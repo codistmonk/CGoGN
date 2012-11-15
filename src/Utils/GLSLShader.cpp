@@ -643,6 +643,7 @@ std::string GLSLShader::findFile(const std::string filename)
 bool GLSLShader::init()
 {
 #ifndef GLEW_MX
+	::glewExperimental = GL_TRUE;
 	GLenum error = glewInit();
 
 	if (error != GLEW_OK)

@@ -48,6 +48,7 @@ GLWidget::GLWidget(SimpleQT* cbs, QWidget *parent) :
 	allow_rotation(true)
 {
 	makeCurrent();
+	::glewExperimental = GL_TRUE;
 	glewInit();
 
 	newModel = 1;

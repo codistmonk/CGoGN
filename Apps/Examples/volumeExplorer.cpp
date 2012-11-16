@@ -188,26 +188,26 @@ void MyQT::cb_Open()
 		}
 	}
 
-	color = myMap.addAttribute<PFP::VEC3, VOLUME>("color");
+	::color = myMap.addAttribute<PFP::VEC3, VOLUME>("color");
 
 	TraversorCell<PFP::MAP, VOLUME> tra(myMap);
 	float maxV = 0.0f;
 	for (Dart d = tra.begin(); d != tra.end(); d = tra.next())
 	{
 		float v = Algo::Geometry::tetrahedronVolume<PFP>(myMap, d, position);
-		color[d] = PFP::VEC3(v,0,0);
+		::color[d] = PFP::VEC3(v,0,0);
 		if (v>maxV)
 			maxV=v;
 	}
-	for (unsigned int i = color.begin(); i != color.end(); color.next(i))
+	for (unsigned int i = ::color.begin(); i != ::color.end(); ::color.next(i))
 	{
-		color[i][0] /= maxV;
-		color[i][2] = 1.0f - color[i][0];
+		::color[i][0] /= maxV;
+		::color[i][2] = 1.0f - ::color[i][0];
 	}
 
 	SelectorDartNoBoundary<PFP::MAP> nb(myMap);
 	m_topo_render->updateData<PFP>(myMap, position,  0.8f, 0.8f, 0.8f, nb);
-	m_explode_render->updateData<PFP>(myMap, position, color);
+	m_explode_render->updateData<PFP>(myMap, position, ::color);
 
 	updateGL() ;
 }
@@ -252,6 +252,81 @@ void MyQT::cb_initGL()
 
 }
 
+static inline float square(float const x)
+{
+	return x * x;
+}
+
+static inline float squaredNorm(float const x, float const y, float const z)
+{
+	return square(x) + square(y) + square(z);
+}
+
+static glm::vec4 viewpoint;
+
+class Comparator
+{
+	static std::vector<float> & distances()
+	{
+		static std::vector<float> result;
+
+		return result;
+	}
+public:
+	Comparator(float const * const buffer, unsigned int const bufferSize)
+	{
+		distances().resize(bufferSize / 4 / 3);
+
+		for (unsigned int i = 0; i < distances().size(); ++i)
+		{
+			distances()[i] = squaredNorm(
+				buffer[4 * 3 * i + 0] - 0.5F - ::viewpoint.x,
+				buffer[4 * 3 * i + 1] - 0.5F - ::viewpoint.y,
+				buffer[4 * 3 * i + 2] - 0.5F - ::viewpoint.z);
+		}
+	}
+
+	bool operator() (unsigned int const i, unsigned int const j) const
+	{
+		return distances()[i] > distances()[j];
+	}
+};
+
+static void sortData(Algo::Render::GL2::ExplodeVolumeAlphaRender const * const evr, std::vector<unsigned int> & permutation, std::vector<GLuint> & triangles)
+{
+	unsigned int const n = evr->nbTris();
+
+	permutation.resize(n);
+
+	for (GLuint i = 0; i < n; ++i)
+	{
+		permutation[i] = i;
+	}
+
+	Utils::VBO const * const colorVBO = evr->colors();
+//	Utils::VBO const * const colorVBO = evr->vertices();
+//	Utils::VBO const * const vertexVBO = evr->vertices();
+
+	float const * const colors = static_cast<float const *>(colorVBO->lockPtr());
+
+	if (colors)
+	{
+		std::sort(permutation.begin(), permutation.end(), Comparator(colors, colorVBO->nbElts() * 3));
+
+		colorVBO->releasePtr();
+	}
+
+	triangles.resize(n * 4);
+
+	for (GLuint i = 0; i < n * 4; i += 4)
+	{
+		for (int j = 0; j < 4; ++j)
+		{
+			triangles[i + j] = permutation[i / 4] * 4 + j;
+		}
+	}
+}
+
 
 
 void MyQT::cb_redraw()
@@ -275,10 +350,19 @@ void MyQT::cb_redraw()
 
 	if (render_volumes)
 	{
+		::viewpoint = glm::inverse(modelViewMatrix()) * glm::vec4(0.0, 0.0, 0.0, 1.0);
+		unsigned int const n = m_explode_render->nbTris();
+		static std::vector<unsigned int> indices(n);
+		static std::vector<GLuint> triangles(n * 4);
+
+		sortData(m_explode_render, indices, triangles);
 		glEnable(GL_BLEND); DEBUG_GL;
 		glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD); DEBUG_GL;
 		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO); DEBUG_GL;
-		m_explode_render->drawFaces();
+//		m_explode_render->drawFaces();
+		m_explode_render->shaderFaces()->enableVertexAttribs();
+		glDrawElements(GL_LINES_ADJACENCY_EXT, n * 4, GL_UNSIGNED_INT, &triangles[0]); DEBUG_GL;
+		m_explode_render->shaderFaces()->disableVertexAttribs();
 		glDisable(GL_BLEND); DEBUG_GL;
 	}
 

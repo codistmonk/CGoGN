@@ -100,6 +100,12 @@ public:
 	 */
 	Utils::GLSLShader* shaderLines() ;
 
+	GLuint nbTris() const;
+
+	Utils::VBO* vertices() const;
+
+	Utils::VBO* colors() const;
+
 	/**
 	* update all drawing buffers
 	* @param map the map

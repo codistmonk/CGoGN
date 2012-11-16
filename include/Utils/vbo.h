@@ -93,7 +93,7 @@ public:
 	/**
 	 * get nb element in vbo (vertices, colors ...)
 	 */
-	unsigned int nbElts() { return m_nbElts; }
+	unsigned int nbElts() const { return m_nbElts; }
 
 	/**
 	 * bind array vbo

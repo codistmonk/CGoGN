@@ -343,6 +343,21 @@ inline Utils::GLSLShader* ExplodeVolumeAlphaRender::shaderLines()
 	return m_shaderL;
 }
 
+inline GLuint ExplodeVolumeAlphaRender::nbTris() const
+{
+	return m_nbTris;
+}
+
+inline Utils::VBO* ExplodeVolumeAlphaRender::vertices() const
+{
+	return m_vboPos;
+}
+
+inline Utils::VBO* ExplodeVolumeAlphaRender::colors() const
+{
+	return m_vboColors;
+}
+
 }//end namespace VBO
 
 }//end namespace Algo

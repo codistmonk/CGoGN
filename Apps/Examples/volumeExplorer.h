@@ -39,7 +39,7 @@
 #include "Geometry/vector_gen.h"
 #include "Algo/Geometry/boundingbox.h"
 #include "Algo/Render/GL2/topo3Render.h"
-#include "Algo/Render/GL2/explodeVolumeRender.h"
+#include "Algo/Render/GL2/explodeVolumeAlphaRender.h"
 
 #include "Utils/cgognStream.h"
 #include "Utils/Qt/qtSimple.h"
@@ -84,10 +84,11 @@ class MyQT: public Utils::QT::SimpleQT
     bool hide_clipping;
 
 	Algo::Render::GL2::Topo3Render* m_topo_render;
-	Algo::Render::GL2::ExplodeVolumeRender* m_explode_render;
+	Algo::Render::GL2::ExplodeVolumeAlphaRender* m_explode_render;
 
 	float m_explode_factor;
 	float m_explode_factorf;
+	float m_opacity;
 
 	// for clipping plane manipulation
 	Utils::Pickable* m_PlanePick;
@@ -112,7 +113,8 @@ public:
 		hide_clipping(false),
 		m_topo_render(NULL),
 		m_explode_render(NULL),
-		m_explode_factor(0.8f)
+		m_explode_factor(0.8f),
+		m_opacity(0.5f)
 	{}
 
 protected:
@@ -135,6 +137,7 @@ public slots:
 	void slider_pressed();
 	void slider_released();
 	void slider_explodeF(int x);
+	void slider_opacity(int x);
 };
 
 #endif

@@ -32,7 +32,7 @@
 #include "Algo/Geometry/volume.h"
 
 #include "Utils/chrono.h"
-
+#include "debug.h"
 
 PFP::MAP myMap;
 VertexAttribute<PFP::VEC3> position ;
@@ -129,6 +129,13 @@ void MyQT::slider_released()
 	updateGL();
 }
 
+void MyQT::slider_opacity(int const x)
+{
+	m_opacity = 0.01f * x;
+	m_explode_render->setAlpha(m_opacity); DEBUG_GL;
+	updateGL(); DEBUG_GL;
+}
+
 
 void MyQT::cb_Open()
 {
@@ -213,7 +220,7 @@ void MyQT::cb_initGL()
 
 	// create the renders
     m_topo_render = new Algo::Render::GL2::Topo3Render();
-    m_explode_render = new Algo::Render::GL2::ExplodeVolumeRender(true,true);
+    m_explode_render = new Algo::Render::GL2::ExplodeVolumeAlphaRender(true,true);
 
 	SelectorDartNoBoundary<PFP::MAP> nb(myMap);
 	m_topo_render->updateData<PFP>(myMap, position,  0.8f, 0.8f, 0.8f, nb);
@@ -223,6 +230,7 @@ void MyQT::cb_initGL()
 	m_explode_render->setAmbiant(Geom::Vec4f(0.2f,0.2f,0.2f,1.0f));
 	m_explode_render->setBackColor(Geom::Vec4f(0.9f,0.9f,0.9f,1.0f));
 	m_explode_render->setColorLine(Geom::Vec4f(0.8f,0.2f,0.2f,1.0f));
+	m_explode_render->setAlpha(m_opacity);
 
 	registerShader(m_explode_render->shaderFaces());
 	registerShader(m_explode_render->shaderLines());
@@ -248,32 +256,36 @@ void MyQT::cb_initGL()
 
 void MyQT::cb_redraw()
 {
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glEnable(GL_LIGHTING);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); DEBUG_GL;
+	glEnable(GL_LIGHTING); DEBUG_GL;
 
-	glEnable(GL_POLYGON_OFFSET_FILL);
-	glPolygonOffset(1.0f, 1.0f);
+	glEnable(GL_POLYGON_OFFSET_FILL); DEBUG_GL;
+	glPolygonOffset(1.0f, 1.0f); DEBUG_GL;
 
 	if (render_topo)
-		m_topo_render->drawTopo();
+		m_topo_render->drawTopo(); DEBUG_GL;
 
 	if (render_edges)
 	{
 		glLineWidth(2.0f);
-		m_explode_render->drawEdges();
+		m_explode_render->drawEdges(); DEBUG_GL;
 	}
 
 	glDisable(GL_POLYGON_OFFSET_FILL);
 
 	if (render_volumes)
 	{
+		glEnable(GL_BLEND); DEBUG_GL;
+		glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD); DEBUG_GL;
+		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO); DEBUG_GL;
 		m_explode_render->drawFaces();
+		glDisable(GL_BLEND); DEBUG_GL;
 	}
 
 	if (clip_volume && !hide_clipping)
 	{
-		m_frame->draw();
-		m_PlanePick->draw();
+		m_frame->draw(); DEBUG_GL;
+		m_PlanePick->draw(); DEBUG_GL;
 	}
 }
 
@@ -476,16 +488,18 @@ int main(int argc, char **argv)
 
 	sqt.setCallBack( dock.checkBox_hide, SIGNAL(toggled(bool)), SLOT(hide_onoff(bool)) );
 	sqt.setCallBack( dock.checkBox_plane, SIGNAL(toggled(bool)), SLOT(clipping_onoff(bool)) );
-	sqt.setCallBack( dock.slider_explode, SIGNAL(valueChanged(int)), SLOT(slider_explode(int)) );
 
+	sqt.setCallBack( dock.slider_explode, SIGNAL(valueChanged(int)), SLOT(slider_explode(int)) );
 	sqt.setCallBack( dock.slider_explode, SIGNAL(sliderPressed()), SLOT(slider_pressed()) );
 	sqt.setCallBack( dock.slider_explode, SIGNAL(sliderReleased()), SLOT(slider_released()) );
 
 	sqt.setCallBack( dock.slider_explode_face, SIGNAL(valueChanged(int)), SLOT(slider_explodeF(int)) );
-
 	sqt.setCallBack( dock.slider_explode_face, SIGNAL(sliderPressed()), SLOT(slider_pressed()) );
 	sqt.setCallBack( dock.slider_explode_face, SIGNAL(sliderReleased()), SLOT(slider_released()) );
 
+	sqt.setCallBack( dock.slider_opacity, SIGNAL(valueChanged(int)), SLOT(slider_opacity(int)) );
+	sqt.setCallBack( dock.slider_opacity, SIGNAL(sliderPressed()), SLOT(slider_pressed()) );
+	sqt.setCallBack( dock.slider_opacity, SIGNAL(sliderReleased()), SLOT(slider_released()) );
 
 
 	sqt.show();

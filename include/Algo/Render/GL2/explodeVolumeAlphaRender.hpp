@@ -220,6 +220,7 @@ template<typename PFP>
 void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP& map, const VertexAttribute<typename PFP::VEC3>& positions, const VolumeAttribute<typename PFP::VEC3>& colorPerXXX, const FunctorSelect& good)
 {
 	DEBUG_OUT << std::endl;
+
 	if (!m_cpf)
 	{
 		CGoGNerr<< "ExplodeVolumeAlphaRender: problem wrong update fonction use the other" << CGoGNendl;
@@ -227,7 +228,6 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP& map, const VertexAt
 	}
 
 	std::vector<int> depths(map.getNbDarts(), -1);
-
 	computeDepths<PFP>(map, good, depths);
 
 	typedef typename PFP::VEC3 VEC3;
@@ -240,11 +240,7 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP& map, const VertexAt
 	buffer.reserve(16384);
 
 	std::vector<VEC3> bufferColors;
-
-//	bool withColors = (positions == colorPerXXX);
-	bool withColors = true;
-	if (withColors)
-		bufferColors.reserve(16384);
+	bufferColors.reserve(16384);
 
 	TraversorCell<typename PFP::MAP, PFP::MAP::FACE_OF_PARENT> traFace(map, good);
 
@@ -259,8 +255,10 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP& map, const VertexAt
 		do
 		{
 			int const depth = depths[d.label()];
+
 			buffer.push_back(centerVolumes[d]);
 			bufferColors.push_back(centerFace);
+
 			buffer.push_back(positions[d]);
 			if (depth == 0)
 				bufferColors.push_back(VEC3(1, 0, 0));
@@ -271,6 +269,7 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP& map, const VertexAt
 			else
 				bufferColors.push_back(VEC3(1, 1, 1));
 //				bufferColors.push_back(colorPerXXX[d]);
+
 			buffer.push_back(positions[b]);
 			if (depth == 0)
 				bufferColors.push_back(VEC3(1, 0, 0));
@@ -281,6 +280,7 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP& map, const VertexAt
 			else
 				bufferColors.push_back(VEC3(1, 1, 1));
 //				bufferColors.push_back(colorPerXXX[b]);
+
 			buffer.push_back(positions[c]);
 			if (depth == 0)
 				bufferColors.push_back(VEC3(1, 0, 0));
@@ -291,33 +291,35 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP& map, const VertexAt
 			else
 				bufferColors.push_back(VEC3(1, 1, 1));
 //				bufferColors.push_back(colorPerXXX[c]);
+
 			b = c;
 			c = map.phi1(b);
 
 		} while (c != d);
 	}
 
-	m_nbTris = buffer.size()/4;
+	m_nbTris = buffer.size() / 4;
 
-	m_vboPos->allocate(buffer.size());
-	VEC3* ptrPos = reinterpret_cast<VEC3*>(m_vboPos->lockPtr());
-	memcpy(ptrPos,&buffer[0],buffer.size()*sizeof(VEC3));
-	m_vboPos->releasePtr();
-	m_shader->setAttributePosition(m_vboPos);
+	{
+		m_vboPos->allocate(buffer.size());
+		VEC3 * const ptrPos = reinterpret_cast<VEC3 *>(m_vboPos->lockPtr());
+		memcpy(ptrPos, &buffer[0], buffer.size() * sizeof(VEC3));
+		m_vboPos->releasePtr();
+		m_shader->setAttributePosition(m_vboPos);
+	}
 
-	if (withColors)
 	{
 		m_vboColors->allocate(bufferColors.size());
-		VEC3* ptrCol = reinterpret_cast<VEC3*>(m_vboColors->lockPtr());
-		memcpy(ptrCol,&bufferColors[0],bufferColors.size()*sizeof(VEC3));
+		VEC3 * const ptrCol = reinterpret_cast<VEC3* >(m_vboColors->lockPtr());
+		memcpy(ptrCol, &bufferColors[0], bufferColors.size() * sizeof(VEC3));
 		m_vboColors->releasePtr();
 		m_shader->setAttributeColor(m_vboColors);
 	}
 
-
 	buffer.clear();
 
 	TraversorCell<typename PFP::MAP, PFP::MAP::EDGE_OF_PARENT> traEdge(map, good);
+
 	for (Dart d = traEdge.begin(); d != traEdge.end(); d = traEdge.next())
 	{
 			buffer.push_back(centerVolumes[d]);
@@ -325,15 +327,15 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP& map, const VertexAt
 			buffer.push_back(positions[map.phi1(d)]);
 	}
 
-	m_nbLines = buffer.size()/3;
+	m_nbLines = buffer.size() / 3;
 
-	m_vboPosLine->allocate(buffer.size());
-
-	ptrPos = reinterpret_cast<VEC3*>(m_vboPosLine->lockPtr());
-	memcpy(ptrPos,&buffer[0],buffer.size()*sizeof(VEC3));
-
-	m_vboPosLine->releasePtr();
-	m_shaderL->setAttributePosition(m_vboPosLine);
+	{
+		m_vboPosLine->allocate(buffer.size());
+		VEC3 * const ptrPos = reinterpret_cast<VEC3 *>(m_vboPosLine->lockPtr());
+		memcpy(ptrPos, &buffer[0], buffer.size() * sizeof(VEC3));
+		m_vboPosLine->releasePtr();
+		m_shaderL->setAttributePosition(m_vboPosLine);
+	}
 }
 
 inline void ExplodeVolumeAlphaRender::drawFaces()

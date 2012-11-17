@@ -164,25 +164,42 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP& map, const VertexAt
 }
 
 template<typename PFP>
-void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP& map, const VertexAttribute<typename PFP::VEC3>& positions, const VolumeAttribute<typename PFP::VEC3>& colorPerXXX, const FunctorSelect& good)
+static void computeDepths(typename PFP::MAP& map, const FunctorSelect& good, std::vector<int> & depths)
 {
-	DEBUG_OUT << std::endl;
-	if (!m_cpf)
-	{
-		CGoGNerr<< "ExplodeVolumeAlphaRender: problem wrong update fonction use the other" << CGoGNendl;
-		return;
-	}
-	std::vector<int> depths(map.getNbDarts(), -1);
-	{
-		TraversorCell<typename PFP::MAP, PFP::MAP::FACE_OF_PARENT> modelFaces(map, good);
+	TraversorCell<typename PFP::MAP, PFP::MAP::FACE_OF_PARENT> modelFaces(map, good);
 
-		int borderDartCount = 0;
-		int depth = 0;
+	int depth = 0;
+
+	for (Dart d = modelFaces.begin(); d != modelFaces.end(); d = modelFaces.next())
+	{
+		if (map.isBoundaryFace(d))
+		{
+			Traversor3WF<typename PFP::MAP> cellFaces(map, d);
+
+			for (Dart e = cellFaces.begin(); e != cellFaces.end(); e = cellFaces.next())
+			{
+				Traversor3FE<typename PFP::MAP> faceEdges(map, e);
+
+				for (Dart f = faceEdges.begin(); f != faceEdges.end(); f = faceEdges.next())
+				{
+					depths[f.label()] = depth;
+				}
+			}
+		}
+	}
+
+	bool notDone;
+
+	do
+	{
+		++depth;
+		notDone = false;
 
 		for (Dart d = modelFaces.begin(); d != modelFaces.end(); d = modelFaces.next())
 		{
-			if (map.isBoundaryFace(d))
+			if (depths[d.label()] == -1 && depths[map.phi3(d).label()] == depth - 1)
 			{
+				notDone = true;
 				Traversor3WF<typename PFP::MAP> cellFaces(map, d);
 
 				for (Dart e = cellFaces.begin(); e != cellFaces.end(); e = cellFaces.next())
@@ -194,40 +211,24 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP& map, const VertexAt
 						depths[f.label()] = depth;
 					}
 				}
-
-				++borderDartCount;
 			}
 		}
+	} while (notDone);
+}
 
-		DEBUG_OUT << "borderDarts:" << borderDartCount << "/" << map.getNbDarts() << std::endl;
-
-		bool notDone;
-
-		do
-		{
-			++depth;
-			notDone = false;
-
-			for (Dart d = modelFaces.begin(); d != modelFaces.end(); d = modelFaces.next())
-			{
-				if (depths[d.label()] == -1 && depths[map.phi3(d).label()] == depth - 1)
-				{
-					notDone = true;
-					Traversor3WF<typename PFP::MAP> cellFaces(map, d);
-
-					for (Dart e = cellFaces.begin(); e != cellFaces.end(); e = cellFaces.next())
-					{
-						Traversor3FE<typename PFP::MAP> faceEdges(map, e);
-
-						for (Dart f = faceEdges.begin(); f != faceEdges.end(); f = faceEdges.next())
-						{
-							depths[f.label()] = depth;
-						}
-					}
-				}
-			}
-		} while (notDone);
+template<typename PFP>
+void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP& map, const VertexAttribute<typename PFP::VEC3>& positions, const VolumeAttribute<typename PFP::VEC3>& colorPerXXX, const FunctorSelect& good)
+{
+	DEBUG_OUT << std::endl;
+	if (!m_cpf)
+	{
+		CGoGNerr<< "ExplodeVolumeAlphaRender: problem wrong update fonction use the other" << CGoGNendl;
+		return;
 	}
+
+	std::vector<int> depths(map.getNbDarts(), -1);
+
+	computeDepths<PFP>(map, good, depths);
 
 	typedef typename PFP::VEC3 VEC3;
 	typedef typename PFP::REAL REAL;

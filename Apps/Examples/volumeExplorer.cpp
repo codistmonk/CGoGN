@@ -332,8 +332,6 @@ static void sortData(Algo::Render::GL2::ExplodeVolumeAlphaRender const * const e
 void MyQT::cb_redraw()
 {
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); DEBUG_GL;
-//	glEnable(GL_CULL_FACE); DEBUG_GL;
-//	glCullFace(GL_BACK); DEBUG_GL;
 
 	glEnable(GL_POLYGON_OFFSET_FILL); DEBUG_GL;
 	glPolygonOffset(1.0f, 1.0f); DEBUG_GL;
@@ -351,20 +349,26 @@ void MyQT::cb_redraw()
 
 	if (render_volumes)
 	{
-		::viewpoint = glm::inverse(modelViewMatrix()) * glm::vec4(0.0, 0.0, 0.0, 1.0);
-		unsigned int const n = m_explode_render->nbTris();
-		static std::vector<unsigned int> indices(n);
-		static std::vector<GLuint> triangles(n * 4);
+		if (m_opacity < 1)
+		{
+			::viewpoint = glm::inverse(modelViewMatrix()) * glm::vec4(0.0, 0.0, 0.0, 1.0);
+			unsigned int const n = m_explode_render->nbTris();
+			static std::vector<unsigned int> indices(n);
+			static std::vector<GLuint> triangles(n * 4);
 
-		sortData(m_explode_render, indices, triangles);
-		glEnable(GL_BLEND); DEBUG_GL;
-		glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD); DEBUG_GL;
-		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO); DEBUG_GL;
-//		m_explode_render->drawFaces();
-		m_explode_render->shaderFaces()->enableVertexAttribs();
-		glDrawElements(GL_LINES_ADJACENCY_EXT, n * 4, GL_UNSIGNED_INT, &triangles[0]); DEBUG_GL;
-		m_explode_render->shaderFaces()->disableVertexAttribs();
-		glDisable(GL_BLEND); DEBUG_GL;
+			sortData(m_explode_render, indices, triangles);
+			glEnable(GL_BLEND); DEBUG_GL;
+			glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD); DEBUG_GL;
+			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO); DEBUG_GL;
+			m_explode_render->shaderFaces()->enableVertexAttribs();
+			glDrawElements(GL_LINES_ADJACENCY_EXT, n * 4, GL_UNSIGNED_INT, &triangles[0]); DEBUG_GL;
+			m_explode_render->shaderFaces()->disableVertexAttribs();
+			glDisable(GL_BLEND); DEBUG_GL;
+		}
+		else
+		{
+			m_explode_render->drawFaces();
+		}
 	}
 
 	if (clip_volume && !hide_clipping)
@@ -541,7 +545,7 @@ int main(int argc, char **argv)
 	{
 		position = myMap.addAttribute<PFP::VEC3, VERTEX>("position");
 		Algo::Modelisation::Primitive3D<PFP> prim(myMap, position);
-		int nb = 5;
+		int nb = 8;
 		prim.hexaGrid_topo(nb,nb,nb);
 		prim.embedHexaGrid(1.0f,1.0f,1.0f);
 

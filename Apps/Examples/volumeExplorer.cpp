@@ -32,7 +32,7 @@
 #include "Algo/Geometry/volume.h"
 
 #include "Utils/chrono.h"
-#include "debug.h"
+#include "Utils/debug.h"
 
 PFP::MAP myMap;
 VertexAttribute<PFP::VEC3> position ;
@@ -280,9 +280,9 @@ public:
 		for (unsigned int i = 0; i < distances().size(); ++i)
 		{
 			distances()[i] = squaredNorm(
-				buffer[4 * 3 * i + 0] - 0.5F - ::viewpoint.x,
-				buffer[4 * 3 * i + 1] - 0.5F - ::viewpoint.y,
-				buffer[4 * 3 * i + 2] - 0.5F - ::viewpoint.z);
+				buffer[4 * 3 * i + 0] - ::viewpoint.x,
+				buffer[4 * 3 * i + 1] - ::viewpoint.y,
+				buffer[4 * 3 * i + 2] - ::viewpoint.z);
 		}
 	}
 
@@ -332,7 +332,8 @@ static void sortData(Algo::Render::GL2::ExplodeVolumeAlphaRender const * const e
 void MyQT::cb_redraw()
 {
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); DEBUG_GL;
-	glEnable(GL_LIGHTING); DEBUG_GL;
+//	glEnable(GL_CULL_FACE); DEBUG_GL;
+//	glCullFace(GL_BACK); DEBUG_GL;
 
 	glEnable(GL_POLYGON_OFFSET_FILL); DEBUG_GL;
 	glPolygonOffset(1.0f, 1.0f); DEBUG_GL;
@@ -540,7 +541,7 @@ int main(int argc, char **argv)
 	{
 		position = myMap.addAttribute<PFP::VEC3, VERTEX>("position");
 		Algo::Modelisation::Primitive3D<PFP> prim(myMap, position);
-		int nb = 8;
+		int nb = 5;
 		prim.hexaGrid_topo(nb,nb,nb);
 		prim.embedHexaGrid(1.0f,1.0f,1.0f);
 

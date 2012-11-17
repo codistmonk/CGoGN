@@ -27,6 +27,7 @@
 #include "Topology/generic/dartmarker.h"
 #include "Topology/generic/cellmarker.h"
 #include "Algo/Geometry/centroid.h"
+#include "Utils/debug.h"
 
 namespace CGoGN
 {
@@ -56,12 +57,6 @@ inline ExplodeVolumeAlphaRender::ExplodeVolumeAlphaRender(bool withColorPerFace,
 	m_shader = new Utils::ShaderExplodeVolumesAlpha(withColorPerFace,withExplodeFace);
 	m_shaderL = new Utils::ShaderExplodeVolumesLines();
 
-//	m_shader->setAmbiant(Geom::Vec4f(0.1f,0.1f,0.1f,0.0f));
-//	m_shader->setDiffuse(Geom::Vec4f(1.0f,1.0f,0.1f,0.0f));
-	//m_shaderL->setColor(Geom::Vec4f(1.0f,1.0f,1.0f,0.0f));
-
-	//m_shaderL->setColor(Geom::Vec4f(0.113f,0.337f,0.0f,0.113f));
-
 	m_shaderL->setColor(Geom::Vec4f(1.0f,1.0f,1.0f,0.0f));
 
 }
@@ -78,6 +73,7 @@ inline ExplodeVolumeAlphaRender::~ExplodeVolumeAlphaRender()
 template<typename PFP>
 void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP& map, const VertexAttribute<typename PFP::VEC3>& positions, const FunctorSelect& good)
 {
+	DEBUG_OUT << std::endl;
 	if (m_cpf)
 	{
 		CGoGNerr<< "ExplodeVolumeAlphaRender: problem wrong update fonction use the other" << CGoGNendl;
@@ -170,10 +166,67 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP& map, const VertexAt
 template<typename PFP>
 void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP& map, const VertexAttribute<typename PFP::VEC3>& positions, const VolumeAttribute<typename PFP::VEC3>& colorPerXXX, const FunctorSelect& good)
 {
+	DEBUG_OUT << std::endl;
 	if (!m_cpf)
 	{
 		CGoGNerr<< "ExplodeVolumeAlphaRender: problem wrong update fonction use the other" << CGoGNendl;
 		return;
+	}
+	std::vector<int> depths(map.getNbDarts(), -1);
+	{
+		TraversorCell<typename PFP::MAP, PFP::MAP::FACE_OF_PARENT> modelFaces(map, good);
+
+		int borderDartCount = 0;
+		int depth = 0;
+
+		for (Dart d = modelFaces.begin(); d != modelFaces.end(); d = modelFaces.next())
+		{
+			if (map.isBoundaryFace(d))
+			{
+				Traversor3WF<typename PFP::MAP> cellFaces(map, d);
+
+				for (Dart e = cellFaces.begin(); e != cellFaces.end(); e = cellFaces.next())
+				{
+					Traversor3FE<typename PFP::MAP> faceEdges(map, e);
+
+					for (Dart f = faceEdges.begin(); f != faceEdges.end(); f = faceEdges.next())
+					{
+						depths[f.label()] = depth;
+					}
+				}
+
+				++borderDartCount;
+			}
+		}
+
+		DEBUG_OUT << "borderDarts:" << borderDartCount << "/" << map.getNbDarts() << std::endl;
+
+		bool notDone;
+
+		do
+		{
+			++depth;
+			notDone = false;
+
+			for (Dart d = modelFaces.begin(); d != modelFaces.end(); d = modelFaces.next())
+			{
+				if (depths[d.label()] == -1 && depths[map.phi3(d).label()] == depth - 1)
+				{
+					notDone = true;
+					Traversor3WF<typename PFP::MAP> cellFaces(map, d);
+
+					for (Dart e = cellFaces.begin(); e != cellFaces.end(); e = cellFaces.next())
+					{
+						Traversor3FE<typename PFP::MAP> faceEdges(map, e);
+
+						for (Dart f = faceEdges.begin(); f != faceEdges.end(); f = faceEdges.next())
+						{
+							depths[f.label()] = depth;
+						}
+					}
+				}
+			}
+		} while (notDone);
 	}
 
 	typedef typename PFP::VEC3 VEC3;
@@ -204,23 +257,39 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP& map, const VertexAt
 		// loop to cut a polygon in triangle on the fly (works only with convex faces)
 		do
 		{
+			int const depth = depths[d.label()];
 			buffer.push_back(centerVolumes[d]);
 			bufferColors.push_back(centerFace);
 			buffer.push_back(positions[d]);
-			if (m_cpf)
-				bufferColors.push_back(colorPerXXX[d]);
+			if (depth == 0)
+				bufferColors.push_back(VEC3(1, 0, 0));
+			else if (depth == 1)
+				bufferColors.push_back(VEC3(0, 1, 0));
+			else if (depth == 2)
+				bufferColors.push_back(VEC3(0, 0, 1));
 			else
-				bufferColors.push_back(m_globalColor);
+				bufferColors.push_back(VEC3(1, 1, 1));
+//				bufferColors.push_back(colorPerXXX[d]);
 			buffer.push_back(positions[b]);
-			if (m_cpf)
-				bufferColors.push_back(colorPerXXX[b]);
+			if (depth == 0)
+				bufferColors.push_back(VEC3(1, 0, 0));
+			else if (depth == 1)
+				bufferColors.push_back(VEC3(0, 1, 0));
+			else if (depth == 2)
+				bufferColors.push_back(VEC3(0, 0, 1));
 			else
-				bufferColors.push_back(m_globalColor);
+				bufferColors.push_back(VEC3(1, 1, 1));
+//				bufferColors.push_back(colorPerXXX[b]);
 			buffer.push_back(positions[c]);
-			if (m_cpf)
-				bufferColors.push_back(colorPerXXX[c]);
+			if (depth == 0)
+				bufferColors.push_back(VEC3(1, 0, 0));
+			else if (depth == 1)
+				bufferColors.push_back(VEC3(0, 1, 0));
+			else if (depth == 2)
+				bufferColors.push_back(VEC3(0, 0, 1));
 			else
-				bufferColors.push_back(m_globalColor);
+				bufferColors.push_back(VEC3(1, 1, 1));
+//				bufferColors.push_back(colorPerXXX[c]);
 			b = c;
 			c = map.phi1(b);
 

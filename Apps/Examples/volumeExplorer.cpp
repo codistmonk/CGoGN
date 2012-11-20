@@ -38,6 +38,139 @@ PFP::MAP myMap;
 VertexAttribute<PFP::VEC3> position ;
 VolumeAttribute<PFP::VEC3> color ;
 
+template<typename PFP>
+static int computeDepths(typename PFP::MAP& map, const FunctorSelect& good, std::vector<int> & depths)
+{
+	TraversorCell<typename PFP::MAP, PFP::MAP::FACE_OF_PARENT> modelFaces(map, good);
+
+	int depth = 0;
+	bool notDone = false;
+
+	for (Dart d = modelFaces.begin(); d != modelFaces.end(); d = modelFaces.next())
+	{
+		if (map.isBoundaryFace(d))
+		{
+			notDone = true;
+			Traversor3WF<typename PFP::MAP> cellFaces(map, d);
+
+			for (Dart e = cellFaces.begin(); e != cellFaces.end(); e = cellFaces.next())
+			{
+				Traversor3FE<typename PFP::MAP> faceEdges(map, e);
+
+				for (Dart f = faceEdges.begin(); f != faceEdges.end(); f = faceEdges.next())
+				{
+					depths[f.label()] = depth;
+				}
+			}
+		}
+	}
+
+	++depth;
+
+	while (notDone)
+	{
+		notDone = false;
+
+		for (Dart d = modelFaces.begin(); d != modelFaces.end(); d = modelFaces.next())
+		{
+			if (depths[d.label()] == -1 && depths[map.phi3(d).label()] == depth - 1)
+			{
+				notDone = true;
+				Traversor3WF<typename PFP::MAP> cellFaces(map, d);
+
+				for (Dart e = cellFaces.begin(); e != cellFaces.end(); e = cellFaces.next())
+				{
+					Traversor3FE<typename PFP::MAP> faceEdges(map, e);
+
+					for (Dart f = faceEdges.begin(); f != faceEdges.end(); f = faceEdges.next())
+					{
+						depths[f.label()] = depth;
+					}
+				}
+			}
+		}
+
+		if (notDone)
+		{
+			++depth;
+		}
+	}
+
+	return depth - 1;
+}
+
+template<typename VEC3>
+static VEC3 const & jetColor(int const i, int const iMax)
+{
+	static VEC3 const defaultColor = VEC3(1, 1, 1);
+	static VEC3 const colors[] = {
+			VEC3(0.0, 0.0, 0.5),
+			VEC3(0.0, 0.0, 0.6),
+			VEC3(0.0, 0.0, 0.7),
+			VEC3(0.0, 0.0, 0.8),
+			VEC3(0.0, 0.0, 0.9),
+			VEC3(0.0, 0.0, 1.0),
+			VEC3(0.0, 0.1, 1.0),
+			VEC3(0.0, 0.2, 1.0),
+			VEC3(0.0, 0.3, 1.0),
+			VEC3(0.0, 0.4, 1.0),
+			VEC3(0.0, 0.5, 1.0),
+			VEC3(0.0, 0.6, 1.0),
+			VEC3(0.0, 0.7, 1.0),
+			VEC3(0.0, 0.8, 1.0),
+			VEC3(0.0, 0.9, 1.0),
+			VEC3(0.0, 1.0, 1.0),
+			VEC3(0.1, 1.0, 0.9),
+			VEC3(0.2, 1.0, 0.8),
+			VEC3(0.3, 1.0, 0.7),
+			VEC3(0.4, 1.0, 0.6),
+			VEC3(0.5, 1.0, 0.5),
+			VEC3(0.6, 1.0, 0.4),
+			VEC3(0.7, 1.0, 0.3),
+			VEC3(0.8, 1.0, 0.2),
+			VEC3(0.9, 1.0, 0.1),
+			VEC3(1.0, 1.0, 0.0),
+			VEC3(1.0, 0.9, 0.0),
+			VEC3(1.0, 0.8, 0.0),
+			VEC3(1.0, 0.7, 0.0),
+			VEC3(1.0, 0.6, 0.0),
+			VEC3(1.0, 0.5, 0.0),
+			VEC3(1.0, 0.4, 0.0),
+			VEC3(1.0, 0.3, 0.0),
+			VEC3(1.0, 0.2, 0.0),
+			VEC3(1.0, 0.1, 0.0),
+			VEC3(1.0, 0.0, 0.0),
+			VEC3(0.9, 0.0, 0.0),
+			VEC3(0.8, 0.0, 0.0),
+			VEC3(0.7, 0.0, 0.0),
+			VEC3(0.6, 0.0, 0.0),
+			VEC3(0.5, 0.0, 0.0),
+	};
+	static unsigned int const lastColorIndex = sizeof(colors) / sizeof(VEC3) - 1;
+
+	return i < 0 ? defaultColor : colors[iMax <= 0 ? lastColorIndex : i * lastColorIndex / iMax];
+}
+
+template<typename PFP>
+static void computeColorsUsingDepths(typename PFP::MAP & map, VolumeAttribute<typename PFP::VEC3> & colorPerXXX, FunctorSelect const & good)
+{
+	std::vector<int> depths(map.getNbDarts(), -1);
+	int const depthEnd = computeDepths<PFP>(map, good, depths);
+	TraversorCell<typename PFP::MAP, PFP::MAP::FACE_OF_PARENT> traFace(map, good);
+
+	for (Dart d = traFace.begin(); d != traFace.end(); d = traFace.next())
+	{
+		int const depth = depths[d.label()];
+
+		Dart a = d;
+		Dart b = map.phi1(a);
+		Dart c = map.phi1(b);
+		colorPerXXX[a] = jetColor<typename PFP::VEC3>(depth, depthEnd);
+		colorPerXXX[b] = jetColor<typename PFP::VEC3>(depth, depthEnd);
+		colorPerXXX[c] = jetColor<typename PFP::VEC3>(depth, depthEnd);
+	}
+}
+
 void MyQT::volumes_onoff(bool x)
 {
 	render_volumes = !render_volumes;
@@ -55,8 +188,8 @@ void MyQT::topo_onoff(bool x)
 	render_topo = !render_topo;
 	if (render_topo)
 	{
-		SelectorDartNoBoundary<PFP::MAP> nb(myMap);
-		m_topo_render->updateData<PFP>(myMap, position, 0.8f, m_explode_factorf-0.05f, m_explode_factor, nb);
+		SelectorDartNoBoundary<PFP::MAP> nb(::myMap);
+		m_topo_render->updateData<PFP>(::myMap, position, 0.8f, m_explode_factorf-0.05f, m_explode_factor, nb);
 	}
 
 	updateGL();
@@ -123,8 +256,8 @@ void MyQT::slider_released()
 	render_topo = render_topoTemp;
 	if (render_topo)
 	{
-		SelectorDartNoBoundary<PFP::MAP> nb(myMap);
-		m_topo_render->updateData<PFP>(myMap, position, 0.8f, m_explode_factorf-0.05f, m_explode_factor, nb);
+		SelectorDartNoBoundary<PFP::MAP> nb(::myMap);
+		m_topo_render->updateData<PFP>(::myMap, position, 0.8f, m_explode_factorf-0.05f, m_explode_factor, nb);
 	}
 	updateGL();
 }
@@ -144,7 +277,7 @@ void MyQT::cb_Open()
 	if (filename.empty())
 		return ;
 
-	myMap.clear(true);
+	::myMap.clear(true);
 
 	std::vector<std::string> attrNames ;
 
@@ -153,48 +286,48 @@ void MyQT::cb_Open()
 
 	if(extension == std::string(".tet"))
 	{
-		if(!Algo::Import::importTet<PFP>(myMap,filename,attrNames))
+		if(!Algo::Import::importTet<PFP>(::myMap,filename,attrNames))
 		{
 			CGoGNerr << "could not import " << filename << CGoGNendl ;
 			return;
 		}
 		else
-			position = myMap.getAttribute<PFP::VEC3, VERTEX>(attrNames[0]) ;
+			position = ::myMap.getAttribute<PFP::VEC3, VERTEX>(attrNames[0]) ;
 	}
 
 	if(extension == std::string(".node"))
 	{
-		if(!Algo::Import::importMeshV<PFP>(myMap, filename, attrNames, Algo::Import::ImportVolumique::NODE))
+		if(!Algo::Import::importMeshV<PFP>(::myMap, filename, attrNames, Algo::Import::ImportVolumique::NODE))
 		{
 			std::cerr << "could not import " << filename << std::endl ;
 			return ;
 		}
 		else
-			position = myMap.getAttribute<PFP::VEC3,VERTEX>(attrNames[0]) ;
+			position = ::myMap.getAttribute<PFP::VEC3,VERTEX>(attrNames[0]) ;
 	}
 
 
 	if(extension == std::string(".off"))
 	{
-		if(!Algo::Import::importMeshToExtrude<PFP>(myMap, filename, attrNames))
+		if(!Algo::Import::importMeshToExtrude<PFP>(::myMap, filename, attrNames))
 		{
 			std::cerr << "could not import " << filename << std::endl ;
 			return ;
 		}
 		else
 		{
-			position = myMap.getAttribute<PFP::VEC3, VERTEX>(attrNames[0]) ;
-			myMap.closeMap();
+			position = ::myMap.getAttribute<PFP::VEC3, VERTEX>(attrNames[0]) ;
+			::myMap.closeMap();
 		}
 	}
 
-	::color = myMap.addAttribute<PFP::VEC3, VOLUME>("color");
+	::color = ::myMap.addAttribute<PFP::VEC3, VOLUME>("color");
 
-	TraversorCell<PFP::MAP, VOLUME> tra(myMap);
+	TraversorCell<PFP::MAP, VOLUME> tra(::myMap);
 	float maxV = 0.0f;
 	for (Dart d = tra.begin(); d != tra.end(); d = tra.next())
 	{
-		float v = Algo::Geometry::tetrahedronVolume<PFP>(myMap, d, position);
+		float v = Algo::Geometry::tetrahedronVolume<PFP>(::myMap, d, position);
 		::color[d] = PFP::VEC3(v,0,0);
 		if (v>maxV)
 			maxV=v;
@@ -205,9 +338,10 @@ void MyQT::cb_Open()
 		::color[i][2] = 1.0f - ::color[i][0];
 	}
 
-	SelectorDartNoBoundary<PFP::MAP> nb(myMap);
-	m_topo_render->updateData<PFP>(myMap, position,  0.8f, 0.8f, 0.8f, nb);
-	m_explode_render->updateData<PFP>(myMap, position, ::color);
+	SelectorDartNoBoundary<PFP::MAP> nb(::myMap);
+	m_topo_render->updateData<PFP>(::myMap, position,  0.8f, 0.8f, 0.8f, nb);
+	computeColorsUsingDepths<PFP>(::myMap, ::color, allDarts);
+	m_explode_render->updateData<PFP>(::myMap, position, ::color);
 
 	updateGL() ;
 }
@@ -222,9 +356,10 @@ void MyQT::cb_initGL()
     m_topo_render = new Algo::Render::GL2::Topo3Render();
     m_explode_render = new Algo::Render::GL2::ExplodeVolumeAlphaRender(true,true);
 
-	SelectorDartNoBoundary<PFP::MAP> nb(myMap);
-	m_topo_render->updateData<PFP>(myMap, position,  0.8f, 0.8f, 0.8f, nb);
-	m_explode_render->updateData<PFP>(myMap, position, color);
+	SelectorDartNoBoundary<PFP::MAP> nb(::myMap);
+	m_topo_render->updateData<PFP>(::myMap, position,  0.8f, 0.8f, 0.8f, nb);
+	computeColorsUsingDepths<PFP>(::myMap, ::color, allDarts);
+	m_explode_render->updateData<PFP>(::myMap, position, color);
 	m_explode_render->setExplodeVolumes(0.8f);
 	m_explode_render->setExplodeFaces(0.9f);
 	m_explode_render->setAmbiant(Geom::Vec4f(0.2f,0.2f,0.2f,1.0f));
@@ -489,48 +624,48 @@ int main(int argc, char **argv)
 
 		if(extension == std::string(".tet"))
 		{
-			if(!Algo::Import::importTet<PFP>(myMap,argv[1],attrNames))
+			if(!Algo::Import::importTet<PFP>(::myMap,argv[1],attrNames))
 			{
 				CGoGNerr << "could not import " << argv[1] << CGoGNendl ;
 				return 1;
 			}
 			else
-				position = myMap.getAttribute<PFP::VEC3, VERTEX>(attrNames[0]) ;
+				position = ::myMap.getAttribute<PFP::VEC3, VERTEX>(attrNames[0]) ;
 		}
 
 		if(extension == std::string(".node"))
 		{
-			if(!Algo::Import::importMeshV<PFP>(myMap, argv[1], attrNames, Algo::Import::ImportVolumique::NODE))
+			if(!Algo::Import::importMeshV<PFP>(::myMap, argv[1], attrNames, Algo::Import::ImportVolumique::NODE))
 			{
 				std::cerr << "could not import " << argv[1] << std::endl ;
 				return 1;
 			}
 			else
-				position = myMap.getAttribute<PFP::VEC3,VERTEX>(attrNames[0]) ;
+				position = ::myMap.getAttribute<PFP::VEC3,VERTEX>(attrNames[0]) ;
 		}
 
 
 		if(extension == std::string(".off"))
 		{
-			if(!Algo::Import::importMeshToExtrude<PFP>(myMap, argv[1], attrNames))
+			if(!Algo::Import::importMeshToExtrude<PFP>(::myMap, argv[1], attrNames))
 			{
 				std::cerr << "could not import "  << std::endl ;
 				return 1;
 			}
 			else
 			{
-				position = myMap.getAttribute<PFP::VEC3, VERTEX>(attrNames[0]) ;
-				myMap.closeMap();
+				position = ::myMap.getAttribute<PFP::VEC3, VERTEX>(attrNames[0]) ;
+				::myMap.closeMap();
 			}
 		}
 
-		color = myMap.addAttribute<PFP::VEC3, VOLUME>("color");
+		color = ::myMap.addAttribute<PFP::VEC3, VOLUME>("color");
 
-		TraversorCell<PFP::MAP, VOLUME> tra(myMap);
+		TraversorCell<PFP::MAP, VOLUME> tra(::myMap);
 		float maxV = 0.0f;
 		for (Dart d = tra.begin(); d != tra.end(); d = tra.next())
 		{
-			float v = Algo::Geometry::tetrahedronVolume<PFP>(myMap, d, position);
+			float v = Algo::Geometry::tetrahedronVolume<PFP>(::myMap, d, position);
 			color[d] = PFP::VEC3(v,0,0);
 			if (v>maxV)
 				maxV=v;
@@ -543,14 +678,14 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		position = myMap.addAttribute<PFP::VEC3, VERTEX>("position");
-		Algo::Modelisation::Primitive3D<PFP> prim(myMap, position);
+		position = ::myMap.addAttribute<PFP::VEC3, VERTEX>("position");
+		Algo::Modelisation::Primitive3D<PFP> prim(::myMap, position);
 		int nb = 8;
 		prim.hexaGrid_topo(nb,nb,nb);
 		prim.embedHexaGrid(1.0f,1.0f,1.0f);
 
-		color = myMap.addAttribute<PFP::VEC3, VOLUME>("color");
-		TraversorW<PFP::MAP> tra(myMap);
+		color = ::myMap.addAttribute<PFP::VEC3, VOLUME>("color");
+		TraversorW<PFP::MAP> tra(::myMap);
 		for (Dart d = tra.begin(); d != tra.end(); d = tra.next())
 			color[d] = position[d] + PFP::VEC3(0.5,0.5,0.5);
 	}
@@ -564,7 +699,7 @@ int main(int argc, char **argv)
 
 
 	//  bounding box
-    Geom::BoundingBox<PFP::VEC3> bb = Algo::Geometry::computeBoundingBox<PFP>(myMap, position);
+    Geom::BoundingBox<PFP::VEC3> bb = Algo::Geometry::computeBoundingBox<PFP>(::myMap, position);
     sqt.m_WidthObj = std::max<PFP::REAL>(std::max<PFP::REAL>(bb.size(0), bb.size(1)), bb.size(2));
     sqt.m_PosObj = (bb.min() +  bb.max()) / PFP::REAL(2);
 
@@ -600,17 +735,17 @@ int main(int argc, char **argv)
 
 	std::cout << "Compute Volume ->"<< std::endl;
 	ch.start();
-	float vol = Algo::Geometry::totalVolume<PFP>(myMap, position);
-	vol += Algo::Geometry::totalVolume<PFP>(myMap, position);
-	vol += Algo::Geometry::totalVolume<PFP>(myMap, position);
-	vol += Algo::Geometry::totalVolume<PFP>(myMap, position);
+	float vol = Algo::Geometry::totalVolume<PFP>(::myMap, position);
+	vol += Algo::Geometry::totalVolume<PFP>(::myMap, position);
+	vol += Algo::Geometry::totalVolume<PFP>(::myMap, position);
+	vol += Algo::Geometry::totalVolume<PFP>(::myMap, position);
 	std::cout << ch.elapsed()<< " ms  val="<<vol<< std::endl;
 
 	ch.start();
-	vol = Algo::Geometry::Parallel::totalVolume<PFP>(myMap, position);
-	vol += Algo::Geometry::Parallel::totalVolume<PFP>(myMap, position);
-	vol += Algo::Geometry::Parallel::totalVolume<PFP>(myMap, position);
-	vol += Algo::Geometry::Parallel::totalVolume<PFP>(myMap, position);
+	vol = Algo::Geometry::Parallel::totalVolume<PFP>(::myMap, position);
+	vol += Algo::Geometry::Parallel::totalVolume<PFP>(::myMap, position);
+	vol += Algo::Geometry::Parallel::totalVolume<PFP>(::myMap, position);
+	vol += Algo::Geometry::Parallel::totalVolume<PFP>(::myMap, position);
 	std::cout << ch.elapsed()<< " ms //  val="<<vol<< std::endl;
 
 

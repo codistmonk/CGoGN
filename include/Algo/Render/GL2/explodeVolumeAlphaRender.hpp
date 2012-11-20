@@ -164,119 +164,6 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP& map, const VertexAt
 }
 
 template<typename PFP>
-static int computeDepths(typename PFP::MAP& map, const FunctorSelect& good, std::vector<int> & depths)
-{
-	TraversorCell<typename PFP::MAP, PFP::MAP::FACE_OF_PARENT> modelFaces(map, good);
-
-	int depth = 0;
-	bool notDone = false;
-
-	for (Dart d = modelFaces.begin(); d != modelFaces.end(); d = modelFaces.next())
-	{
-		if (map.isBoundaryFace(d))
-		{
-			notDone = true;
-			Traversor3WF<typename PFP::MAP> cellFaces(map, d);
-
-			for (Dart e = cellFaces.begin(); e != cellFaces.end(); e = cellFaces.next())
-			{
-				Traversor3FE<typename PFP::MAP> faceEdges(map, e);
-
-				for (Dart f = faceEdges.begin(); f != faceEdges.end(); f = faceEdges.next())
-				{
-					depths[f.label()] = depth;
-				}
-			}
-		}
-	}
-
-	++depth;
-
-	while (notDone)
-	{
-		notDone = false;
-
-		for (Dart d = modelFaces.begin(); d != modelFaces.end(); d = modelFaces.next())
-		{
-			if (depths[d.label()] == -1 && depths[map.phi3(d).label()] == depth - 1)
-			{
-				notDone = true;
-				Traversor3WF<typename PFP::MAP> cellFaces(map, d);
-
-				for (Dart e = cellFaces.begin(); e != cellFaces.end(); e = cellFaces.next())
-				{
-					Traversor3FE<typename PFP::MAP> faceEdges(map, e);
-
-					for (Dart f = faceEdges.begin(); f != faceEdges.end(); f = faceEdges.next())
-					{
-						depths[f.label()] = depth;
-					}
-				}
-			}
-		}
-
-		if (notDone)
-		{
-			++depth;
-		}
-	}
-
-	return depth - 1;
-}
-
-template<typename VEC3>
-static VEC3 const & jetColor(int const i, int const iMax)
-{
-	static VEC3 const defaultColor = VEC3(1, 1, 1);
-	static VEC3 const colors[] = {
-			VEC3(0.0, 0.0, 0.5),
-			VEC3(0.0, 0.0, 0.6),
-			VEC3(0.0, 0.0, 0.7),
-			VEC3(0.0, 0.0, 0.8),
-			VEC3(0.0, 0.0, 0.9),
-			VEC3(0.0, 0.0, 1.0),
-			VEC3(0.0, 0.1, 1.0),
-			VEC3(0.0, 0.2, 1.0),
-			VEC3(0.0, 0.3, 1.0),
-			VEC3(0.0, 0.4, 1.0),
-			VEC3(0.0, 0.5, 1.0),
-			VEC3(0.0, 0.6, 1.0),
-			VEC3(0.0, 0.7, 1.0),
-			VEC3(0.0, 0.8, 1.0),
-			VEC3(0.0, 0.9, 1.0),
-			VEC3(0.0, 1.0, 1.0),
-			VEC3(0.1, 1.0, 0.9),
-			VEC3(0.2, 1.0, 0.8),
-			VEC3(0.3, 1.0, 0.7),
-			VEC3(0.4, 1.0, 0.6),
-			VEC3(0.5, 1.0, 0.5),
-			VEC3(0.6, 1.0, 0.4),
-			VEC3(0.7, 1.0, 0.3),
-			VEC3(0.8, 1.0, 0.2),
-			VEC3(0.9, 1.0, 0.1),
-			VEC3(1.0, 1.0, 0.0),
-			VEC3(1.0, 0.9, 0.0),
-			VEC3(1.0, 0.8, 0.0),
-			VEC3(1.0, 0.7, 0.0),
-			VEC3(1.0, 0.6, 0.0),
-			VEC3(1.0, 0.5, 0.0),
-			VEC3(1.0, 0.4, 0.0),
-			VEC3(1.0, 0.3, 0.0),
-			VEC3(1.0, 0.2, 0.0),
-			VEC3(1.0, 0.1, 0.0),
-			VEC3(1.0, 0.0, 0.0),
-			VEC3(0.9, 0.0, 0.0),
-			VEC3(0.8, 0.0, 0.0),
-			VEC3(0.7, 0.0, 0.0),
-			VEC3(0.6, 0.0, 0.0),
-			VEC3(0.5, 0.0, 0.0),
-	};
-	static unsigned int const lastColorIndex = sizeof(colors) / sizeof(VEC3) - 1;
-
-	return i < 0 ? defaultColor : colors[iMax <= 0 ? lastColorIndex : i * lastColorIndex / iMax];
-}
-
-template<typename PFP>
 void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP & map, VertexAttribute<typename PFP::VEC3> const & positions, VolumeAttribute<typename PFP::VEC3> const & colorPerXXX, FunctorSelect const & good)
 {
 	DEBUG_OUT << std::endl;
@@ -286,9 +173,6 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP & map, VertexAttribu
 		CGoGNerr<< "ExplodeVolumeAlphaRender: problem wrong update fonction use the other" << CGoGNendl;
 		return;
 	}
-
-	std::vector<int> depths(map.getNbDarts(), -1);
-	int const depthEnd = computeDepths<PFP>(map, good, depths);
 
 	typedef typename PFP::VEC3 VEC3;
 	typedef typename PFP::REAL REAL;
@@ -314,22 +198,20 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP & map, VertexAttribu
 		// loop to cut a polygon in triangle on the fly (works only with convex faces)
 		do
 		{
-			int const depth = depths[d.label()];
-
 			buffer.push_back(centerVolumes[d]);
 			bufferColors.push_back(centerFace);
 
 			buffer.push_back(positions[d]);
-			bufferColors.push_back(jetColor<VEC3>(depth, depthEnd));
-//				bufferColors.push_back(colorPerXXX[d]);
+//			bufferColors.push_back(jetColor<VEC3>(depth, depthEnd));
+			bufferColors.push_back(colorPerXXX[d]);
 
 			buffer.push_back(positions[b]);
-			bufferColors.push_back(jetColor<VEC3>(depth, depthEnd));
-//				bufferColors.push_back(colorPerXXX[b]);
+//			bufferColors.push_back(jetColor<VEC3>(depth, depthEnd));
+			bufferColors.push_back(colorPerXXX[b]);
 
 			buffer.push_back(positions[c]);
-			bufferColors.push_back(jetColor<VEC3>(depth, depthEnd));
-//				bufferColors.push_back(colorPerXXX[c]);
+//			bufferColors.push_back(jetColor<VEC3>(depth, depthEnd));
+			bufferColors.push_back(colorPerXXX[c]);
 
 			b = c;
 			c = map.phi1(b);

@@ -53,21 +53,19 @@ public:
     /// destructor
     ~FBO();
 
-    /**
-     *
-     */
     void attachRender(GLenum internalformat);
 
-    /**
-     *
-     */
-    void attachTexture(GLenum internalformat, GLint filter = GL_LINEAR);
+    void attachColorTexture(GLenum internalformat, GLint filter = GL_LINEAR);
+    
+    void attachDepthTexture(GLint filter = GL_LINEAR);
 
-    void bindTexInput();
-    void bindTexInput(int num);
+    void bindColorTexInput();
+    void bindColorTexInput(int num);
 
-    void bindTexOutput();
-    void bindTexOutput(int num);
+    void bindColorTexOutput();
+    void bindColorTexOutput(int num);
+    
+    void bindDepthTexInput();
 
     void unbind();
 
@@ -87,10 +85,11 @@ protected:
 
     CGoGNGLuint m_fboID;
     CGoGNGLuint m_renderID;
-    std::vector<CGoGNGLuint> m_texID;
+    std::vector<CGoGNGLuint> m_colorTexID;
+    std::vector<CGoGNGLuint> m_depthTexID;
 
 
-    CGoGNGLenumTable m_attachmentPoints;
+    CGoGNGLenumTable m_colorAttachmentPoints;
 
 };
 

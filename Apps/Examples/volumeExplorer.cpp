@@ -408,16 +408,16 @@ class Comparator
 		return result;
 	}
 public:
-	Comparator(float const * const buffer, unsigned int const bufferSize)
+	Comparator(float const * const bufferWithFaceCenters, float const * const bufferWithVolumeCenters, unsigned int const elementCount)
 	{
-		distances().resize(bufferSize / 4 / 3);
+		distances().resize(elementCount / 4);
 
 		for (unsigned int i = 0; i < distances().size(); ++i)
 		{
 			distances()[i] = squaredNorm(
-				buffer[4 * 3 * i + 0] - ::viewpoint.x,
-				buffer[4 * 3 * i + 1] - ::viewpoint.y,
-				buffer[4 * 3 * i + 2] - ::viewpoint.z);
+				(bufferWithFaceCenters[4 * 3 * i + 0] + bufferWithVolumeCenters[4 * 3 * i + 0]) / 2 - ::viewpoint.x,
+				(bufferWithFaceCenters[4 * 3 * i + 1] + bufferWithVolumeCenters[4 * 3 * i + 1]) / 2 - ::viewpoint.y,
+				(bufferWithFaceCenters[4 * 3 * i + 2] + bufferWithVolumeCenters[4 * 3 * i + 2]) / 2 - ::viewpoint.z);
 		}
 	}
 
@@ -439,16 +439,26 @@ static void sortData(Algo::Render::GL2::ExplodeVolumeAlphaRender const * const e
 	}
 
 	Utils::VBO const * const colorVBO = evr->colors();
-//	Utils::VBO const * const colorVBO = evr->vertices();
-//	Utils::VBO const * const vertexVBO = evr->vertices();
+	Utils::VBO const * const vertexVBO = evr->vertices();
 
 	float const * const colors = static_cast<float const *>(colorVBO->lockPtr());
+	float const * const vertices = static_cast<float const *>(vertexVBO->lockPtr());
+
+	if (colors && vertices)
+	{
+		assert(colorVBO->nbElts() == vertexVBO->nbElts());
+
+		std::sort(permutation.begin(), permutation.end(), Comparator(colors, vertices, colorVBO->nbElts()));
+	}
 
 	if (colors)
 	{
-		std::sort(permutation.begin(), permutation.end(), Comparator(colors, colorVBO->nbElts() * 3));
-
 		colorVBO->releasePtr();
+	}
+
+	if (vertices)
+	{
+		vertexVBO->releasePtr();
 	}
 
 	triangles.resize(n * 4);

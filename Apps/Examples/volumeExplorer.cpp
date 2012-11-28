@@ -347,6 +347,35 @@ void MyQT::slider_opacity_gradient(int const x)
 }
 
 
+static void centerModel()
+{
+	PFP::VEC3 centroid(0, 0, 0);
+	float count = 0;
+
+	/*compute_centroid:*/
+	{
+		TraversorCell<PFP::MAP, VOLUME> tra(myMap);
+
+		for (Dart d = tra.begin(); d != tra.end(); d = tra.next())
+		{
+			centroid += position[d];
+			++count;
+		}
+
+		centroid /= count;
+	}
+
+	/*update_position:*/
+	{
+		TraversorCell<PFP::MAP, VERTEX> tra(myMap);
+
+		for (Dart d = tra.begin(); d != tra.end(); d = tra.next())
+		{
+			position[d] -= centroid;
+		}
+	}
+}
+
 void MyQT::cb_Open()
 {
 	std::string filters("all (*.*);; trian (*.trian);; ctm (*.ctm);; off (*.off);; ply (*.ply)") ;
@@ -414,6 +443,8 @@ void MyQT::cb_Open()
 		::color[i][0] /= maxV;
 		::color[i][2] = 1.0f - ::color[i][0];
 	}
+
+	centerModel();
 
 	SelectorDartNoBoundary<PFP::MAP> nb(::myMap);
 	m_topo_render->updateData<PFP>(::myMap, position,  0.8f, 0.8f, 0.8f, nb);
@@ -704,9 +735,11 @@ void  MyQT::cb_mouseMove(int buttons, int x, int y)
 
 void MyQT::updateDepths()
 {
+	DEBUG_OUT << "Updating depths..." << std::endl;
 	m_depths.clear();
 	m_depths.resize(::myMap.getNbDarts(), -1);
 	m_depthEnd = computeDepths<PFP>(::myMap, allDarts, m_depths);
+	DEBUG_OUT << "Depths are up-to-date" << std::endl;
 }
 
 int main(int argc, char **argv)

@@ -204,7 +204,7 @@ static VEC4 const & jetColor4(int const i, int const iMax)
 }
 
 template<typename PFP>
-static void computeColorsUsingDepths(typename PFP::MAP & map, VolumeAttribute<typename PFP::VEC4> & colorPerXXX, float const opacityGradient, FunctorSelect const & good)
+static void computeColorsUsingDepths(typename PFP::MAP & map, VolumeAttribute<typename PFP::VEC4> & colorPerXXX, float const opacity, float const opacityGradient, FunctorSelect const & good)
 {
 	std::vector<int> depths(map.getNbDarts(), -1);
 	int const depthEnd = computeDepths<PFP>(map, good, depths);
@@ -213,13 +213,26 @@ static void computeColorsUsingDepths(typename PFP::MAP & map, VolumeAttribute<ty
 	for (Dart d = faces.begin(); d != faces.end(); d = faces.next())
 	{
 		int const depth = depths[d.label()];
+		float alpha = opacity;
+
+		if (opacityGradient < 0.5)
+		{
+			alpha *= pow(opacityGradient * 2.0, depthEnd - depth);
+		}
+		else
+		{
+			alpha *= pow((1.0 - opacityGradient) * 2.0, depth);
+		}
 
 		Dart a = d;
 		Dart b = map.phi1(a);
 		Dart c = map.phi1(b);
 		colorPerXXX[a] = jetColor4<typename PFP::VEC4>(depth, depthEnd);
+		colorPerXXX[a][3] = alpha;
 		colorPerXXX[b] = jetColor4<typename PFP::VEC4>(depth, depthEnd);
+		colorPerXXX[b][3] = alpha;
 		colorPerXXX[c] = jetColor4<typename PFP::VEC4>(depth, depthEnd);
+		colorPerXXX[c][3] = alpha;
 	}
 }
 
@@ -318,14 +331,16 @@ void MyQT::slider_opacity(int const x)
 {
 	m_opacity = 0.01f * x;
 	m_explode_render->setAlpha(m_opacity); DEBUG_GL;
+	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts);
+	m_explode_render->updateData<PFP>(::myMap, position, color);
 	updateGL(); DEBUG_GL;
 }
 
 void MyQT::slider_opacity_gradient(int const x)
 {
 	m_opacity_gradient = 0.01f * x;
-	// TODO
-	DEBUG_OUT << x << std::endl;
+	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts);
+	m_explode_render->updateData<PFP>(::myMap, position, color);
 	updateGL(); DEBUG_GL;
 }
 
@@ -400,7 +415,7 @@ void MyQT::cb_Open()
 
 	SelectorDartNoBoundary<PFP::MAP> nb(::myMap);
 	m_topo_render->updateData<PFP>(::myMap, position,  0.8f, 0.8f, 0.8f, nb);
-	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity_gradient, allDarts);
+	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts);
 	m_explode_render->updateData<PFP>(::myMap, position, ::color);
 
 	updateGL() ;
@@ -418,7 +433,7 @@ void MyQT::cb_initGL()
 
 	SelectorDartNoBoundary<PFP::MAP> nb(::myMap);
 	m_topo_render->updateData<PFP>(::myMap, position,  0.8f, 0.8f, 0.8f, nb);
-	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity_gradient, allDarts);
+	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts);
 	m_explode_render->updateData<PFP>(::myMap, position, color);
 	m_explode_render->setExplodeVolumes(0.8f);
 	m_explode_render->setExplodeFaces(0.9f);

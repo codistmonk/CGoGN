@@ -73,7 +73,6 @@ inline ExplodeVolumeAlphaRender::~ExplodeVolumeAlphaRender()
 template<typename PFP>
 void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP& map, const VertexAttribute<typename PFP::VEC3>& positions, const FunctorSelect& good)
 {
-	DEBUG_OUT << std::endl;
 	if (m_cpf)
 	{
 		CGoGNerr<< "ExplodeVolumeAlphaRender: problem wrong update fonction use the other" << CGoGNendl;
@@ -166,8 +165,6 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP& map, const VertexAt
 template<typename PFP>
 void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP & map, VertexAttribute<typename PFP::VEC3> const & positions, VolumeAttribute<typename PFP::VEC4> const & colorPerXXX, FunctorSelect const & good)
 {
-	DEBUG_OUT << std::endl;
-
 	if (!m_cpf)
 	{
 		CGoGNerr<< "ExplodeVolumeAlphaRender: problem wrong update fonction use the other" << CGoGNendl;

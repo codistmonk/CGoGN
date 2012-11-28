@@ -100,6 +100,10 @@ class MyQT: public Utils::QT::SimpleQT
 	int clip_id1;
 	int clip_id2;
 
+	// for volume depth coloring
+	std::vector<int> m_depths;
+	int m_depthEnd;
+
 public:
 	float m_WidthObj;
 	Geom::Vec3f m_PosObj;
@@ -118,6 +122,8 @@ public:
 		m_opacity(0.5f),
 		m_opacity_gradient(0.5f)
 	{}
+
+	void updateDepths();
 
 protected:
 	void cb_redraw();

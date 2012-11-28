@@ -48,7 +48,7 @@ inline ExplodeVolumeAlphaRender::ExplodeVolumeAlphaRender(bool withColorPerFace,
 	m_vboPos->setDataSize(3);
 
 	m_vboColors = new Utils::VBO();
-	m_vboColors->setDataSize(3);
+	m_vboColors->setDataSize(4);
 
 
 	m_vboPosLine = new Utils::VBO();
@@ -164,7 +164,7 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP& map, const VertexAt
 }
 
 template<typename PFP>
-void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP & map, VertexAttribute<typename PFP::VEC3> const & positions, VolumeAttribute<typename PFP::VEC3> const & colorPerXXX, FunctorSelect const & good)
+void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP & map, VertexAttribute<typename PFP::VEC3> const & positions, VolumeAttribute<typename PFP::VEC4> const & colorPerXXX, FunctorSelect const & good)
 {
 	DEBUG_OUT << std::endl;
 
@@ -175,6 +175,7 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP & map, VertexAttribu
 	}
 
 	typedef typename PFP::VEC3 VEC3;
+	typedef typename PFP::VEC4 VEC4;
 	typedef typename PFP::REAL REAL;
 
 	VolumeAutoAttribute<VEC3> centerVolumes(map, "centerVolumes");
@@ -183,7 +184,7 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP & map, VertexAttribu
 	std::vector<VEC3> buffer;
 	buffer.reserve(16384);
 
-	std::vector<VEC3> bufferColors;
+	std::vector<VEC4> bufferColors;
 	bufferColors.reserve(16384);
 
 	TraversorCell<typename PFP::MAP, PFP::MAP::FACE_OF_PARENT> traFace(map, good);
@@ -191,6 +192,7 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP & map, VertexAttribu
 	for (Dart d = traFace.begin(); d != traFace.end(); d = traFace.next())
 	{
 		VEC3 const centerFace = Algo::Geometry::faceCentroid<PFP>(map, d, positions);
+		VEC4 const centerFace4 = VEC4(centerFace[0], centerFace[1], centerFace[2], 1.0);
 
 		Dart a = d;
 		Dart b = map.phi1(a);
@@ -199,18 +201,15 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP & map, VertexAttribu
 		do
 		{
 			buffer.push_back(centerVolumes[d]);
-			bufferColors.push_back(centerFace);
+			bufferColors.push_back(centerFace4);
 
 			buffer.push_back(positions[d]);
-//			bufferColors.push_back(jetColor<VEC3>(depth, depthEnd));
 			bufferColors.push_back(colorPerXXX[d]);
 
 			buffer.push_back(positions[b]);
-//			bufferColors.push_back(jetColor<VEC3>(depth, depthEnd));
 			bufferColors.push_back(colorPerXXX[b]);
 
 			buffer.push_back(positions[c]);
-//			bufferColors.push_back(jetColor<VEC3>(depth, depthEnd));
 			bufferColors.push_back(colorPerXXX[c]);
 
 			b = c;
@@ -231,8 +230,8 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP & map, VertexAttribu
 
 	{
 		m_vboColors->allocate(bufferColors.size());
-		VEC3 * const ptrCol = reinterpret_cast<VEC3* >(m_vboColors->lockPtr());
-		memcpy(ptrCol, &bufferColors[0], bufferColors.size() * sizeof(VEC3));
+		VEC4 * const ptrCol = reinterpret_cast<VEC4* >(m_vboColors->lockPtr());
+		memcpy(ptrCol, &bufferColors[0], bufferColors.size() * sizeof(VEC4));
 		m_vboColors->releasePtr();
 		m_shader->setAttributeColor(m_vboColors);
 	}

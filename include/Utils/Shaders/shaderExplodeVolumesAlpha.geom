@@ -12,7 +12,7 @@ uniform vec4 plane;
 
 uniform float alpha;
 
-VARYING_IN vec3 colorVertex[4];
+VARYING_IN vec4 colorVertex[4];
 VARYING_OUT vec4 ColorFS;
 
 
@@ -28,21 +28,21 @@ void main(void)
 		N  =  normalize (vec3(NormalMatrix*vec4(N,0.0))); 
 		
 	// compute face center & lighting informations
-		vec4 newPos =  ModelViewMatrix * vec4(colorVertex[0],1.0);
+		vec4 newPos =  ModelViewMatrix * colorVertex[0];
 		vec3 L =  normalize (lightPosition - newPos.xyz);
 		float lambertTerm = dot(N,L);
 	
 		for (int i=1; i<=3; i++)
 		{
 			// explode in face
-			vec4 P = explodeF * POSITION_IN(i)  + (1.0-explodeF)* vec4(colorVertex[0],1.0);
+			vec4 P = explodeF * POSITION_IN(i)  + (1.0-explodeF) * colorVertex[0];
 
 			// explode in volume
 			vec4 Q = explodeV *  P + (1.0-explodeV)* POSITION_IN(0);
 			gl_Position = ModelViewProjectionMatrix *  Q;
 			vec4 color;
 			if (lambertTerm > 0.0)
-				color = ambient + vec4(colorVertex[i]*lambertTerm, 1.0);
+				color = ambient + colorVertex[i]*lambertTerm;
 			else
 				color = ambient - backColor*lambertTerm;
 			ColorFS = vec4(color.xyz, alpha);

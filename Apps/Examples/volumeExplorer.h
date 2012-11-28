@@ -89,6 +89,7 @@ class MyQT: public Utils::QT::SimpleQT
 	float m_explode_factor;
 	float m_explode_factorf;
 	float m_opacity;
+	float m_opacity_gradient;
 
 	// for clipping plane manipulation
 	Utils::Pickable* m_PlanePick;
@@ -114,7 +115,8 @@ public:
 		m_topo_render(NULL),
 		m_explode_render(NULL),
 		m_explode_factor(0.8f),
-		m_opacity(0.5f)
+		m_opacity(0.5f),
+		m_opacity_gradient(0.5f)
 	{}
 
 protected:
@@ -138,6 +140,7 @@ public slots:
 	void slider_released();
 	void slider_explodeF(int x);
 	void slider_opacity(int x);
+	void slider_opacity_gradient(int x);
 };
 
 #endif

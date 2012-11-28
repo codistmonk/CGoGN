@@ -36,7 +36,7 @@
 
 PFP::MAP myMap;
 VertexAttribute<PFP::VEC3> position ;
-VolumeAttribute<PFP::VEC3> color ;
+VolumeAttribute<PFP::VEC4> color ;
 
 template<typename PFP>
 static int computeDepths(typename PFP::MAP& map, const FunctorSelect& good, std::vector<int> & depths)
@@ -100,7 +100,7 @@ static int computeDepths(typename PFP::MAP& map, const FunctorSelect& good, std:
 }
 
 template<typename VEC3>
-static VEC3 const & jetColor(int const i, int const iMax)
+static VEC3 const & jetColor3(int const i, int const iMax)
 {
 	static VEC3 const defaultColor = VEC3(1, 1, 1);
 	static VEC3 const colors[] = {
@@ -151,23 +151,75 @@ static VEC3 const & jetColor(int const i, int const iMax)
 	return i < 0 ? defaultColor : colors[iMax <= 0 ? lastColorIndex : i * lastColorIndex / iMax];
 }
 
+template<typename VEC4>
+static VEC4 const & jetColor4(int const i, int const iMax)
+{
+	static VEC4 const defaultColor = VEC4(1, 1, 1, 1);
+	static VEC4 const colors[] = {
+			VEC4(0.0, 0.0, 0.5, 1.0),
+			VEC4(0.0, 0.0, 0.6, 1.0),
+			VEC4(0.0, 0.0, 0.7, 1.0),
+			VEC4(0.0, 0.0, 0.8, 1.0),
+			VEC4(0.0, 0.0, 0.9, 1.0),
+			VEC4(0.0, 0.0, 1.0, 1.0),
+			VEC4(0.0, 0.1, 1.0, 1.0),
+			VEC4(0.0, 0.2, 1.0, 1.0),
+			VEC4(0.0, 0.3, 1.0, 1.0),
+			VEC4(0.0, 0.4, 1.0, 1.0),
+			VEC4(0.0, 0.5, 1.0, 1.0),
+			VEC4(0.0, 0.6, 1.0, 1.0),
+			VEC4(0.0, 0.7, 1.0, 1.0),
+			VEC4(0.0, 0.8, 1.0, 1.0),
+			VEC4(0.0, 0.9, 1.0, 1.0),
+			VEC4(0.0, 1.0, 1.0, 1.0),
+			VEC4(0.1, 1.0, 0.9, 1.0),
+			VEC4(0.2, 1.0, 0.8, 1.0),
+			VEC4(0.3, 1.0, 0.7, 1.0),
+			VEC4(0.4, 1.0, 0.6, 1.0),
+			VEC4(0.5, 1.0, 0.5, 1.0),
+			VEC4(0.6, 1.0, 0.4, 1.0),
+			VEC4(0.7, 1.0, 0.3, 1.0),
+			VEC4(0.8, 1.0, 0.2, 1.0),
+			VEC4(0.9, 1.0, 0.1, 1.0),
+			VEC4(1.0, 1.0, 0.0, 1.0),
+			VEC4(1.0, 0.9, 0.0, 1.0),
+			VEC4(1.0, 0.8, 0.0, 1.0),
+			VEC4(1.0, 0.7, 0.0, 1.0),
+			VEC4(1.0, 0.6, 0.0, 1.0),
+			VEC4(1.0, 0.5, 0.0, 1.0),
+			VEC4(1.0, 0.4, 0.0, 1.0),
+			VEC4(1.0, 0.3, 0.0, 1.0),
+			VEC4(1.0, 0.2, 0.0, 1.0),
+			VEC4(1.0, 0.1, 0.0, 1.0),
+			VEC4(1.0, 0.0, 0.0, 1.0),
+			VEC4(0.9, 0.0, 0.0, 1.0),
+			VEC4(0.8, 0.0, 0.0, 1.0),
+			VEC4(0.7, 0.0, 0.0, 1.0),
+			VEC4(0.6, 0.0, 0.0, 1.0),
+			VEC4(0.5, 0.0, 0.0, 1.0),
+	};
+	static unsigned int const lastColorIndex = sizeof(colors) / sizeof(VEC4) - 1;
+
+	return i < 0 ? defaultColor : colors[iMax <= 0 ? lastColorIndex : i * lastColorIndex / iMax];
+}
+
 template<typename PFP>
-static void computeColorsUsingDepths(typename PFP::MAP & map, VolumeAttribute<typename PFP::VEC3> & colorPerXXX, FunctorSelect const & good)
+static void computeColorsUsingDepths(typename PFP::MAP & map, VolumeAttribute<typename PFP::VEC4> & colorPerXXX, float const opacityGradient, FunctorSelect const & good)
 {
 	std::vector<int> depths(map.getNbDarts(), -1);
 	int const depthEnd = computeDepths<PFP>(map, good, depths);
-	TraversorCell<typename PFP::MAP, PFP::MAP::FACE_OF_PARENT> traFace(map, good);
+	TraversorCell<typename PFP::MAP, PFP::MAP::FACE_OF_PARENT> faces(map, good);
 
-	for (Dart d = traFace.begin(); d != traFace.end(); d = traFace.next())
+	for (Dart d = faces.begin(); d != faces.end(); d = faces.next())
 	{
 		int const depth = depths[d.label()];
 
 		Dart a = d;
 		Dart b = map.phi1(a);
 		Dart c = map.phi1(b);
-		colorPerXXX[a] = jetColor<typename PFP::VEC3>(depth, depthEnd);
-		colorPerXXX[b] = jetColor<typename PFP::VEC3>(depth, depthEnd);
-		colorPerXXX[c] = jetColor<typename PFP::VEC3>(depth, depthEnd);
+		colorPerXXX[a] = jetColor4<typename PFP::VEC4>(depth, depthEnd);
+		colorPerXXX[b] = jetColor4<typename PFP::VEC4>(depth, depthEnd);
+		colorPerXXX[c] = jetColor4<typename PFP::VEC4>(depth, depthEnd);
 	}
 }
 
@@ -269,6 +321,14 @@ void MyQT::slider_opacity(int const x)
 	updateGL(); DEBUG_GL;
 }
 
+void MyQT::slider_opacity_gradient(int const x)
+{
+	m_opacity_gradient = 0.01f * x;
+	// TODO
+	DEBUG_OUT << x << std::endl;
+	updateGL(); DEBUG_GL;
+}
+
 
 void MyQT::cb_Open()
 {
@@ -321,14 +381,14 @@ void MyQT::cb_Open()
 		}
 	}
 
-	::color = ::myMap.addAttribute<PFP::VEC3, VOLUME>("color");
+	::color = ::myMap.addAttribute<PFP::VEC4, VOLUME>("color");
 
 	TraversorCell<PFP::MAP, VOLUME> tra(::myMap);
 	float maxV = 0.0f;
 	for (Dart d = tra.begin(); d != tra.end(); d = tra.next())
 	{
 		float v = Algo::Geometry::tetrahedronVolume<PFP>(::myMap, d, position);
-		::color[d] = PFP::VEC3(v,0,0);
+		::color[d] = PFP::VEC4(v,0,0,1);
 		if (v>maxV)
 			maxV=v;
 	}
@@ -340,7 +400,7 @@ void MyQT::cb_Open()
 
 	SelectorDartNoBoundary<PFP::MAP> nb(::myMap);
 	m_topo_render->updateData<PFP>(::myMap, position,  0.8f, 0.8f, 0.8f, nb);
-	computeColorsUsingDepths<PFP>(::myMap, ::color, allDarts);
+	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity_gradient, allDarts);
 	m_explode_render->updateData<PFP>(::myMap, position, ::color);
 
 	updateGL() ;
@@ -358,7 +418,7 @@ void MyQT::cb_initGL()
 
 	SelectorDartNoBoundary<PFP::MAP> nb(::myMap);
 	m_topo_render->updateData<PFP>(::myMap, position,  0.8f, 0.8f, 0.8f, nb);
-	computeColorsUsingDepths<PFP>(::myMap, ::color, allDarts);
+	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity_gradient, allDarts);
 	m_explode_render->updateData<PFP>(::myMap, position, color);
 	m_explode_render->setExplodeVolumes(0.8f);
 	m_explode_render->setExplodeFaces(0.9f);
@@ -408,16 +468,16 @@ class Comparator
 		return result;
 	}
 public:
-	Comparator(float const * const bufferWithFaceCenters, float const * const bufferWithVolumeCenters, unsigned int const elementCount)
+	Comparator(float const * const colorBufferWithFaceCenters, float const * const vertexBufferWithVolumeCenters, unsigned int const elementCount)
 	{
 		distances().resize(elementCount / 4);
 
 		for (unsigned int i = 0; i < distances().size(); ++i)
 		{
 			distances()[i] = squaredNorm(
-				(bufferWithFaceCenters[4 * 3 * i + 0] + bufferWithVolumeCenters[4 * 3 * i + 0]) / 2 - ::viewpoint.x,
-				(bufferWithFaceCenters[4 * 3 * i + 1] + bufferWithVolumeCenters[4 * 3 * i + 1]) / 2 - ::viewpoint.y,
-				(bufferWithFaceCenters[4 * 3 * i + 2] + bufferWithVolumeCenters[4 * 3 * i + 2]) / 2 - ::viewpoint.z);
+				(colorBufferWithFaceCenters[4 * 4 * i + 0] + vertexBufferWithVolumeCenters[4 * 3 * i + 0]) / 2 - ::viewpoint.x,
+				(colorBufferWithFaceCenters[4 * 4 * i + 1] + vertexBufferWithVolumeCenters[4 * 3 * i + 1]) / 2 - ::viewpoint.y,
+				(colorBufferWithFaceCenters[4 * 4 * i + 2] + vertexBufferWithVolumeCenters[4 * 3 * i + 2]) / 2 - ::viewpoint.z);
 		}
 	}
 
@@ -669,21 +729,21 @@ int main(int argc, char **argv)
 			}
 		}
 
-		color = ::myMap.addAttribute<PFP::VEC3, VOLUME>("color");
+		::color = ::myMap.addAttribute<PFP::VEC4, VOLUME>("color");
 
 		TraversorCell<PFP::MAP, VOLUME> tra(::myMap);
 		float maxV = 0.0f;
 		for (Dart d = tra.begin(); d != tra.end(); d = tra.next())
 		{
 			float v = Algo::Geometry::tetrahedronVolume<PFP>(::myMap, d, position);
-			color[d] = PFP::VEC3(v,0,0);
+			::color[d] = PFP::VEC4(v,0,0,1);
 			if (v>maxV)
 				maxV=v;
 		}
-		for (unsigned int i = color.begin(); i != color.end(); color.next(i))
+		for (unsigned int i = ::color.begin(); i != ::color.end(); ::color.next(i))
 		{
-			color[i][0] /= maxV;
-			color[i][2] = 1.0f - color[i][0];
+			::color[i][0] /= maxV;
+			::color[i][2] = 1.0f - color[i][0];
 		}
 	}
 	else
@@ -694,10 +754,13 @@ int main(int argc, char **argv)
 		prim.hexaGrid_topo(nb,nb,nb);
 		prim.embedHexaGrid(1.0f,1.0f,1.0f);
 
-		color = ::myMap.addAttribute<PFP::VEC3, VOLUME>("color");
+		::color = ::myMap.addAttribute<PFP::VEC4, VOLUME>("color");
 		TraversorW<PFP::MAP> tra(::myMap);
 		for (Dart d = tra.begin(); d != tra.end(); d = tra.next())
-			color[d] = position[d] + PFP::VEC3(0.5,0.5,0.5);
+		{
+			PFP::VEC3 tmp = position[d] + PFP::VEC3(0.5,0.5,0.5);
+			::color[d] = PFP::VEC4(tmp[0], tmp[1], tmp[2], 1.0);
+		}
 	}
     // un peu d'interface
 	QApplication app(argc, argv);
@@ -734,6 +797,10 @@ int main(int argc, char **argv)
 	sqt.setCallBack( dock.slider_opacity, SIGNAL(valueChanged(int)), SLOT(slider_opacity(int)) );
 	sqt.setCallBack( dock.slider_opacity, SIGNAL(sliderPressed()), SLOT(slider_pressed()) );
 	sqt.setCallBack( dock.slider_opacity, SIGNAL(sliderReleased()), SLOT(slider_released()) );
+
+	sqt.setCallBack( dock.slider_opacity_gradient, SIGNAL(valueChanged(int)), SLOT(slider_opacity_gradient(int)) );
+	sqt.setCallBack( dock.slider_opacity_gradient, SIGNAL(sliderPressed()), SLOT(slider_pressed()) );
+	sqt.setCallBack( dock.slider_opacity_gradient, SIGNAL(sliderReleased()), SLOT(slider_released()) );
 
 
 	sqt.show();

@@ -33,6 +33,11 @@ namespace CGoGN
 namespace Utils
 {
 
+bool TextureSticker::m_isInitialized                               = false;
+Utils::VBO* TextureSticker::m_quadPositionsVbo                     = NULL;
+Utils::VBO* TextureSticker::m_quadTexCoordsVbo                     = NULL;
+Utils::ShaderSimpleTexture* TextureSticker::m_textureMappingShader = NULL;
+
 TextureSticker::TextureSticker()
 {
 }
@@ -47,6 +52,15 @@ void TextureSticker::StickTextureOnWholeScreen()
 
 void TextureSticker::InitializeElements()
 {
+	// Initialize positions and texture coords Vbos
+	
+	m_quadPositionsVbo = new Utils::VBO();
+	m_quadTexCoordsVbo = new Utils::VBO();
+	m_quadPositionsVbo->setDataSize(3);
+	m_quadTexCoordsVbo->setDataSize(2);
+	m_quadPositionsVbo->allocate(4);
+	m_quadTexCoordsVbo->allocate(4);
+
 	GLfloat positions[] = {
 		-0.5f, -0.5f, 0.0f,
 		+0.5f, -0.5f, 0.0f,
@@ -59,17 +73,19 @@ void TextureSticker::InitializeElements()
 		1.0f, 1.0f,
 		0.0f, 1.0f
 		};
-
-	// Initialisation des Vbos
-	glGenBuffers(1, &m_quadPositionsVboId);
-	glGenBuffers(1, &m_quadTexCoordsVboId);
-	glBindBuffer(GL_ARRAY_BUFFER, m_quadPositionsVboId);
-	glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(GLfloat), &positions, GL_STATIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, m_quadTexCoordsVboId);
-	glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(GLfloat), &texCoords, GL_STATIC_DRAW);
+		
+	GLfloat* positionsPtr = (GLfloat*) m_quadPositionsVbo->lockPtr();
+	memcpy(positionsPtr, positions, 3 * 4 * sizeof(GLfloat));
+	m_quadPositionsVbo->releasePtr();
+	GLfloat* texCoordsPtr = (GLfloat*) m_quadTexCoordsVbo->lockPtr();
+	memcpy(texCoordsPtr, texCoords, 2 * 4 * sizeof(GLfloat));
+	m_quadTexCoordsVbo->releasePtr();
 	
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	// Initialize simple texture mapping shader
 	
+	m_textureMappingShader = new Utils::ShaderSimpleTexture();
+	m_textureMappingShader->setAttributePosition(m_quadPositionsVbo);
+	m_textureMappingShader->setAttributeTexCoord(m_quadTexCoordsVbo);
 }
 
 } // namespace Utils

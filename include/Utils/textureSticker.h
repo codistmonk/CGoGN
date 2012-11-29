@@ -22,6 +22,12 @@
 *                                                                              *
 *******************************************************************************/
 
+#ifndef _CGOGN_TEXTURESTICKER_H_
+#define _CGOGN_TEXTURESTICKER_H_
+
+#include "Utils/vbo.h"
+#include "Utils/Shaders/shaderSimpleTexture.h"
+
 namespace CGoGN
 {
 
@@ -39,18 +45,24 @@ private :
 	
 public :
 
-	void StickTextureOnWholeScreen();
+	static void StickTextureOnWholeScreen();
 	
 private :
 
-	void InitializeElements();
+	static void InitializeElements();
 	
-	GLuint m_quadPositionsVboId;
+	static bool m_isInitialized;
 	
-	GLuint m_quadTexCoordsVboId;
+	static Utils::VBO* m_quadPositionsVbo;
+	
+	static Utils::VBO* m_quadTexCoordsVbo;
+	
+	static Utils::ShaderSimpleTexture* m_textureMappingShader;
 };
 
 } // namespace Utils
 
 } // namespace CGoGN
+
+#endif
 

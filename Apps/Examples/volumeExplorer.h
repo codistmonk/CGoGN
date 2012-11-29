@@ -89,6 +89,7 @@ class MyQT: public Utils::QT::SimpleQT
 	float m_explode_factor;
 	float m_explode_factorf;
 	float m_opacity;
+	float m_opacity_gradient;
 
 	// for clipping plane manipulation
 	Utils::Pickable* m_PlanePick;
@@ -98,6 +99,10 @@ class MyQT: public Utils::QT::SimpleQT
 	int m_begY;
 	int clip_id1;
 	int clip_id2;
+
+	// for volume depth coloring
+	std::vector<int> m_depths;
+	int m_lastDepth;
 
 public:
 	float m_WidthObj;
@@ -114,8 +119,11 @@ public:
 		m_topo_render(NULL),
 		m_explode_render(NULL),
 		m_explode_factor(0.8f),
-		m_opacity(0.5f)
+		m_opacity(0.5f),
+		m_opacity_gradient(0.5f)
 	{}
+
+	void updateDepths();
 
 protected:
 	void cb_redraw();
@@ -138,6 +146,7 @@ public slots:
 	void slider_released();
 	void slider_explodeF(int x);
 	void slider_opacity(int x);
+	void slider_opacity_gradient(int x);
 };
 
 #endif

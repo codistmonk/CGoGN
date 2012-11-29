@@ -1,7 +1,7 @@
 // ShaderExplodeVolumesAlpha::vertexShaderText
 ATTRIBUTE vec3 VertexPosition;
-ATTRIBUTE vec3 VertexColor;
-VARYING_VERT vec3 colorVertex;
+ATTRIBUTE vec4 VertexColor;
+VARYING_VERT vec4 colorVertex;
 void main()
 {
 	colorVertex = VertexColor;

@@ -102,7 +102,7 @@ class MyQT: public Utils::QT::SimpleQT
 
 	// for volume depth coloring
 	std::vector<int> m_depths;
-	int m_depthEnd;
+	int m_lastDepth;
 
 public:
 	float m_WidthObj;

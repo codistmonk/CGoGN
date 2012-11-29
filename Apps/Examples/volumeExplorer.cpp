@@ -99,127 +99,54 @@ static int computeDepths(typename PFP::MAP& map, const FunctorSelect& good, std:
 	return depth - 1;
 }
 
-template<typename VEC3>
-static VEC3 const & jetColor3(int const i, int const iMax)
-{
-	static VEC3 const defaultColor = VEC3(1, 1, 1);
-	static VEC3 const colors[] = {
-			VEC3(0.0, 0.0, 0.5),
-			VEC3(0.0, 0.0, 0.6),
-			VEC3(0.0, 0.0, 0.7),
-			VEC3(0.0, 0.0, 0.8),
-			VEC3(0.0, 0.0, 0.9),
-			VEC3(0.0, 0.0, 1.0),
-			VEC3(0.0, 0.1, 1.0),
-			VEC3(0.0, 0.2, 1.0),
-			VEC3(0.0, 0.3, 1.0),
-			VEC3(0.0, 0.4, 1.0),
-			VEC3(0.0, 0.5, 1.0),
-			VEC3(0.0, 0.6, 1.0),
-			VEC3(0.0, 0.7, 1.0),
-			VEC3(0.0, 0.8, 1.0),
-			VEC3(0.0, 0.9, 1.0),
-			VEC3(0.0, 1.0, 1.0),
-			VEC3(0.1, 1.0, 0.9),
-			VEC3(0.2, 1.0, 0.8),
-			VEC3(0.3, 1.0, 0.7),
-			VEC3(0.4, 1.0, 0.6),
-			VEC3(0.5, 1.0, 0.5),
-			VEC3(0.6, 1.0, 0.4),
-			VEC3(0.7, 1.0, 0.3),
-			VEC3(0.8, 1.0, 0.2),
-			VEC3(0.9, 1.0, 0.1),
-			VEC3(1.0, 1.0, 0.0),
-			VEC3(1.0, 0.9, 0.0),
-			VEC3(1.0, 0.8, 0.0),
-			VEC3(1.0, 0.7, 0.0),
-			VEC3(1.0, 0.6, 0.0),
-			VEC3(1.0, 0.5, 0.0),
-			VEC3(1.0, 0.4, 0.0),
-			VEC3(1.0, 0.3, 0.0),
-			VEC3(1.0, 0.2, 0.0),
-			VEC3(1.0, 0.1, 0.0),
-			VEC3(1.0, 0.0, 0.0),
-			VEC3(0.9, 0.0, 0.0),
-			VEC3(0.8, 0.0, 0.0),
-			VEC3(0.7, 0.0, 0.0),
-			VEC3(0.6, 0.0, 0.0),
-			VEC3(0.5, 0.0, 0.0),
-	};
-	static unsigned int const lastColorIndex = sizeof(colors) / sizeof(VEC3) - 1;
-
-	return i < 0 ? defaultColor : colors[iMax <= 0 ? lastColorIndex : i * lastColorIndex / iMax];
-}
-
 template<typename VEC4>
-static VEC4 const & jetColor4(int const i, int const iMax)
+static VEC4 const jetColor4(float const x)
 {
 	static VEC4 const defaultColor = VEC4(1, 1, 1, 1);
 	static VEC4 const colors[] = {
 			VEC4(0.0, 0.0, 0.5, 1.0),
-			VEC4(0.0, 0.0, 0.6, 1.0),
-			VEC4(0.0, 0.0, 0.7, 1.0),
-			VEC4(0.0, 0.0, 0.8, 1.0),
-			VEC4(0.0, 0.0, 0.9, 1.0),
 			VEC4(0.0, 0.0, 1.0, 1.0),
-			VEC4(0.0, 0.1, 1.0, 1.0),
-			VEC4(0.0, 0.2, 1.0, 1.0),
-			VEC4(0.0, 0.3, 1.0, 1.0),
-			VEC4(0.0, 0.4, 1.0, 1.0),
-			VEC4(0.0, 0.5, 1.0, 1.0),
-			VEC4(0.0, 0.6, 1.0, 1.0),
-			VEC4(0.0, 0.7, 1.0, 1.0),
-			VEC4(0.0, 0.8, 1.0, 1.0),
-			VEC4(0.0, 0.9, 1.0, 1.0),
 			VEC4(0.0, 1.0, 1.0, 1.0),
-			VEC4(0.1, 1.0, 0.9, 1.0),
-			VEC4(0.2, 1.0, 0.8, 1.0),
-			VEC4(0.3, 1.0, 0.7, 1.0),
-			VEC4(0.4, 1.0, 0.6, 1.0),
-			VEC4(0.5, 1.0, 0.5, 1.0),
-			VEC4(0.6, 1.0, 0.4, 1.0),
-			VEC4(0.7, 1.0, 0.3, 1.0),
-			VEC4(0.8, 1.0, 0.2, 1.0),
-			VEC4(0.9, 1.0, 0.1, 1.0),
 			VEC4(1.0, 1.0, 0.0, 1.0),
-			VEC4(1.0, 0.9, 0.0, 1.0),
-			VEC4(1.0, 0.8, 0.0, 1.0),
-			VEC4(1.0, 0.7, 0.0, 1.0),
-			VEC4(1.0, 0.6, 0.0, 1.0),
-			VEC4(1.0, 0.5, 0.0, 1.0),
-			VEC4(1.0, 0.4, 0.0, 1.0),
-			VEC4(1.0, 0.3, 0.0, 1.0),
-			VEC4(1.0, 0.2, 0.0, 1.0),
-			VEC4(1.0, 0.1, 0.0, 1.0),
 			VEC4(1.0, 0.0, 0.0, 1.0),
-			VEC4(0.9, 0.0, 0.0, 1.0),
-			VEC4(0.8, 0.0, 0.0, 1.0),
-			VEC4(0.7, 0.0, 0.0, 1.0),
-			VEC4(0.6, 0.0, 0.0, 1.0),
 			VEC4(0.5, 0.0, 0.0, 1.0),
 	};
-	static unsigned int const lastColorIndex = sizeof(colors) / sizeof(VEC4) - 1;
+	static unsigned int const n = sizeof(colors) / sizeof(VEC4);
+	static unsigned int const lastColorIndex = n - 1;
 
-	return i < 0 ? defaultColor : colors[iMax <= 0 ? lastColorIndex : i * lastColorIndex / iMax];
+	if (x < 0.0)
+	{
+		return defaultColor;
+	}
+
+	if (1.0 <= x)
+	{
+		return colors[lastColorIndex];
+	}
+
+	float const xn = x * lastColorIndex;
+	int const i = static_cast<int>(xn);
+	float const r = xn - i;
+
+	return colors[i] * (1.0 - r) + colors[i + 1] * r;
 }
 
 template<typename PFP>
 static void computeColorsUsingDepths(typename PFP::MAP & map, VolumeAttribute<typename PFP::VEC4> & colorPerXXX,
 		float const opacity, float const opacityGradient, FunctorSelect const & good,
-		std::vector<int> const & depths, int const depthEnd)
+		std::vector<int> const & depths, int const lastDepth)
 {
-//	std::vector<int> depths(map.getNbDarts(), -1);
-//	int const depthEnd = computeDepths<PFP>(map, good, depths);
 	TraversorCell<typename PFP::MAP, PFP::MAP::FACE_OF_PARENT> faces(map, good);
 
 	for (Dart d = faces.begin(); d != faces.end(); d = faces.next())
 	{
 		int const depth = depths[d.label()];
+		float const normalizedDepth = lastDepth == 0 ? 1.0 : static_cast<float>(depth) / lastDepth;
 		float alpha = opacity;
 
 		if (opacityGradient < 0.5)
 		{
-			alpha *= pow(opacityGradient * 2.0, depthEnd - depth);
+			alpha *= pow(opacityGradient * 2.0, lastDepth - depth);
 		}
 		else
 		{
@@ -229,11 +156,11 @@ static void computeColorsUsingDepths(typename PFP::MAP & map, VolumeAttribute<ty
 		Dart a = d;
 		Dart b = map.phi1(a);
 		Dart c = map.phi1(b);
-		colorPerXXX[a] = jetColor4<typename PFP::VEC4>(depth, depthEnd);
+		colorPerXXX[a] = jetColor4<typename PFP::VEC4>(normalizedDepth);
 		colorPerXXX[a][3] = alpha;
-		colorPerXXX[b] = jetColor4<typename PFP::VEC4>(depth, depthEnd);
+		colorPerXXX[b] = jetColor4<typename PFP::VEC4>(normalizedDepth);
 		colorPerXXX[b][3] = alpha;
-		colorPerXXX[c] = jetColor4<typename PFP::VEC4>(depth, depthEnd);
+		colorPerXXX[c] = jetColor4<typename PFP::VEC4>(normalizedDepth);
 		colorPerXXX[c][3] = alpha;
 	}
 }
@@ -333,7 +260,7 @@ void MyQT::slider_opacity(int const x)
 {
 	m_opacity = 0.01f * x;
 	m_explode_render->setAlpha(m_opacity); DEBUG_GL;
-	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts, m_depths, m_depthEnd);
+	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts, m_depths, m_lastDepth);
 	m_explode_render->updateData<PFP>(::myMap, position, color);
 	updateGL(); DEBUG_GL;
 }
@@ -341,7 +268,7 @@ void MyQT::slider_opacity(int const x)
 void MyQT::slider_opacity_gradient(int const x)
 {
 	m_opacity_gradient = 0.01f * x;
-	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts, m_depths, m_depthEnd);
+	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts, m_depths, m_lastDepth);
 	m_explode_render->updateData<PFP>(::myMap, position, color);
 	updateGL(); DEBUG_GL;
 }
@@ -449,7 +376,7 @@ void MyQT::cb_Open()
 	SelectorDartNoBoundary<PFP::MAP> nb(::myMap);
 	m_topo_render->updateData<PFP>(::myMap, position,  0.8f, 0.8f, 0.8f, nb);
 	updateDepths();
-	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts, m_depths, m_depthEnd);
+	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts, m_depths, m_lastDepth);
 	m_explode_render->updateData<PFP>(::myMap, position, ::color);
 
 	updateGL() ;
@@ -468,7 +395,7 @@ void MyQT::cb_initGL()
 	SelectorDartNoBoundary<PFP::MAP> nb(::myMap);
 	m_topo_render->updateData<PFP>(::myMap, position,  0.8f, 0.8f, 0.8f, nb);
 	updateDepths();
-	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts, m_depths, m_depthEnd);
+	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts, m_depths, m_lastDepth);
 	m_explode_render->updateData<PFP>(::myMap, position, color);
 	m_explode_render->setExplodeVolumes(0.8f);
 	m_explode_render->setExplodeFaces(0.9f);
@@ -738,7 +665,7 @@ void MyQT::updateDepths()
 	DEBUG_OUT << "Updating depths..." << std::endl;
 	m_depths.clear();
 	m_depths.resize(::myMap.getNbDarts(), -1);
-	m_depthEnd = computeDepths<PFP>(::myMap, allDarts, m_depths);
+	m_lastDepth = computeDepths<PFP>(::myMap, allDarts, m_depths);
 	DEBUG_OUT << "Depths are up-to-date" << std::endl;
 }
 

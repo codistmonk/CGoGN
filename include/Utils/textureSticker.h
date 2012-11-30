@@ -27,6 +27,7 @@
 
 #include "Utils/vbo.h"
 #include "Utils/Shaders/shaderSimpleTexture.h"
+#include "Utils/gl_def.h"
 
 namespace CGoGN
 {
@@ -45,7 +46,7 @@ private :
 	
 public :
 
-	static void StickTextureOnWholeScreen();
+	static void StickTextureOnWholeScreen(CGoGNGLuint texId);
 	
 private :
 

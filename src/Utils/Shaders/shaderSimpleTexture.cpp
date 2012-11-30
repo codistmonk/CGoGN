@@ -88,11 +88,15 @@ void ShaderSimpleTexture::setTexture(Utils::GTexture* tex)
 
 void ShaderSimpleTexture::activeTexture()
 {
-	glActiveTexture(GL_TEXTURE0+m_unit);
+	glActiveTexture(GL_TEXTURE0 + m_unit);
 	m_tex_ptr->bind();
 }
 
-
+void ShaderSimpleTexture::activeTexture(CGoGNGLuint texId)
+{
+	glActiveTexture(GL_TEXTURE0 + m_unit);
+	glBindTexture(GL_TEXTURE_2D, *texId);
+}
 
 unsigned int ShaderSimpleTexture::setAttributePosition(VBO* vbo)
 {

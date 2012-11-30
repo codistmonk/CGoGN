@@ -25,7 +25,8 @@
 #include "GL/glew.h"
 #include "Utils/textureSticker.h"
 
-#include <vector>
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_projection.hpp"
 
 namespace CGoGN
 {
@@ -46,8 +47,34 @@ TextureSticker::~TextureSticker()
 {
 }
 
-void TextureSticker::StickTextureOnWholeScreen()
+void TextureSticker::StickTextureOnWholeScreen(CGoGNGLuint texId)
 {
+	// Check if TextureSticker's elements have been initialized before
+	if (!m_isInitialized)
+	{
+		InitializeElements();
+		m_isInitialized = true;
+	}
+
+	// Bind texture mapping shader
+	m_textureMappingShader->bind();
+	
+	// Set texture uniform
+	m_textureMappingShader->setTextureUnit(GL_TEXTURE0);
+	m_textureMappingShader->activeTexture(texId);
+	
+	// Set matrices uniforms
+	glm::mat4 projMatrix = glm::ortho(-0.5f, 0.5f, -0.5f, 0.5f, -1.0f, 1.0f);
+	glm::mat4 viewMatrix(1.0f);
+	m_textureMappingShader->updateMatrices(projMatrix, viewMatrix);
+
+	// Draw quad	
+	m_textureMappingShader->enableVertexAttribs();
+	glDrawArrays(GL_QUADS, 0, 4);
+	m_textureMappingShader->disableVertexAttribs();
+
+	// Unbind texture mapping shader
+	m_textureMappingShader->unbind();
 }
 
 void TextureSticker::InitializeElements()

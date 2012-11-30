@@ -430,6 +430,22 @@ void MyQT::updateDepths()
 	DEBUG_OUT << "Depths are up-to-date" << std::endl;
 }
 
+void MyQT::button_render_software()
+{
+	Algo::Render::GL2::ExplodeVolumeAlphaRender const * const evr = m_explode_render;
+
+	VBODataPointer const colors(evr->colors());
+	VBODataPointer const vertices(evr->vertices());
+
+	if (colors && vertices)
+	{
+		assert(colors.elementCount() == vertices.elementCount());
+
+		// TODO
+		DEBUG_OUT << "TODO" << std::endl;
+	}
+}
+
 int main(int argc, char **argv)
 {
 	if (argc>1)
@@ -549,6 +565,8 @@ int main(int argc, char **argv)
 	sqt.setCallBack( dock.slider_opacity_gradient, SIGNAL(valueChanged(int)), SLOT(slider_opacity_gradient(int)) );
 	sqt.setCallBack( dock.slider_opacity_gradient, SIGNAL(sliderPressed()), SLOT(slider_pressed()) );
 	sqt.setCallBack( dock.slider_opacity_gradient, SIGNAL(sliderReleased()), SLOT(slider_released()) );
+
+	sqt.setCallBack( dock.button_render_software, SIGNAL(released()), SLOT(button_render_software()) );
 
 
 	sqt.show();

@@ -76,6 +76,9 @@
       </item>
       <item>
        <widget class="QSlider" name="slider_explode">
+        <property name="toolTip">
+         <string>Face scale</string>
+        </property>
         <property name="value">
          <number>50</number>
         </property>
@@ -86,6 +89,9 @@
       </item>
       <item>
        <widget class="QSlider" name="slider_explode_face">
+        <property name="toolTip">
+         <string>Volume scale</string>
+        </property>
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
@@ -93,6 +99,9 @@
       </item>
       <item>
        <widget class="QSlider" name="slider_opacity">
+        <property name="toolTip">
+         <string>Opacity</string>
+        </property>
         <property name="maximum">
          <number>100</number>
         </property>
@@ -106,6 +115,9 @@
       </item>
       <item>
        <widget class="QSlider" name="slider_opacity_gradient">
+        <property name="toolTip">
+         <string>Opacity gradient</string>
+        </property>
         <property name="value">
          <number>50</number>
         </property>
@@ -141,6 +153,20 @@
         </property>
         <property name="text">
          <string>hide clipping plane</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="Line" name="line">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="button_render_software">
+        <property name="text">
+         <string>Render (software)</string>
         </property>
        </widget>
       </item>

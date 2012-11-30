@@ -205,6 +205,48 @@ public:
 	}
 };
 
+/**
+ * RAII wrapper for VBO data pointer.
+ */
+class VBODataPointer
+{
+
+	Utils::VBO * const m_vbo;
+
+	float * const m_data;
+
+public:
+
+	VBODataPointer(Utils::VBO * const vbo): m_vbo(vbo), m_data(static_cast<float *>(vbo->lockPtr()))
+	{
+		// NOP
+	}
+
+	~VBODataPointer()
+	{
+		if (m_data)
+		{
+			m_vbo->releasePtr();
+		}
+	}
+	
+	unsigned int elementCount() const
+	{
+		return m_vbo->nbElts();
+	}
+
+	operator float *()
+	{
+		return m_data;
+	}
+
+	operator float const *() const
+	{
+		return m_data;
+	}
+
+};
+
 static void sortData(Algo::Render::GL2::ExplodeVolumeAlphaRender const * const evr, std::vector<unsigned int> & permutation,
 		std::vector<GLuint> & triangles, glm::vec4 const & viewpoint)
 {
@@ -217,27 +259,14 @@ static void sortData(Algo::Render::GL2::ExplodeVolumeAlphaRender const * const e
 		permutation[i] = i;
 	}
 
-	Utils::VBO const * const colorVBO = evr->colors();
-	Utils::VBO const * const vertexVBO = evr->vertices();
-
-	float const * const colors = static_cast<float const *>(colorVBO->lockPtr());
-	float const * const vertices = static_cast<float const *>(vertexVBO->lockPtr());
+	VBODataPointer const colors(evr->colors());
+	VBODataPointer const vertices(evr->vertices());
 
 	if (colors && vertices)
 	{
-		assert(colorVBO->nbElts() == vertexVBO->nbElts());
+		assert(colors.elementCount() == vertices.elementCount());
 
-		std::sort(permutation.begin(), permutation.end(), Comparator(colors, vertices, colorVBO->nbElts(), viewpoint));
-	}
-
-	if (colors)
-	{
-		colorVBO->releasePtr();
-	}
-
-	if (vertices)
-	{
-		vertexVBO->releasePtr();
+		std::sort(permutation.begin(), permutation.end(), Comparator(colors, vertices, colors.elementCount(), viewpoint));
 	}
 
 	triangles.resize(n * 4);

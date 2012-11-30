@@ -147,6 +147,7 @@ public slots:
 	void slider_explodeF(int x);
 	void slider_opacity(int x);
 	void slider_opacity_gradient(int x);
+	void button_render_software();
 };
 
 #endif

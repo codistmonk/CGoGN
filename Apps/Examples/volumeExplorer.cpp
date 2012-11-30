@@ -446,6 +446,12 @@ std::ostream & operator<<(std::ostream & out, glm::vec4 const & v)
 
 } // Debug
 
+static glm::vec4 project(glm::vec4 const & v, glm::mat4 mvp, glm::vec4 viewportCenter, glm::vec4 viewportScale)
+{
+	glm::vec4 const tmp(mvp * v);
+	return viewportScale * tmp / tmp[3]  + viewportCenter;
+}
+
 void MyQT::button_render_software()
 {
 	DEBUG_OUT << "Software rendering..." << std::endl;
@@ -474,6 +480,7 @@ void MyQT::button_render_software()
 		image.fill(QColor(0, 0, 0));
 		QPainter painter(&image);
 		QPointF triangle[3];
+		glm::mat4 const mvp = projectionMatrix() * modelViewMatrix() * transfoMatrix();
 
 		painter.setPen(QColor(255, 0, 0));
 
@@ -484,12 +491,9 @@ void MyQT::button_render_software()
 			glm::vec4 v2(vertices[i * 3 + 6 + 0], vertices[i * 3 + 6 + 1], vertices[i * 3 + 6 + 2], 1.0);
 			glm::vec4 v3(vertices[i * 3 + 9 + 0], vertices[i * 3 + 9 + 1], vertices[i * 3 + 9 + 2], 1.0);
 //			DEBUG_OUT << v1 << ' ' << v2 << ' ' << v3 << std::endl;
-			v1 = projectionMatrix() * modelViewMatrix() * transfoMatrix() * v1;
-			v1 = v1 / v1[3] * viewportScale + viewportCenter;
-			v2 = projectionMatrix() * modelViewMatrix() * transfoMatrix() * v2;
-			v2 = v2 / v2[3] * viewportScale + viewportCenter;
-			v3 = projectionMatrix() * modelViewMatrix() * transfoMatrix() * v3;
-			v3 = v3 / v3[3] * viewportScale + viewportCenter;
+			v1 = project(v1, mvp, viewportCenter, viewportScale);
+			v2 = project(v2, mvp, viewportCenter, viewportScale);
+			v3 = project(v3, mvp, viewportCenter, viewportScale);
 //			DEBUG_OUT << v1 << ' ' << v2 << ' ' << v3 << std::endl;
 			triangle[0] = QPointF(v1[0], viewportHeight - 1 - v1[1]);
 			triangle[1] = QPointF(v2[0], viewportHeight - 1 - v2[1]);

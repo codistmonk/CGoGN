@@ -104,6 +104,9 @@ class MyQT: public Utils::QT::SimpleQT
 	std::vector<int> m_depths;
 	int m_lastDepth;
 
+	QScrollArea m_imageViewer;
+	QLabel m_imageComponent;
+
 public:
 	float m_WidthObj;
 	Geom::Vec3f m_PosObj;
@@ -124,6 +127,7 @@ public:
 	{}
 
 	void updateDepths();
+	glm::vec4 viewpoint() const;
 
 protected:
 	void cb_redraw();

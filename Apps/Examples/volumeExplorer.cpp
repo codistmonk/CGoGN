@@ -294,12 +294,11 @@ void MyQT::cb_redraw()
 	{
 		if (m_opacity < 1)
 		{
-			glm::vec4 viewpoint = glm::inverse(modelViewMatrix()) * glm::vec4(0.0, 0.0, 0.0, 1.0);
 			unsigned int const n = m_explode_render->nbTris();
 			static std::vector<unsigned int> indices(n);
 			static std::vector<GLuint> triangles(n * 4);
 
-			sortData(m_explode_render, indices, triangles, viewpoint);
+			sortData(m_explode_render, indices, triangles, viewpoint());
 			glEnable(GL_BLEND); DEBUG_GL;
 			glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD); DEBUG_GL;
 			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO); DEBUG_GL;
@@ -430,8 +429,27 @@ void MyQT::updateDepths()
 	DEBUG_OUT << "Depths are up-to-date" << std::endl;
 }
 
+glm::vec4 MyQT::viewpoint() const
+{
+	return glm::inverse(modelViewMatrix()) * glm::vec4(0.0, 0.0, 0.0, 1.0);
+}
+
+namespace Debug
+{
+
+std::ostream & operator<<(std::ostream & out, glm::vec4 const & v)
+{
+	out << '[' << v[0] << ' ' << v[1] << ' ' << v[2] << ' ' << v[3] << ']';
+
+	return out;
+}
+
+} // Debug
+
 void MyQT::button_render_software()
 {
+	DEBUG_OUT << "Software rendering..." << std::endl;
+
 	Algo::Render::GL2::ExplodeVolumeAlphaRender const * const evr = m_explode_render;
 
 	VBODataPointer const colors(evr->colors());
@@ -440,10 +458,49 @@ void MyQT::button_render_software()
 	if (colors && vertices)
 	{
 		assert(colors.elementCount() == vertices.elementCount());
+		GLint viewport[4];
 
-		// TODO
-		DEBUG_OUT << "TODO" << std::endl;
+		glGetIntegerv(GL_VIEWPORT, viewport);
+		GLint const viewportX = viewport[0];
+		GLint const viewportY = viewport[1];
+		GLint const viewportWidth = viewport[2];
+		GLint const viewportHeight = viewport[3];
+
+		DEBUG_OUT << viewportX << ' ' << viewportY << ' ' << viewportWidth << ' ' << viewportHeight << std::endl;
+
+		glm::vec4 viewportCenter(viewportX + viewportWidth / 2.0, viewportY + viewportHeight / 2.0, 0.0, 0.0);
+		QPixmap image(viewportWidth, viewportHeight);
+		image.fill(QColor(0, 0, 0));
+		QPainter painter(&image);
+		QPointF triangle[3];
+
+		painter.setPen(QColor(255, 0, 0));
+
+		DEBUG_OUT << vertices.elementCount() << std::endl;
+
+		for (unsigned int i = 0; i < vertices.elementCount(); i += 4)
+		{
+			using namespace Debug;
+			glm::vec4 v1(vertices[i * 3 + 3 + 0], vertices[i * 3 + 3 + 1], vertices[i * 3 + 3 + 2], 1.0);
+			glm::vec4 v2(vertices[i * 3 + 6 + 0], vertices[i * 3 + 6 + 1], vertices[i * 3 + 6 + 2], 1.0);
+			glm::vec4 v3(vertices[i * 3 + 9 + 0], vertices[i * 3 + 9 + 1], vertices[i * 3 + 9 + 2], 1.0);
+//			DEBUG_OUT << v1 << ' ' << v2 << ' ' << v3 << std::endl;
+			v1 = projectionMatrix() * modelViewMatrix() * v1 * v1[3] + viewportCenter;
+			v2 = projectionMatrix() * modelViewMatrix() * v2 * v2[3] + viewportCenter;
+			v3 = projectionMatrix() * modelViewMatrix() * v3 * v3[3] + viewportCenter;
+//			DEBUG_OUT << v1 << ' ' << v2 << ' ' << v3 << std::endl;
+			triangle[0] = QPointF(v1[0], viewportHeight - 1 - v1[1]);
+			triangle[1] = QPointF(v2[0], viewportHeight - 1 - v2[1]);
+			triangle[2] = QPointF(v3[0], viewportHeight - 1 - v3[1]);
+			painter.drawConvexPolygon(triangle, 3);
+		}
+
+		m_imageComponent.setPixmap(image);
+		m_imageViewer.setWidget(&m_imageComponent);
+		m_imageViewer.show();
 	}
+
+	DEBUG_OUT << "Software rendering done" << std::endl;
 }
 
 int main(int argc, char **argv)

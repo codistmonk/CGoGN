@@ -446,7 +446,14 @@ std::ostream & operator<<(std::ostream & out, glm::vec4 const & v)
 
 } // Debug
 
-static glm::vec4 project(glm::vec4 const & v, glm::mat4 mvp, glm::vec4 viewportCenter, glm::vec4 viewportScale)
+static glm::vec4 explode(glm::vec4 const & v, glm::vec4 const & faceCenter, float const faceScale, glm::vec4 const & volumeCenter, float const volumeScale)
+{
+	glm::vec4 const tmp = faceScale * v + (1.0 - faceScale) * faceCenter;
+
+	return volumeScale * tmp + (1.0 - volumeScale) * volumeCenter;
+}
+
+static glm::vec4 project(glm::vec4 const & v, glm::mat4 const & mvp, glm::vec4 const & viewportCenter, glm::vec4 const & viewportScale)
 {
 	glm::vec4 const tmp(mvp * v);
 	return viewportScale * tmp / tmp[3]  + viewportCenter;
@@ -487,17 +494,24 @@ void MyQT::button_render_software()
 		for (unsigned int i = 0; i < vertices.elementCount(); i += 4)
 		{
 			using namespace Debug;
+			glm::vec4 const volumeCenter(vertices[i * 3 + 0 + 0], vertices[i * 3 + 0 + 1], vertices[i * 3 + 0 + 2], 1.0);
+			glm::vec4 const faceCenter(colors[i * 4 + 0 + 0], colors[i * 4 + 0 + 1], colors[i * 4 + 0 + 2], 1.0);
 			glm::vec4 v1(vertices[i * 3 + 3 + 0], vertices[i * 3 + 3 + 1], vertices[i * 3 + 3 + 2], 1.0);
 			glm::vec4 v2(vertices[i * 3 + 6 + 0], vertices[i * 3 + 6 + 1], vertices[i * 3 + 6 + 2], 1.0);
 			glm::vec4 v3(vertices[i * 3 + 9 + 0], vertices[i * 3 + 9 + 1], vertices[i * 3 + 9 + 2], 1.0);
 //			DEBUG_OUT << v1 << ' ' << v2 << ' ' << v3 << std::endl;
-			v1 = project(v1, mvp, viewportCenter, viewportScale);
-			v2 = project(v2, mvp, viewportCenter, viewportScale);
-			v3 = project(v3, mvp, viewportCenter, viewportScale);
+			v1 = project(explode(v1, faceCenter, m_explode_factorf, volumeCenter, m_explode_factor),
+					mvp, viewportCenter, viewportScale);
+			v2 = project(explode(v2, faceCenter, m_explode_factorf, volumeCenter, m_explode_factor),
+					mvp, viewportCenter, viewportScale);
+			v3 = project(explode(v3, faceCenter, m_explode_factorf, volumeCenter, m_explode_factor),
+					mvp, viewportCenter, viewportScale);
 //			DEBUG_OUT << v1 << ' ' << v2 << ' ' << v3 << std::endl;
 			triangle[0] = QPointF(v1[0], viewportHeight - 1 - v1[1]);
 			triangle[1] = QPointF(v2[0], viewportHeight - 1 - v2[1]);
 			triangle[2] = QPointF(v3[0], viewportHeight - 1 - v3[1]);
+
+			painter.setBrush(QColor(colors[i * 4 + 4 + 0] * 255.0, colors[i * 4 + 4 + 1] * 255.0, colors[i * 4 + 4 + 2] * 255.0));
 			painter.drawConvexPolygon(triangle, 3);
 		}
 

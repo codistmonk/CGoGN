@@ -468,15 +468,14 @@ void MyQT::button_render_software()
 
 		DEBUG_OUT << viewportX << ' ' << viewportY << ' ' << viewportWidth << ' ' << viewportHeight << std::endl;
 
-		glm::vec4 viewportCenter(viewportX + viewportWidth / 2.0, viewportY + viewportHeight / 2.0, 0.0, 0.0);
+		glm::vec4 const viewportCenter(viewportX + viewportWidth / 2.0, viewportY + viewportHeight / 2.0, 0.0, 0.0);
+		glm::vec4 const viewportScale(viewportWidth / 2.0, viewportHeight / 2.0, 1.0, 1.0);
 		QPixmap image(viewportWidth, viewportHeight);
 		image.fill(QColor(0, 0, 0));
 		QPainter painter(&image);
 		QPointF triangle[3];
 
 		painter.setPen(QColor(255, 0, 0));
-
-		DEBUG_OUT << vertices.elementCount() << std::endl;
 
 		for (unsigned int i = 0; i < vertices.elementCount(); i += 4)
 		{
@@ -485,9 +484,12 @@ void MyQT::button_render_software()
 			glm::vec4 v2(vertices[i * 3 + 6 + 0], vertices[i * 3 + 6 + 1], vertices[i * 3 + 6 + 2], 1.0);
 			glm::vec4 v3(vertices[i * 3 + 9 + 0], vertices[i * 3 + 9 + 1], vertices[i * 3 + 9 + 2], 1.0);
 //			DEBUG_OUT << v1 << ' ' << v2 << ' ' << v3 << std::endl;
-			v1 = projectionMatrix() * modelViewMatrix() * v1 * v1[3] + viewportCenter;
-			v2 = projectionMatrix() * modelViewMatrix() * v2 * v2[3] + viewportCenter;
-			v3 = projectionMatrix() * modelViewMatrix() * v3 * v3[3] + viewportCenter;
+			v1 = projectionMatrix() * modelViewMatrix() * transfoMatrix() * v1;
+			v1 = v1 / v1[3] * viewportScale + viewportCenter;
+			v2 = projectionMatrix() * modelViewMatrix() * transfoMatrix() * v2;
+			v2 = v2 / v2[3] * viewportScale + viewportCenter;
+			v3 = projectionMatrix() * modelViewMatrix() * transfoMatrix() * v3;
+			v3 = v3 / v3[3] * viewportScale + viewportCenter;
 //			DEBUG_OUT << v1 << ' ' << v2 << ' ' << v3 << std::endl;
 			triangle[0] = QPointF(v1[0], viewportHeight - 1 - v1[1]);
 			triangle[1] = QPointF(v2[0], viewportHeight - 1 - v2[1]);

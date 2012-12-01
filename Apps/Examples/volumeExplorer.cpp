@@ -444,6 +444,13 @@ std::ostream & operator<<(std::ostream & out, glm::vec4 const & v)
 	return out;
 }
 
+std::ostream & operator<<(std::ostream & out, QPointF const & p)
+{
+	out << '[' << p.x() << ' ' << p.y() << ']';
+
+	return out;
+}
+
 } // Debug
 
 static glm::vec4 explode(glm::vec4 const & v, glm::vec4 const & faceCenter, float const faceScale, glm::vec4 const & volumeCenter, float const volumeScale)
@@ -459,9 +466,103 @@ static glm::vec4 project(glm::vec4 const & v, glm::mat4 const & mvp, glm::vec4 c
 	return viewportScale * tmp / tmp[3]  + viewportCenter;
 }
 
+// min X and max X for every horizontal line within the triangle
+//int ContourX[SCREEN_HEIGHT][2];
+
+#define ABS(x) ((x >= 0) ? x : -x)
+
+// Scans a side of a triangle setting min X and max X in ContourX[][]
+// (using the Bresenham's line drawing algorithm).
+void scanLine(int * const contourX, int const screenHeight, int x1, int y1, int x2, int y2)
+{
+  int sx, sy, dx1, dy1, dx2, dy2, x, y, m, n, k, cnt;
+
+  sx = x2 - x1;
+  sy = y2 - y1;
+
+  if (sx > 0) dx1 = 1;
+  else if (sx < 0) dx1 = -1;
+  else dy1 = 0;
+
+  if (sy > 0) dy1 = 1;
+  else if (sy < 0) dy1 = -1;
+  else dy1 = 0;
+
+  m = ABS(sx);
+  n = ABS(sy);
+  dx2 = dx1;
+  dy2 = 0;
+
+  if (m < n)
+  {
+    m = ABS(sy);
+    n = ABS(sx);
+    dx2 = 0;
+    dy2 = dy1;
+  }
+
+  x = x1; y = y1;
+  cnt = m + 1;
+  k = n / 2;
+
+  while (cnt--)
+  {
+    if ((y >= 0) && (y < screenHeight))
+    {
+      if (x < contourX[y * 2 + 0]) contourX[y * 2 + 0] = x;
+      if (x > contourX[y * 2 + 1]) contourX[y * 2 + 1] = x;
+    }
+
+    k += n;
+    if (k < m)
+    {
+      x += dx2;
+      y += dy2;
+    }
+    else
+    {
+      k -= m;
+      x += dx1;
+      y += dy1;
+    }
+  }
+}
+
+void rasterizeTriangle(int * const contourX, int const screenHeight, QPointF const & p0, QPointF const & p1, QPointF const & p2, QImage & image, unsigned int color)
+{
+  int y;
+
+  for (y = 0; y < screenHeight; y++)
+  {
+    contourX[y * 2 + 0] = INT_MAX; // min X
+    contourX[y * 2 + 1] = INT_MIN; // max X
+  }
+
+  scanLine(contourX, screenHeight, p0.x(), p0.y(), p1.x(), p1.y());
+  scanLine(contourX, screenHeight, p1.x(), p1.y(), p2.x(), p2.y());
+  scanLine(contourX, screenHeight, p2.x(), p2.y(), p0.x(), p0.y());
+
+  for (y = 0; y < screenHeight; y++)
+  {
+    if (contourX[y * 2 + 1] >= contourX[y * 2 + 0])
+    {
+      int x = contourX[y * 2 + 0];
+      int len = 1 + contourX[y * 2 + 1] - contourX[y * 2 + 0];
+
+      // Can draw a horizontal line instead of individual pixels here
+      while (len--)
+      {
+    	  image.setPixel(x++, y, color);
+      }
+    }
+  }
+}
+
 void MyQT::button_render_software()
 {
 	DEBUG_OUT << "Software rendering..." << std::endl;
+	static bool const debugRasterization = false;
+	static bool const debugUseQtRasterization = false;
 
 	Algo::Render::GL2::ExplodeVolumeAlphaRender const * const evr = m_explode_render;
 
@@ -470,6 +571,10 @@ void MyQT::button_render_software()
 
 	if (colors && vertices)
 	{
+		Utils::Chrono timer;
+
+		timer.start();
+
 		assert(colors.elementCount() == vertices.elementCount());
 		GLint viewport[4];
 
@@ -483,19 +588,21 @@ void MyQT::button_render_software()
 
 		glm::vec4 const viewportCenter(viewportX + viewportWidth / 2.0, viewportY + viewportHeight / 2.0, 0.0, 0.0);
 		glm::vec4 const viewportScale(viewportWidth / 2.0, viewportHeight / 2.0, 1.0, 1.0);
-		QPixmap image(viewportWidth, viewportHeight);
+		QImage image(viewportWidth, viewportHeight, QImage::Format_ARGB32);
 		image.fill(QColor(0, 0, 0));
 		QPainter painter(&image);
 		QPointF triangle[3];
 		glm::mat4 const mvp = projectionMatrix() * modelViewMatrix() * transfoMatrix();
 
-		painter.setPen(QColor(255, 0, 0));
+		painter.setPen(Qt::NoPen);
+
+		int * ContourX = new int[viewportHeight * 2];
 
 		for (unsigned int i = 0; i < vertices.elementCount(); i += 4)
 		{
-			using namespace Debug;
-			glm::vec4 const volumeCenter(vertices[i * 3 + 0 + 0], vertices[i * 3 + 0 + 1], vertices[i * 3 + 0 + 2], 1.0);
+//			using namespace Debug;
 			glm::vec4 const faceCenter(colors[i * 4 + 0 + 0], colors[i * 4 + 0 + 1], colors[i * 4 + 0 + 2], 1.0);
+			glm::vec4 const volumeCenter(vertices[i * 3 + 0 + 0], vertices[i * 3 + 0 + 1], vertices[i * 3 + 0 + 2], 1.0);
 			glm::vec4 v1(vertices[i * 3 + 3 + 0], vertices[i * 3 + 3 + 1], vertices[i * 3 + 3 + 2], 1.0);
 			glm::vec4 v2(vertices[i * 3 + 6 + 0], vertices[i * 3 + 6 + 1], vertices[i * 3 + 6 + 2], 1.0);
 			glm::vec4 v3(vertices[i * 3 + 9 + 0], vertices[i * 3 + 9 + 1], vertices[i * 3 + 9 + 2], 1.0);
@@ -511,16 +618,38 @@ void MyQT::button_render_software()
 			triangle[1] = QPointF(v2[0], viewportHeight - 1 - v2[1]);
 			triangle[2] = QPointF(v3[0], viewportHeight - 1 - v3[1]);
 
-			painter.setBrush(QColor(colors[i * 4 + 4 + 0] * 255.0, colors[i * 4 + 4 + 1] * 255.0, colors[i * 4 + 4 + 2] * 255.0));
+			QColor const color(colors[i * 4 + 4 + 0] * 255.0, colors[i * 4 + 4 + 1] * 255.0, colors[i * 4 + 4 + 2] * 255.0);
+
+			if (!debugUseQtRasterization)
+			{
+				rasterizeTriangle(ContourX, viewportHeight, triangle[0], triangle[1], triangle[2], image, color.rgba());
+			}
+			else
+			{
+				painter.setBrush(color);
+			}
+
+			painter.setPen(QColor(255, 0, 255));
 			painter.drawConvexPolygon(triangle, 3);
+
+			if (debugRasterization)
+			{
+				DEBUG_OUT << i << " / " << vertices.elementCount() << '\r';
+			}
 		}
 
-		m_imageComponent.setPixmap(image);
+		delete[] ContourX;
+
+		DEBUG_OUT << "Software rendering done in " << timer.elapsed() << " ms" << std::endl;
+
+		m_imageComponent.setPixmap(QPixmap::fromImage(image));
 		m_imageViewer.setWidget(&m_imageComponent);
 		m_imageViewer.show();
 	}
-
-	DEBUG_OUT << "Software rendering done" << std::endl;
+	else
+	{
+		DEBUG_OUT << "Software rendering aborted" << std::endl;
+	}
 }
 
 int main(int argc, char **argv)
@@ -529,7 +658,7 @@ int main(int argc, char **argv)
 	{
 		std::vector<std::string> attrNames ;
 		std::string filename(argv[1]);
-		size_t pos = filename.rfind(".");    // ::position of "." in filename
+		size_t pos = filename.rfind(".");    // position of "." in filename
 		std::string extension = filename.substr(pos);
 
 		if(extension == std::string(".tet"))
@@ -540,7 +669,7 @@ int main(int argc, char **argv)
 				return 1;
 			}
 			else
-				position = ::myMap.getAttribute<PFP::VEC3, VERTEX>(attrNames[0]) ;
+				::position = ::myMap.getAttribute<PFP::VEC3, VERTEX>(attrNames[0]) ;
 		}
 
 		if(extension == std::string(".node"))
@@ -551,7 +680,7 @@ int main(int argc, char **argv)
 				return 1;
 			}
 			else
-				position = ::myMap.getAttribute<PFP::VEC3,VERTEX>(attrNames[0]) ;
+				::position = ::myMap.getAttribute<PFP::VEC3,VERTEX>(attrNames[0]) ;
 		}
 
 
@@ -564,7 +693,7 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				position = ::myMap.getAttribute<PFP::VEC3, VERTEX>(attrNames[0]) ;
+				::position = ::myMap.getAttribute<PFP::VEC3, VERTEX>(attrNames[0]) ;
 				::myMap.closeMap();
 			}
 		}
@@ -588,7 +717,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		position = ::myMap.addAttribute<PFP::VEC3, VERTEX>("position");
+		::position = ::myMap.addAttribute<PFP::VEC3, VERTEX>("position");
 		Algo::Modelisation::Primitive3D<PFP> prim(::myMap, ::position);
 		int nb = 8;
 		prim.hexaGrid_topo(nb,nb,nb);

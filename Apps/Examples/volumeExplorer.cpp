@@ -466,96 +466,86 @@ static glm::vec4 project(glm::vec4 const & v, glm::mat4 const & mvp, glm::vec4 c
 	return viewportScale * tmp / tmp[3]  + viewportCenter;
 }
 
-// min X and max X for every horizontal line within the triangle
-//int ContourX[SCREEN_HEIGHT][2];
-
-#define ABS(x) ((x >= 0) ? x : -x)
-
-// Scans a side of a triangle setting min X and max X in ContourX[][]
-// (using the Bresenham's line drawing algorithm).
-void scanLine(int * const contourX, int const screenHeight, int x1, int y1, int x2, int y2)
+// Scans a side of a triangle setting min X and max X in ContourX
+// using the Bresenham's line drawing algorithm.
+void updateCountourX(int * const contourX, int const screenHeight, int x1, int y1, int x2, int y2)
 {
-  int sx, sy, dx1, dy1, dx2, dy2, x, y, m, n, k, cnt;
+	int const sx = x2 - x1;
+	int const sy = y2 - y1;
+	int const dx1 = (0 < sx) - (sx < 0);
+	int const dy1 = (0 < sy) - (sy < 0);
+	int m = std::abs(sx);
+	int n = std::abs(sy);
+	int dx2 = dx1;
+	int dy2 = 0;
 
-  sx = x2 - x1;
-  sy = y2 - y1;
+	if (m < n)
+	{
+		std::swap(m, n);
+		dx2 = 0;
+		dy2 = dy1;
+	}
 
-  if (sx > 0) dx1 = 1;
-  else if (sx < 0) dx1 = -1;
-  else dy1 = 0;
+	int x = x1;
+	int y = y1;
+	int pixelCount = m + 2;
+	int k = n / 2;
 
-  if (sy > 0) dy1 = 1;
-  else if (sy < 0) dy1 = -1;
-  else dy1 = 0;
+	while (--pixelCount)
+	{
+		if (0 <= y && y < screenHeight)
+		{
+			if (x < contourX[y * 2 + 0])
+			{
+				contourX[y * 2 + 0] = x;
+			}
 
-  m = ABS(sx);
-  n = ABS(sy);
-  dx2 = dx1;
-  dy2 = 0;
+			if (contourX[y * 2 + 1] < x)
+			{
+				contourX[y * 2 + 1] = x;
+			}
+		}
 
-  if (m < n)
-  {
-    m = ABS(sy);
-    n = ABS(sx);
-    dx2 = 0;
-    dy2 = dy1;
-  }
+		k += n;
 
-  x = x1; y = y1;
-  cnt = m + 1;
-  k = n / 2;
-
-  while (cnt--)
-  {
-    if ((y >= 0) && (y < screenHeight))
-    {
-      if (x < contourX[y * 2 + 0]) contourX[y * 2 + 0] = x;
-      if (x > contourX[y * 2 + 1]) contourX[y * 2 + 1] = x;
-    }
-
-    k += n;
-    if (k < m)
-    {
-      x += dx2;
-      y += dy2;
-    }
-    else
-    {
-      k -= m;
-      x += dx1;
-      y += dy1;
-    }
-  }
+		if (k < m)
+		{
+			x += dx2;
+			y += dy2;
+		}
+		else
+		{
+			k -= m;
+			x += dx1;
+			y += dy1;
+		}
+	}
 }
 
 void rasterizeTriangle(int * const contourX, int const screenHeight, QPointF const & p0, QPointF const & p1, QPointF const & p2, QImage & image, unsigned int color)
 {
-  int y;
+	int const firstY = std::max(0.0, std::min(std::min(p0.y(), p1.y()), p2.y()));
+	int const lastY = std::min(screenHeight - 1.0, std::max(std::max(p0.y(), p1.y()), p2.y()));
 
-  for (y = 0; y < screenHeight; y++)
-  {
-    contourX[y * 2 + 0] = INT_MAX; // min X
-    contourX[y * 2 + 1] = INT_MIN; // max X
-  }
+	for (int y = firstY; y <= lastY; ++y)
+	{
+		contourX[y * 2 + 0] = INT_MAX; // min X
+		contourX[y * 2 + 1] = INT_MIN; // max X
+	}
 
-  scanLine(contourX, screenHeight, p0.x(), p0.y(), p1.x(), p1.y());
-  scanLine(contourX, screenHeight, p1.x(), p1.y(), p2.x(), p2.y());
-  scanLine(contourX, screenHeight, p2.x(), p2.y(), p0.x(), p0.y());
+	updateCountourX(contourX, screenHeight, p0.x(), p0.y(), p1.x(), p1.y());
+	updateCountourX(contourX, screenHeight, p1.x(), p1.y(), p2.x(), p2.y());
+	updateCountourX(contourX, screenHeight, p2.x(), p2.y(), p0.x(), p0.y());
 
-  for (y = 0; y < screenHeight; y++)
-  {
-    if (contourX[y * 2 + 1] >= contourX[y * 2 + 0])
-    {
-      int x = contourX[y * 2 + 0];
-      int len = 1 + contourX[y * 2 + 1] - contourX[y * 2 + 0];
+	for (int y = firstY; y <= lastY; ++y)
+	{
+		int const lastX = contourX[y * 2 + 1];
 
-      // Can draw a horizontal line instead of individual pixels here
-      while (len--)
-      {
-    	  image.setPixel(x++, y, color);
-      }
-    }
-  }
+		for (int x = contourX[y * 2 + 0]; x <= lastX; ++x)
+		{
+			image.setPixel(x, y, color);
+		}
+	}
 }
 
 void MyQT::button_render_software()

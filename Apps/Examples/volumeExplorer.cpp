@@ -487,7 +487,7 @@ public:
 			m_firstC = c;
 		}
 
-		if (this->firstX() < x)
+		if (this->lastX() < x)
 		{
 			m_lastX = x;
 			m_lastA = a;
@@ -501,17 +501,17 @@ public:
 		return m_firstX;
 	}
 
-	int firstA() const
+	float firstA() const
 	{
 		return m_firstA;
 	}
 
-	int firstB() const
+	float firstB() const
 	{
 		return m_firstB;
 	}
 
-	int firstC() const
+	float firstC() const
 	{
 		return m_firstC;
 	}
@@ -521,17 +521,17 @@ public:
 		return m_lastX;
 	}
 
-	int lastA() const
+	float lastA() const
 	{
 		return m_lastA;
 	}
 
-	int lastB() const
+	float lastB() const
 	{
 		return m_lastB;
 	}
 
-	int lastC() const
+	float lastC() const
 	{
 		return m_lastC;
 	}
@@ -551,7 +551,7 @@ static inline float linerp(float const s, float const a, float const b)
 
 // Scans a side of a triangle setting min X and max X in ContourX
 // using the Bresenham's line drawing algorithm.
-void updateRasterizationCountour(RasterizationContourDatum * const contourX, int const screenWidth, int const screenHeight,
+static void updateRasterizationCountour(RasterizationContourDatum * const contourX, int const screenWidth, int const screenHeight,
 		int x1, int y1, float const a1, float const b1, float const c1,
 		int x2, int y2, float const a2, float const b2, float const c2)
 {
@@ -581,6 +581,8 @@ void updateRasterizationCountour(RasterizationContourDatum * const contourX, int
 		if (0 <= x && x < screenWidth && 0 <= y && y < screenHeight)
 		{
 			float const s = static_cast<float>(pixelCount - 1) / std::max(m, 1);
+
+			assert(linerp(s, a1, a2) || linerp(s, b1, b2) || linerp(s, c1, c2));
 
 			contourX[y].updateRange(x, linerp(s, a1, a2), linerp(s, b1, b2), linerp(s, c1, c2));
 		}
@@ -640,7 +642,7 @@ public:
 typedef std::vector< PixelFragment > FragmentStack;
 typedef std::vector< FragmentStack > FragmentBuffer;
 
-void rasterizeTriangle(RasterizationContourDatum * const contourX, int const screenWidth, int const screenHeight,
+static void rasterizeTriangle(RasterizationContourDatum * const contourX, int const screenWidth, int const screenHeight,
 		glm::vec4 const & p0, glm::vec4 const & p1, glm::vec4 const & p2,
 		QImage & image, unsigned int rgba, FragmentBuffer & fragmentBuffer)
 {
@@ -662,6 +664,8 @@ void rasterizeTriangle(RasterizationContourDatum * const contourX, int const scr
 			p2.x, p2.y, 0.0f, 0.0f, 1.0f,
 			p0.x, p0.y, 1.0f, 0.0f, 0.0f);
 
+	float const dz = std::abs(std::min(std::min(p0.z, p1.z), p2.z)) + 1.0f;
+
 	for (int y = firstY; y <= lastY; ++y)
 	{
 		RasterizationContourDatum const & datum = contourX[y];
@@ -675,7 +679,9 @@ void rasterizeTriangle(RasterizationContourDatum * const contourX, int const scr
 			float const a = linerp(s, datum.firstA(), datum.lastA());
 			float const b = linerp(s, datum.firstB(), datum.lastB());
 			float const c = linerp(s, datum.firstC(), datum.lastC());
-			float const z = 1.0f / (a / p0.z + b / p1.z + c / p2.z);
+			float const z = 1.0f / (a / (p0.z + dz) + b / (p1.z + dz) + c / (p2.z + dz));
+
+			assert(a || b || c);
 
 			fragmentBuffer[y * screenWidth + x].push_back(PixelFragment(z, rgba));
 		}
@@ -685,9 +691,9 @@ void rasterizeTriangle(RasterizationContourDatum * const contourX, int const scr
 void MyQT::button_render_software()
 {
 	DEBUG_OUT << "Software rendering..." << std::endl;
-	static bool const debugShowRasterizationProgress = true;
+	static bool const debugShowRasterizationProgress = false;
 	static bool const debugUseQtRasterization = false;
-	static bool const debugDrawQtWireframe = true;
+	static bool const debugDrawQtWireframe = false;
 
 	Algo::Render::GL2::ExplodeVolumeAlphaRender const * const evr = m_explode_render;
 
@@ -721,34 +727,30 @@ void MyQT::button_render_software()
 		painter.setPen(Qt::NoPen);
 
 		RasterizationContourDatum ContourX[viewportHeight];
-//		FragmentBuffer fragmentBuffer(viewportHeight * viewportWidth, std::vector< PixelFragment >(64));
 		FragmentBuffer fragmentBuffer(viewportHeight * viewportWidth);
 
 		DEBUG_OUT << "Rasterizing triangles and accumulating fragments..." << std::endl;
 
 		for (unsigned int i = 0; i < vertices.elementCount(); i += 4)
 		{
-//			using namespace Debug;
 			glm::vec4 const faceCenter(colors[i * 4 + 0 + 0], colors[i * 4 + 0 + 1], colors[i * 4 + 0 + 2], 1.0);
 			glm::vec4 const volumeCenter(vertices[i * 3 + 0 + 0], vertices[i * 3 + 0 + 1], vertices[i * 3 + 0 + 2], 1.0);
 			glm::vec4 v1(vertices[i * 3 + 3 + 0], vertices[i * 3 + 3 + 1], vertices[i * 3 + 3 + 2], 1.0);
 			glm::vec4 v2(vertices[i * 3 + 6 + 0], vertices[i * 3 + 6 + 1], vertices[i * 3 + 6 + 2], 1.0);
 			glm::vec4 v3(vertices[i * 3 + 9 + 0], vertices[i * 3 + 9 + 1], vertices[i * 3 + 9 + 2], 1.0);
-//			DEBUG_OUT << v1 << ' ' << v2 << ' ' << v3 << std::endl;
+
 			v1 = project(explode(v1, faceCenter, m_explode_factorf, volumeCenter, m_explode_factor),
 					mvp, viewportCenter, viewportScale);
 			v2 = project(explode(v2, faceCenter, m_explode_factorf, volumeCenter, m_explode_factor),
 					mvp, viewportCenter, viewportScale);
 			v3 = project(explode(v3, faceCenter, m_explode_factorf, volumeCenter, m_explode_factor),
 					mvp, viewportCenter, viewportScale);
-//			DEBUG_OUT << v1 << ' ' << v2 << ' ' << v3 << std::endl;
+
 			v1.y = viewportHeight - 1 - v1.y;
 			v2.y = viewportHeight - 1 - v2.y;
 			v3.y = viewportHeight - 1 - v3.y;
 
 			QColor const color(colors[i * 4 + 4 + 0] * 255.0, colors[i * 4 + 4 + 1] * 255.0, colors[i * 4 + 4 + 2] * 255.0, colors[i * 4 + 4 + 3] * 255.0);
-
-//			DEBUG_OUT << color.alphaF() << ' ' << std::hex << color.rgba() << std::dec << ' ' << QColor(color.rgba()).alphaF() << std::endl;
 
 			if (!debugUseQtRasterization)
 			{
@@ -785,19 +787,27 @@ void MyQT::button_render_software()
 			{
 				FragmentStack & fragments = fragmentBuffer[y * viewportWidth + x];
 
-				std::sort(fragments.begin(), fragments.end());
+				std::stable_sort(fragments.begin(), fragments.end());
 
 				float red = 0.0f;
 				float green = 0.0f;
 				float blue = 0.0f;
+				PixelFragment const * previous = NULL;
 
 				for (FragmentStack::const_iterator i = fragments.begin(); i != fragments.end(); ++i)
 				{
-					QColor const rgba(QColor::fromRgba(i->rgba()));
-					float const a = rgba.alphaF();
-					red = (1.0f - a) * red + a * rgba.redF();
-					green = (1.0f - a) * green + a * rgba.greenF();
-					blue = (1.0f - a) * blue + a * rgba.blueF();
+					bool const fragmentIsNotADuplicate = previous == NULL || 1E-6 < i->z() - previous->z();
+
+					if (fragmentIsNotADuplicate)
+					{
+						QColor const rgba(QColor::fromRgba(i->rgba()));
+						float const a = rgba.alphaF();
+						red = (1.0f - a) * red + a * rgba.redF();
+						green = (1.0f - a) * green + a * rgba.greenF();
+						blue = (1.0f - a) * blue + a * rgba.blueF();
+					}
+
+					previous = &*i;
 				}
 
 				image.setPixel(x, y, QColor(red * 255.0f, green * 255.0f, blue * 255.0f).rgba());

@@ -522,10 +522,10 @@ void updateCountourX(int * const contourX, int const screenHeight, int x1, int y
 	}
 }
 
-void rasterizeTriangle(int * const contourX, int const screenHeight, QPointF const & p0, QPointF const & p1, QPointF const & p2, QImage & image, unsigned int color)
+void rasterizeTriangle(int * const contourX, int const screenHeight, glm::vec4 const & p0, glm::vec4 const & p1, glm::vec4 const & p2, QImage & image, unsigned int color)
 {
-	int const firstY = std::max(0.0, std::min(std::min(p0.y(), p1.y()), p2.y()));
-	int const lastY = std::min(screenHeight - 1.0, std::max(std::max(p0.y(), p1.y()), p2.y()));
+	int const firstY = std::max(0.0f, std::min(std::min(p0.y, p1.y), p2.y));
+	int const lastY = std::min(screenHeight - 1.0f, std::max(std::max(p0.y, p1.y), p2.y));
 
 	for (int y = firstY; y <= lastY; ++y)
 	{
@@ -533,9 +533,9 @@ void rasterizeTriangle(int * const contourX, int const screenHeight, QPointF con
 		contourX[y * 2 + 1] = INT_MIN; // max X
 	}
 
-	updateCountourX(contourX, screenHeight, p0.x(), p0.y(), p1.x(), p1.y());
-	updateCountourX(contourX, screenHeight, p1.x(), p1.y(), p2.x(), p2.y());
-	updateCountourX(contourX, screenHeight, p2.x(), p2.y(), p0.x(), p0.y());
+	updateCountourX(contourX, screenHeight, p0.x, p0.y, p1.x, p1.y);
+	updateCountourX(contourX, screenHeight, p1.x, p1.y, p2.x, p2.y);
+	updateCountourX(contourX, screenHeight, p2.x, p2.y, p0.x, p0.y);
 
 	for (int y = firstY; y <= lastY; ++y)
 	{
@@ -553,6 +553,7 @@ void MyQT::button_render_software()
 	DEBUG_OUT << "Software rendering..." << std::endl;
 	static bool const debugRasterization = false;
 	static bool const debugUseQtRasterization = false;
+	static bool const debugDrawQtWireframe = true;
 
 	Algo::Render::GL2::ExplodeVolumeAlphaRender const * const evr = m_explode_render;
 
@@ -581,7 +582,6 @@ void MyQT::button_render_software()
 		QImage image(viewportWidth, viewportHeight, QImage::Format_ARGB32);
 		image.fill(QColor(0, 0, 0));
 		QPainter painter(&image);
-		QPointF triangle[3];
 		glm::mat4 const mvp = projectionMatrix() * modelViewMatrix() * transfoMatrix();
 
 		painter.setPen(Qt::NoPen);
@@ -604,23 +604,32 @@ void MyQT::button_render_software()
 			v3 = project(explode(v3, faceCenter, m_explode_factorf, volumeCenter, m_explode_factor),
 					mvp, viewportCenter, viewportScale);
 //			DEBUG_OUT << v1 << ' ' << v2 << ' ' << v3 << std::endl;
-			triangle[0] = QPointF(v1[0], viewportHeight - 1 - v1[1]);
-			triangle[1] = QPointF(v2[0], viewportHeight - 1 - v2[1]);
-			triangle[2] = QPointF(v3[0], viewportHeight - 1 - v3[1]);
+			v1.y = viewportHeight - 1 - v1.y;
+			v2.y = viewportHeight - 1 - v2.y;
+			v3.y = viewportHeight - 1 - v3.y;
 
 			QColor const color(colors[i * 4 + 4 + 0] * 255.0, colors[i * 4 + 4 + 1] * 255.0, colors[i * 4 + 4 + 2] * 255.0);
 
 			if (!debugUseQtRasterization)
 			{
-				rasterizeTriangle(ContourX, viewportHeight, triangle[0], triangle[1], triangle[2], image, color.rgba());
+				rasterizeTriangle(ContourX, viewportHeight, v1, v2, v3, image, color.rgba());
 			}
 			else
 			{
 				painter.setBrush(color);
 			}
 
-			painter.setPen(QColor(255, 0, 255));
-			painter.drawConvexPolygon(triangle, 3);
+			if (debugDrawQtWireframe)
+			{
+				painter.setPen(QColor(255, 0, 255));
+			}
+
+			if (debugUseQtRasterization || debugDrawQtWireframe)
+			{
+				QPointF const triangle[3] = { QPointF(v1.x, v1.y), QPointF(v2.x, v2.y), QPointF(v3.x, v3.y) };
+
+				painter.drawConvexPolygon(triangle, 3);
+			}
 
 			if (debugRasterization)
 			{

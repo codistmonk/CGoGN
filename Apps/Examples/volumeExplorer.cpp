@@ -536,11 +536,24 @@ public:
 		return m_lastC;
 	}
 
+	void reset()
+	{
+		m_firstX = INT_MAX;
+		m_lastX = INT_MIN;
+	}
+
 };
+
+static inline float linerp(float const s, float const a, float const b)
+{
+	return s * a + (1.0f - s) * b;
+}
 
 // Scans a side of a triangle setting min X and max X in ContourX
 // using the Bresenham's line drawing algorithm.
-void updateCountourX(int * const contourX, int const screenHeight, int x1, int y1, int x2, int y2)
+void updateRasterizationCountour(RasterizationContourDatum * const contourX, int const screenWidth, int const screenHeight,
+		int x1, int y1, float const a1, float const b1, float const c1,
+		int x2, int y2, float const a2, float const b2, float const c2)
 {
 	int const sx = x2 - x1;
 	int const sy = y2 - y1;
@@ -565,17 +578,11 @@ void updateCountourX(int * const contourX, int const screenHeight, int x1, int y
 
 	while (--pixelCount)
 	{
-		if (0 <= y && y < screenHeight)
+		if (0 <= x && x < screenWidth && 0 <= y && y < screenHeight)
 		{
-			if (x < contourX[y * 2 + 0])
-			{
-				contourX[y * 2 + 0] = x;
-			}
+			float const s = static_cast<float>(pixelCount - 1) / std::max(m, 1);
 
-			if (contourX[y * 2 + 1] < x)
-			{
-				contourX[y * 2 + 1] = x;
-			}
+			contourX[y].updateRange(x, linerp(s, a1, a2), linerp(s, b1, b2), linerp(s, c1, c2));
 		}
 
 		k += n;
@@ -633,7 +640,7 @@ public:
 typedef std::vector< PixelFragment > FragmentStack;
 typedef std::vector< FragmentStack > FragmentBuffer;
 
-void rasterizeTriangle(int * const contourX, int const screenWidth, int const screenHeight,
+void rasterizeTriangle(RasterizationContourDatum * const contourX, int const screenWidth, int const screenHeight,
 		glm::vec4 const & p0, glm::vec4 const & p1, glm::vec4 const & p2,
 		QImage & image, unsigned int rgba, FragmentBuffer & fragmentBuffer)
 {
@@ -642,28 +649,35 @@ void rasterizeTriangle(int * const contourX, int const screenWidth, int const sc
 
 	for (int y = firstY; y <= lastY; ++y)
 	{
-		contourX[y * 2 + 0] = INT_MAX; // min X
-		contourX[y * 2 + 1] = INT_MIN; // max X
+		contourX[y].reset();
 	}
 
-	updateCountourX(contourX, screenHeight, p0.x, p0.y, p1.x, p1.y);
-	updateCountourX(contourX, screenHeight, p1.x, p1.y, p2.x, p2.y);
-	updateCountourX(contourX, screenHeight, p2.x, p2.y, p0.x, p0.y);
-
-	float const ySpan = std::max(1, lastY - firstY);
+	updateRasterizationCountour(contourX, screenWidth, screenHeight,
+			p0.x, p0.y, 1.0f, 0.0f, 0.0f,
+			p1.x, p1.y, 0.0f, 1.0f, 0.0f);
+	updateRasterizationCountour(contourX, screenWidth, screenHeight,
+			p1.x, p1.y, 0.0f, 1.0f, 0.0f,
+			p2.x, p2.y, 0.0f, 0.0f, 1.0f);
+	updateRasterizationCountour(contourX, screenWidth, screenHeight,
+			p2.x, p2.y, 0.0f, 0.0f, 1.0f,
+			p0.x, p0.y, 1.0f, 0.0f, 0.0f);
 
 	for (int y = firstY; y <= lastY; ++y)
 	{
-		float const ky = (y - firstY) / ySpan;
-		int firstX = contourX[y * 2 + 0];
-		int const lastX = contourX[y * 2 + 1];
+		RasterizationContourDatum const & datum = contourX[y];
+		int const firstX = datum.firstX();
+		int const lastX = datum.lastX();
 		float const xSpan = std::max(1, lastX - firstX);
 
 		for (int x = firstX; x <= lastX; ++x)
 		{
-			float const kx = (x - firstX) / xSpan;
-//			image.setPixel(x, y, rgba);
-			fragmentBuffer[y * screenWidth + x].push_back(PixelFragment(p0.z, rgba));
+			float const s = (x - firstX) / xSpan;
+			float const a = linerp(s, datum.firstA(), datum.lastA());
+			float const b = linerp(s, datum.firstB(), datum.lastB());
+			float const c = linerp(s, datum.firstC(), datum.lastC());
+			float const z = 1.0f / (a / p0.z + b / p1.z + c / p2.z);
+
+			fragmentBuffer[y * screenWidth + x].push_back(PixelFragment(z, rgba));
 		}
 	}
 }
@@ -706,7 +720,7 @@ void MyQT::button_render_software()
 
 		painter.setPen(Qt::NoPen);
 
-		int ContourX[viewportHeight * 2];
+		RasterizationContourDatum ContourX[viewportHeight];
 //		FragmentBuffer fragmentBuffer(viewportHeight * viewportWidth, std::vector< PixelFragment >(64));
 		FragmentBuffer fragmentBuffer(viewportHeight * viewportWidth);
 

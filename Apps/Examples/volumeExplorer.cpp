@@ -23,8 +23,11 @@
 *******************************************************************************/
 
 
-#include "volumeExplorer.h"
+
 #include <iostream>
+
+#include "volumeExplorer.h"
+#include "volumeExplorerTools.h"
 
 #include "Algo/Modelisation/primitives3d.h"
 #include "Algo/Modelisation/polyhedron.h"
@@ -34,136 +37,11 @@
 #include "Utils/chrono.h"
 #include "Utils/debug.h"
 
+using namespace CGoGN::VolumeExplorerTools;
+
 PFP::MAP myMap;
 VertexAttribute<PFP::VEC3> position ;
 VolumeAttribute<PFP::VEC4> color ;
-
-template<typename PFP>
-static int computeDepths(typename PFP::MAP& map, const FunctorSelect& good, std::vector<int> & depths)
-{
-	TraversorCell<typename PFP::MAP, PFP::MAP::FACE_OF_PARENT> modelFaces(map, good);
-
-	int depth = 0;
-	bool notDone = false;
-
-	for (Dart d = modelFaces.begin(); d != modelFaces.end(); d = modelFaces.next())
-	{
-		if (map.isBoundaryFace(d))
-		{
-			notDone = true;
-			Traversor3WF<typename PFP::MAP> cellFaces(map, d);
-
-			for (Dart e = cellFaces.begin(); e != cellFaces.end(); e = cellFaces.next())
-			{
-				Traversor3FE<typename PFP::MAP> faceEdges(map, e);
-
-				for (Dart f = faceEdges.begin(); f != faceEdges.end(); f = faceEdges.next())
-				{
-					depths[f.label()] = depth;
-				}
-			}
-		}
-	}
-
-	++depth;
-
-	while (notDone)
-	{
-		notDone = false;
-
-		for (Dart d = modelFaces.begin(); d != modelFaces.end(); d = modelFaces.next())
-		{
-			if (depths[d.label()] == -1 && depths[map.phi3(d).label()] == depth - 1)
-			{
-				notDone = true;
-				Traversor3WF<typename PFP::MAP> cellFaces(map, d);
-
-				for (Dart e = cellFaces.begin(); e != cellFaces.end(); e = cellFaces.next())
-				{
-					Traversor3FE<typename PFP::MAP> faceEdges(map, e);
-
-					for (Dart f = faceEdges.begin(); f != faceEdges.end(); f = faceEdges.next())
-					{
-						depths[f.label()] = depth;
-					}
-				}
-			}
-		}
-
-		if (notDone)
-		{
-			++depth;
-		}
-	}
-
-	return depth - 1;
-}
-
-template<typename VEC4>
-static VEC4 const jetColor4(float const x)
-{
-	static VEC4 const defaultColor = VEC4(1, 1, 1, 1);
-	static VEC4 const colors[] = {
-			VEC4(0.0, 0.0, 0.5, 1.0),
-			VEC4(0.0, 0.0, 1.0, 1.0),
-			VEC4(0.0, 1.0, 1.0, 1.0),
-			VEC4(1.0, 1.0, 0.0, 1.0),
-			VEC4(1.0, 0.0, 0.0, 1.0),
-			VEC4(0.5, 0.0, 0.0, 1.0),
-	};
-	static unsigned int const n = sizeof(colors) / sizeof(VEC4);
-	static unsigned int const lastColorIndex = n - 1;
-
-	if (x < 0.0)
-	{
-		return defaultColor;
-	}
-
-	if (1.0 <= x)
-	{
-		return colors[lastColorIndex];
-	}
-
-	float const xn = x * lastColorIndex;
-	int const i = static_cast<int>(xn);
-	float const r = xn - i;
-
-	return colors[i] * (1.0 - r) + colors[i + 1] * r;
-}
-
-template<typename PFP>
-static void computeColorsUsingDepths(typename PFP::MAP & map, VolumeAttribute<typename PFP::VEC4> & colorPerXXX,
-		float const opacity, float const opacityGradient, FunctorSelect const & good,
-		std::vector<int> const & depths, int const lastDepth)
-{
-	TraversorCell<typename PFP::MAP, PFP::MAP::FACE_OF_PARENT> faces(map, good);
-
-	for (Dart d = faces.begin(); d != faces.end(); d = faces.next())
-	{
-		int const depth = depths[d.label()];
-		float const normalizedDepth = lastDepth == 0 ? 1.0 : static_cast<float>(depth) / lastDepth;
-		float alpha = opacity;
-
-		if (opacityGradient < 0.5)
-		{
-			alpha *= pow(opacityGradient * 2.0, lastDepth - depth);
-		}
-		else
-		{
-			alpha *= pow((1.0 - opacityGradient) * 2.0, depth);
-		}
-
-		Dart a = d;
-		Dart b = map.phi1(a);
-		Dart c = map.phi1(b);
-		colorPerXXX[a] = jetColor4<typename PFP::VEC4>(normalizedDepth);
-		colorPerXXX[a][3] = alpha;
-		colorPerXXX[b] = jetColor4<typename PFP::VEC4>(normalizedDepth);
-		colorPerXXX[b][3] = alpha;
-		colorPerXXX[c] = jetColor4<typename PFP::VEC4>(normalizedDepth);
-		colorPerXXX[c][3] = alpha;
-	}
-}
 
 void MyQT::volumes_onoff(bool x)
 {
@@ -183,7 +61,7 @@ void MyQT::topo_onoff(bool x)
 	if (render_topo)
 	{
 		SelectorDartNoBoundary<PFP::MAP> nb(::myMap);
-		m_topo_render->updateData<PFP>(::myMap, position, 0.8f, m_explode_factorf-0.05f, m_explode_factor, nb);
+		m_topo_render->updateData<PFP>(::myMap, ::position, 0.8f, m_explode_factorf-0.05f, m_explode_factor, nb);
 	}
 
 	updateGL();
@@ -251,7 +129,7 @@ void MyQT::slider_released()
 	if (render_topo)
 	{
 		SelectorDartNoBoundary<PFP::MAP> nb(::myMap);
-		m_topo_render->updateData<PFP>(::myMap, position, 0.8f, m_explode_factorf-0.05f, m_explode_factor, nb);
+		m_topo_render->updateData<PFP>(::myMap, ::position, 0.8f, m_explode_factorf-0.05f, m_explode_factor, nb);
 	}
 	updateGL();
 }
@@ -261,7 +139,7 @@ void MyQT::slider_opacity(int const x)
 	m_opacity = 0.01f * x;
 	m_explode_render->setAlpha(m_opacity); DEBUG_GL;
 	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts, m_depths, m_lastDepth);
-	m_explode_render->updateData<PFP>(::myMap, position, color);
+	m_explode_render->updateData<PFP>(::myMap, ::position, color);
 	updateGL(); DEBUG_GL;
 }
 
@@ -269,38 +147,8 @@ void MyQT::slider_opacity_gradient(int const x)
 {
 	m_opacity_gradient = 0.01f * x;
 	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts, m_depths, m_lastDepth);
-	m_explode_render->updateData<PFP>(::myMap, position, color);
+	m_explode_render->updateData<PFP>(::myMap, ::position, color);
 	updateGL(); DEBUG_GL;
-}
-
-
-static void centerModel()
-{
-	PFP::VEC3 centroid(0, 0, 0);
-	float count = 0;
-
-	/*compute_centroid:*/
-	{
-		TraversorCell<PFP::MAP, VOLUME> tra(myMap);
-
-		for (Dart d = tra.begin(); d != tra.end(); d = tra.next())
-		{
-			centroid += position[d];
-			++count;
-		}
-
-		centroid /= count;
-	}
-
-	/*update_position:*/
-	{
-		TraversorCell<PFP::MAP, VERTEX> tra(myMap);
-
-		for (Dart d = tra.begin(); d != tra.end(); d = tra.next())
-		{
-			position[d] -= centroid;
-		}
-	}
 }
 
 void MyQT::cb_Open()
@@ -314,7 +162,7 @@ void MyQT::cb_Open()
 
 	std::vector<std::string> attrNames ;
 
-	size_t pos = filename.rfind(".");    // position of "." in filename
+	size_t pos = filename.rfind(".");    // ::position of "." in filename
 	std::string extension = filename.substr(pos);
 
 	if(extension == std::string(".tet"))
@@ -325,7 +173,7 @@ void MyQT::cb_Open()
 			return;
 		}
 		else
-			position = ::myMap.getAttribute<PFP::VEC3, VERTEX>(attrNames[0]) ;
+			::position = ::myMap.getAttribute<PFP::VEC3, VERTEX>(attrNames[0]) ;
 	}
 
 	if(extension == std::string(".node"))
@@ -336,7 +184,7 @@ void MyQT::cb_Open()
 			return ;
 		}
 		else
-			position = ::myMap.getAttribute<PFP::VEC3,VERTEX>(attrNames[0]) ;
+			::position = ::myMap.getAttribute<PFP::VEC3,VERTEX>(attrNames[0]) ;
 	}
 
 
@@ -349,7 +197,7 @@ void MyQT::cb_Open()
 		}
 		else
 		{
-			position = ::myMap.getAttribute<PFP::VEC3, VERTEX>(attrNames[0]) ;
+			::position = ::myMap.getAttribute<PFP::VEC3, VERTEX>(attrNames[0]) ;
 			::myMap.closeMap();
 		}
 	}
@@ -360,7 +208,7 @@ void MyQT::cb_Open()
 	float maxV = 0.0f;
 	for (Dart d = tra.begin(); d != tra.end(); d = tra.next())
 	{
-		float v = Algo::Geometry::tetrahedronVolume<PFP>(::myMap, d, position);
+		float v = Algo::Geometry::tetrahedronVolume<PFP>(::myMap, d, ::position);
 		::color[d] = PFP::VEC4(v,0,0,1);
 		if (v>maxV)
 			maxV=v;
@@ -371,13 +219,13 @@ void MyQT::cb_Open()
 		::color[i][2] = 1.0f - ::color[i][0];
 	}
 
-	centerModel();
+	centerModel<PFP>(::myMap, ::position);
 
 	SelectorDartNoBoundary<PFP::MAP> nb(::myMap);
-	m_topo_render->updateData<PFP>(::myMap, position,  0.8f, 0.8f, 0.8f, nb);
+	m_topo_render->updateData<PFP>(::myMap, ::position,  0.8f, 0.8f, 0.8f, nb);
 	updateDepths();
 	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts, m_depths, m_lastDepth);
-	m_explode_render->updateData<PFP>(::myMap, position, ::color);
+	m_explode_render->updateData<PFP>(::myMap, ::position, ::color);
 
 	updateGL() ;
 }
@@ -393,10 +241,10 @@ void MyQT::cb_initGL()
     m_explode_render = new Algo::Render::GL2::ExplodeVolumeAlphaRender(true,true);
 
 	SelectorDartNoBoundary<PFP::MAP> nb(::myMap);
-	m_topo_render->updateData<PFP>(::myMap, position,  0.8f, 0.8f, 0.8f, nb);
+	m_topo_render->updateData<PFP>(::myMap, ::position,  0.8f, 0.8f, 0.8f, nb);
 	updateDepths();
 	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts, m_depths, m_lastDepth);
-	m_explode_render->updateData<PFP>(::myMap, position, color);
+	m_explode_render->updateData<PFP>(::myMap, ::position, color);
 	m_explode_render->setExplodeVolumes(0.8f);
 	m_explode_render->setExplodeFaces(0.9f);
 	m_explode_render->setAmbiant(Geom::Vec4f(0.2f,0.2f,0.2f,1.0f));
@@ -424,93 +272,6 @@ void MyQT::cb_initGL()
 
 }
 
-static inline float square(float const x)
-{
-	return x * x;
-}
-
-static inline float squaredNorm(float const x, float const y, float const z)
-{
-	return square(x) + square(y) + square(z);
-}
-
-static glm::vec4 viewpoint;
-
-class Comparator
-{
-	static std::vector<float> & distances()
-	{
-		static std::vector<float> result;
-
-		return result;
-	}
-public:
-	Comparator(float const * const colorBufferWithFaceCenters, float const * const vertexBufferWithVolumeCenters, unsigned int const elementCount)
-	{
-		distances().resize(elementCount / 4);
-
-		for (unsigned int i = 0; i < distances().size(); ++i)
-		{
-			distances()[i] = squaredNorm(
-				(colorBufferWithFaceCenters[4 * 4 * i + 0] + vertexBufferWithVolumeCenters[4 * 3 * i + 0]) / 2 - ::viewpoint.x,
-				(colorBufferWithFaceCenters[4 * 4 * i + 1] + vertexBufferWithVolumeCenters[4 * 3 * i + 1]) / 2 - ::viewpoint.y,
-				(colorBufferWithFaceCenters[4 * 4 * i + 2] + vertexBufferWithVolumeCenters[4 * 3 * i + 2]) / 2 - ::viewpoint.z);
-		}
-	}
-
-	bool operator() (unsigned int const i, unsigned int const j) const
-	{
-		return distances()[i] > distances()[j];
-	}
-};
-
-static void sortData(Algo::Render::GL2::ExplodeVolumeAlphaRender const * const evr, std::vector<unsigned int> & permutation, std::vector<GLuint> & triangles)
-{
-	unsigned int const n = evr->nbTris();
-
-	permutation.resize(n);
-
-	for (GLuint i = 0; i < n; ++i)
-	{
-		permutation[i] = i;
-	}
-
-	Utils::VBO const * const colorVBO = evr->colors();
-	Utils::VBO const * const vertexVBO = evr->vertices();
-
-	float const * const colors = static_cast<float const *>(colorVBO->lockPtr());
-	float const * const vertices = static_cast<float const *>(vertexVBO->lockPtr());
-
-	if (colors && vertices)
-	{
-		assert(colorVBO->nbElts() == vertexVBO->nbElts());
-
-		std::sort(permutation.begin(), permutation.end(), Comparator(colors, vertices, colorVBO->nbElts()));
-	}
-
-	if (colors)
-	{
-		colorVBO->releasePtr();
-	}
-
-	if (vertices)
-	{
-		vertexVBO->releasePtr();
-	}
-
-	triangles.resize(n * 4);
-
-	for (GLuint i = 0; i < n * 4; i += 4)
-	{
-		for (int j = 0; j < 4; ++j)
-		{
-			triangles[i + j] = permutation[i / 4] * 4 + j;
-		}
-	}
-}
-
-
-
 void MyQT::cb_redraw()
 {
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); DEBUG_GL;
@@ -533,12 +294,11 @@ void MyQT::cb_redraw()
 	{
 		if (m_opacity < 1)
 		{
-			::viewpoint = glm::inverse(modelViewMatrix()) * glm::vec4(0.0, 0.0, 0.0, 1.0);
 			unsigned int const n = m_explode_render->nbTris();
 			static std::vector<unsigned int> indices(n);
 			static std::vector<GLuint> triangles(n * 4);
 
-			sortData(m_explode_render, indices, triangles);
+			sortData(m_explode_render, indices, triangles, viewpoint());
 			glEnable(GL_BLEND); DEBUG_GL;
 			glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD); DEBUG_GL;
 			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO); DEBUG_GL;
@@ -669,6 +429,403 @@ void MyQT::updateDepths()
 	DEBUG_OUT << "Depths are up-to-date" << std::endl;
 }
 
+glm::vec4 MyQT::viewpoint() const
+{
+	return glm::inverse(modelViewMatrix()) * glm::vec4(0.0, 0.0, 0.0, 1.0);
+}
+
+namespace Debug
+{
+
+std::ostream & operator<<(std::ostream & out, glm::vec4 const & v)
+{
+	out << '[' << v[0] << ' ' << v[1] << ' ' << v[2] << ' ' << v[3] << ']';
+
+	return out;
+}
+
+std::ostream & operator<<(std::ostream & out, QPointF const & p)
+{
+	out << '[' << p.x() << ' ' << p.y() << ']';
+
+	return out;
+}
+
+} // Debug
+
+static glm::vec4 explode(glm::vec4 const & v, glm::vec4 const & faceCenter, float const faceScale, glm::vec4 const & volumeCenter, float const volumeScale)
+{
+	glm::vec4 const tmp = faceScale * v + (1.0 - faceScale) * faceCenter;
+
+	return volumeScale * tmp + (1.0 - volumeScale) * volumeCenter;
+}
+
+static glm::vec4 project(glm::vec4 const & v, glm::mat4 const & mvp, glm::vec4 const & viewportCenter, glm::vec4 const & viewportScale)
+{
+	glm::vec4 const tmp(mvp * v);
+	return viewportScale * tmp / tmp[3]  + viewportCenter;
+}
+
+class RasterizationContourDatum
+{
+
+	int m_firstX, m_lastX;
+
+	// Barycentric coordinates in triangle
+	float m_firstA, m_firstB, m_firstC;
+	float m_lastA, m_lastB, m_lastC;
+
+public:
+
+	void updateRange(int const x, float const a, float const b, float const c)
+	{
+		if (x < this->firstX())
+		{
+			m_firstX = x;
+			m_firstA = a;
+			m_firstB = b;
+			m_firstC = c;
+		}
+
+		if (this->lastX() < x)
+		{
+			m_lastX = x;
+			m_lastA = a;
+			m_lastB = b;
+			m_lastC = c;
+		}
+	}
+
+	int firstX() const
+	{
+		return m_firstX;
+	}
+
+	float firstA() const
+	{
+		return m_firstA;
+	}
+
+	float firstB() const
+	{
+		return m_firstB;
+	}
+
+	float firstC() const
+	{
+		return m_firstC;
+	}
+
+	int lastX() const
+	{
+		return m_lastX;
+	}
+
+	float lastA() const
+	{
+		return m_lastA;
+	}
+
+	float lastB() const
+	{
+		return m_lastB;
+	}
+
+	float lastC() const
+	{
+		return m_lastC;
+	}
+
+	void reset()
+	{
+		m_firstX = INT_MAX;
+		m_lastX = INT_MIN;
+	}
+
+};
+
+static inline float linerp(float const s, float const a, float const b)
+{
+	return s * a + (1.0f - s) * b;
+}
+
+// Scans a side of a triangle setting min X and max X in ContourX
+// using the Bresenham's line drawing algorithm.
+static void updateRasterizationCountour(RasterizationContourDatum * const contourX, int const screenWidth, int const screenHeight,
+		int x1, int y1, float const a1, float const b1, float const c1,
+		int x2, int y2, float const a2, float const b2, float const c2)
+{
+	int const sx = x2 - x1;
+	int const sy = y2 - y1;
+	int const dx1 = (0 < sx) - (sx < 0);
+	int const dy1 = (0 < sy) - (sy < 0);
+	int m = std::abs(sx);
+	int n = std::abs(sy);
+	int dx2 = dx1;
+	int dy2 = 0;
+
+	if (m < n)
+	{
+		std::swap(m, n);
+		dx2 = 0;
+		dy2 = dy1;
+	}
+
+	int x = x1;
+	int y = y1;
+	int pixelCount = m + 2;
+	int k = n / 2;
+
+	while (--pixelCount)
+	{
+		if (0 <= x && x < screenWidth && 0 <= y && y < screenHeight)
+		{
+			float const s = static_cast<float>(pixelCount - 1) / std::max(m, 1);
+
+			assert(linerp(s, a1, a2) || linerp(s, b1, b2) || linerp(s, c1, c2));
+
+			contourX[y].updateRange(x, linerp(s, a1, a2), linerp(s, b1, b2), linerp(s, c1, c2));
+		}
+
+		k += n;
+
+		if (k < m)
+		{
+			x += dx2;
+			y += dy2;
+		}
+		else
+		{
+			k -= m;
+			x += dx1;
+			y += dy1;
+		}
+	}
+}
+
+class PixelFragment
+{
+
+	float m_z;
+
+	int m_rgba;
+
+public:
+
+	PixelFragment(): m_z(-INFINITY), m_rgba(0)
+	{
+		// NOP
+	}
+
+	PixelFragment(float const z, int const rgba): m_z(z), m_rgba(rgba)
+	{
+		// NOP
+	}
+
+	float z() const
+	{
+		return m_z;
+	}
+
+	int rgba() const
+	{
+		return m_rgba;
+	}
+
+	bool operator<(PixelFragment const & that) const
+	{
+		return this->z() < that.z();
+	}
+
+};
+
+typedef std::vector< PixelFragment > FragmentStack;
+typedef std::vector< FragmentStack > FragmentBuffer;
+
+static void rasterizeTriangle(RasterizationContourDatum * const contourX, int const screenWidth, int const screenHeight,
+		glm::vec4 const & p0, glm::vec4 const & p1, glm::vec4 const & p2,
+		QImage & image, unsigned int rgba, FragmentBuffer & fragmentBuffer)
+{
+	int const firstY = std::max(0.0f, std::min(std::min(p0.y, p1.y), p2.y));
+	int const lastY = std::min(screenHeight - 1.0f, std::max(std::max(p0.y, p1.y), p2.y));
+
+	for (int y = firstY; y <= lastY; ++y)
+	{
+		contourX[y].reset();
+	}
+
+	updateRasterizationCountour(contourX, screenWidth, screenHeight,
+			p0.x, p0.y, 1.0f, 0.0f, 0.0f,
+			p1.x, p1.y, 0.0f, 1.0f, 0.0f);
+	updateRasterizationCountour(contourX, screenWidth, screenHeight,
+			p1.x, p1.y, 0.0f, 1.0f, 0.0f,
+			p2.x, p2.y, 0.0f, 0.0f, 1.0f);
+	updateRasterizationCountour(contourX, screenWidth, screenHeight,
+			p2.x, p2.y, 0.0f, 0.0f, 1.0f,
+			p0.x, p0.y, 1.0f, 0.0f, 0.0f);
+
+	float const dz = std::abs(std::min(std::min(p0.z, p1.z), p2.z)) + 1.0f;
+
+	for (int y = firstY; y <= lastY; ++y)
+	{
+		RasterizationContourDatum const & datum = contourX[y];
+		int const firstX = datum.firstX();
+		int const lastX = datum.lastX();
+		float const xSpan = std::max(1, lastX - firstX);
+
+		for (int x = firstX; x <= lastX; ++x)
+		{
+			float const s = (x - firstX) / xSpan;
+			float const a = linerp(s, datum.firstA(), datum.lastA());
+			float const b = linerp(s, datum.firstB(), datum.lastB());
+			float const c = linerp(s, datum.firstC(), datum.lastC());
+			float const z = 1.0f / (a / (p0.z + dz) + b / (p1.z + dz) + c / (p2.z + dz));
+
+			assert(a || b || c);
+
+			fragmentBuffer[y * screenWidth + x].push_back(PixelFragment(z, rgba));
+		}
+	}
+}
+
+void MyQT::button_render_software()
+{
+	DEBUG_OUT << "Software rendering..." << std::endl;
+	static bool const debugShowRasterizationProgress = false;
+	static bool const debugUseQtRasterization = false;
+	static bool const debugDrawQtWireframe = false;
+
+	Algo::Render::GL2::ExplodeVolumeAlphaRender const * const evr = m_explode_render;
+
+	VBODataPointer const colors(evr->colors());
+	VBODataPointer const vertices(evr->vertices());
+
+	if (colors && vertices)
+	{
+		Utils::Chrono timer;
+
+		timer.start();
+
+		assert(colors.elementCount() == vertices.elementCount());
+		GLint viewport[4];
+
+		glGetIntegerv(GL_VIEWPORT, viewport);
+		GLint const viewportX = viewport[0];
+		GLint const viewportY = viewport[1];
+		GLint const viewportWidth = viewport[2];
+		GLint const viewportHeight = viewport[3];
+
+		DEBUG_OUT << viewportX << ' ' << viewportY << ' ' << viewportWidth << ' ' << viewportHeight << std::endl;
+
+		glm::vec4 const viewportCenter(viewportX + viewportWidth / 2.0, viewportY + viewportHeight / 2.0, 0.0, 0.0);
+		glm::vec4 const viewportScale(viewportWidth / 2.0, viewportHeight / 2.0, 1.0, 1.0);
+		QImage image(viewportWidth, viewportHeight, QImage::Format_ARGB32);
+		image.fill(QColor(0, 0, 0));
+		QPainter painter(&image);
+		glm::mat4 const mvp = projectionMatrix() * modelViewMatrix() * transfoMatrix();
+
+		painter.setPen(Qt::NoPen);
+
+		RasterizationContourDatum ContourX[viewportHeight];
+		FragmentBuffer fragmentBuffer(viewportHeight * viewportWidth);
+
+		DEBUG_OUT << "Rasterizing triangles and accumulating fragments..." << std::endl;
+
+		for (unsigned int i = 0; i < vertices.elementCount(); i += 4)
+		{
+			glm::vec4 const faceCenter(colors[i * 4 + 0 + 0], colors[i * 4 + 0 + 1], colors[i * 4 + 0 + 2], 1.0);
+			glm::vec4 const volumeCenter(vertices[i * 3 + 0 + 0], vertices[i * 3 + 0 + 1], vertices[i * 3 + 0 + 2], 1.0);
+			glm::vec4 v1(vertices[i * 3 + 3 + 0], vertices[i * 3 + 3 + 1], vertices[i * 3 + 3 + 2], 1.0);
+			glm::vec4 v2(vertices[i * 3 + 6 + 0], vertices[i * 3 + 6 + 1], vertices[i * 3 + 6 + 2], 1.0);
+			glm::vec4 v3(vertices[i * 3 + 9 + 0], vertices[i * 3 + 9 + 1], vertices[i * 3 + 9 + 2], 1.0);
+
+			v1 = project(explode(v1, faceCenter, m_explode_factorf, volumeCenter, m_explode_factor),
+					mvp, viewportCenter, viewportScale);
+			v2 = project(explode(v2, faceCenter, m_explode_factorf, volumeCenter, m_explode_factor),
+					mvp, viewportCenter, viewportScale);
+			v3 = project(explode(v3, faceCenter, m_explode_factorf, volumeCenter, m_explode_factor),
+					mvp, viewportCenter, viewportScale);
+
+			v1.y = viewportHeight - 1 - v1.y;
+			v2.y = viewportHeight - 1 - v2.y;
+			v3.y = viewportHeight - 1 - v3.y;
+
+			QColor const color(colors[i * 4 + 4 + 0] * 255.0, colors[i * 4 + 4 + 1] * 255.0, colors[i * 4 + 4 + 2] * 255.0, colors[i * 4 + 4 + 3] * 255.0);
+
+			if (!debugUseQtRasterization)
+			{
+				rasterizeTriangle(ContourX, viewportWidth, viewportHeight, v1, v2, v3, image, color.rgba(), fragmentBuffer);
+			}
+			else
+			{
+				painter.setBrush(color);
+			}
+
+			if (debugDrawQtWireframe)
+			{
+				painter.setPen(QColor(255, 0, 255));
+			}
+
+			if (debugUseQtRasterization || debugDrawQtWireframe)
+			{
+				QPointF const triangle[3] = { QPointF(v1.x, v1.y), QPointF(v2.x, v2.y), QPointF(v3.x, v3.y) };
+
+				painter.drawConvexPolygon(triangle, 3);
+			}
+
+			if (debugShowRasterizationProgress)
+			{
+				DEBUG_OUT << i << " / " << vertices.elementCount() << '\r' << std::flush;
+			}
+		}
+
+		DEBUG_OUT << "Sorting and blending fragments..." << std::endl;
+
+		for (int y = 0; y < viewportHeight; ++y)
+		{
+			for (int x = 0; x < viewportWidth; ++x)
+			{
+				FragmentStack & fragments = fragmentBuffer[y * viewportWidth + x];
+
+				std::stable_sort(fragments.begin(), fragments.end());
+
+				float red = 0.0f;
+				float green = 0.0f;
+				float blue = 0.0f;
+				PixelFragment const * previous = NULL;
+
+				for (FragmentStack::const_iterator i = fragments.begin(); i != fragments.end(); ++i)
+				{
+					bool const fragmentIsNotADuplicate = previous == NULL || 1E-6 < i->z() - previous->z();
+
+					if (fragmentIsNotADuplicate)
+					{
+						QColor const rgba(QColor::fromRgba(i->rgba()));
+						float const a = rgba.alphaF();
+						red = (1.0f - a) * red + a * rgba.redF();
+						green = (1.0f - a) * green + a * rgba.greenF();
+						blue = (1.0f - a) * blue + a * rgba.blueF();
+					}
+
+					previous = &*i;
+				}
+
+				image.setPixel(x, y, QColor(red * 255.0f, green * 255.0f, blue * 255.0f).rgba());
+			}
+		}
+
+		DEBUG_OUT << "Software rendering done in " << timer.elapsed() << " ms" << std::endl;
+
+		m_imageComponent.setPixmap(QPixmap::fromImage(image));
+		m_imageViewer.setWidget(&m_imageComponent);
+		m_imageViewer.show();
+	}
+	else
+	{
+		DEBUG_OUT << "Software rendering aborted" << std::endl;
+	}
+}
+
 int main(int argc, char **argv)
 {
 	if (argc>1)
@@ -686,7 +843,7 @@ int main(int argc, char **argv)
 				return 1;
 			}
 			else
-				position = ::myMap.getAttribute<PFP::VEC3, VERTEX>(attrNames[0]) ;
+				::position = ::myMap.getAttribute<PFP::VEC3, VERTEX>(attrNames[0]) ;
 		}
 
 		if(extension == std::string(".node"))
@@ -697,7 +854,7 @@ int main(int argc, char **argv)
 				return 1;
 			}
 			else
-				position = ::myMap.getAttribute<PFP::VEC3,VERTEX>(attrNames[0]) ;
+				::position = ::myMap.getAttribute<PFP::VEC3,VERTEX>(attrNames[0]) ;
 		}
 
 
@@ -710,7 +867,7 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				position = ::myMap.getAttribute<PFP::VEC3, VERTEX>(attrNames[0]) ;
+				::position = ::myMap.getAttribute<PFP::VEC3, VERTEX>(attrNames[0]) ;
 				::myMap.closeMap();
 			}
 		}
@@ -721,7 +878,7 @@ int main(int argc, char **argv)
 		float maxV = 0.0f;
 		for (Dart d = tra.begin(); d != tra.end(); d = tra.next())
 		{
-			float v = Algo::Geometry::tetrahedronVolume<PFP>(::myMap, d, position);
+			float v = Algo::Geometry::tetrahedronVolume<PFP>(::myMap, d, ::position);
 			::color[d] = PFP::VEC4(v,0,0,1);
 			if (v>maxV)
 				maxV=v;
@@ -734,8 +891,8 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		position = ::myMap.addAttribute<PFP::VEC3, VERTEX>("position");
-		Algo::Modelisation::Primitive3D<PFP> prim(::myMap, position);
+		::position = ::myMap.addAttribute<PFP::VEC3, VERTEX>("position");
+		Algo::Modelisation::Primitive3D<PFP> prim(::myMap, ::position);
 		int nb = 8;
 		prim.hexaGrid_topo(nb,nb,nb);
 		prim.embedHexaGrid(1.0f,1.0f,1.0f);
@@ -744,7 +901,7 @@ int main(int argc, char **argv)
 		TraversorW<PFP::MAP> tra(::myMap);
 		for (Dart d = tra.begin(); d != tra.end(); d = tra.next())
 		{
-			PFP::VEC3 tmp = position[d] + PFP::VEC3(0.5,0.5,0.5);
+			PFP::VEC3 tmp = ::position[d] + PFP::VEC3(0.5,0.5,0.5);
 			::color[d] = PFP::VEC4(tmp[0], tmp[1], tmp[2], 1.0);
 		}
 	}
@@ -759,7 +916,7 @@ int main(int argc, char **argv)
 
 
 	//  bounding box
-    Geom::BoundingBox<PFP::VEC3> bb = Algo::Geometry::computeBoundingBox<PFP>(::myMap, position);
+    Geom::BoundingBox<PFP::VEC3> bb = Algo::Geometry::computeBoundingBox<PFP>(::myMap, ::position);
     sqt.m_WidthObj = std::max<PFP::REAL>(std::max<PFP::REAL>(bb.size(0), bb.size(1)), bb.size(2));
     sqt.m_PosObj = (bb.min() +  bb.max()) / PFP::REAL(2);
 
@@ -789,6 +946,8 @@ int main(int argc, char **argv)
 	sqt.setCallBack( dock.slider_opacity_gradient, SIGNAL(sliderPressed()), SLOT(slider_pressed()) );
 	sqt.setCallBack( dock.slider_opacity_gradient, SIGNAL(sliderReleased()), SLOT(slider_released()) );
 
+	sqt.setCallBack( dock.button_render_software, SIGNAL(released()), SLOT(button_render_software()) );
+
 
 	sqt.show();
 	dock.slider_explode->setValue(80);
@@ -799,17 +958,17 @@ int main(int argc, char **argv)
 
 	std::cout << "Compute Volume ->"<< std::endl;
 	ch.start();
-	float vol = Algo::Geometry::totalVolume<PFP>(::myMap, position);
-	vol += Algo::Geometry::totalVolume<PFP>(::myMap, position);
-	vol += Algo::Geometry::totalVolume<PFP>(::myMap, position);
-	vol += Algo::Geometry::totalVolume<PFP>(::myMap, position);
+	float vol = Algo::Geometry::totalVolume<PFP>(::myMap, ::position);
+	vol += Algo::Geometry::totalVolume<PFP>(::myMap, ::position);
+	vol += Algo::Geometry::totalVolume<PFP>(::myMap, ::position);
+	vol += Algo::Geometry::totalVolume<PFP>(::myMap, ::position);
 	std::cout << ch.elapsed()<< " ms  val="<<vol<< std::endl;
 
 	ch.start();
-	vol = Algo::Geometry::Parallel::totalVolume<PFP>(::myMap, position);
-	vol += Algo::Geometry::Parallel::totalVolume<PFP>(::myMap, position);
-	vol += Algo::Geometry::Parallel::totalVolume<PFP>(::myMap, position);
-	vol += Algo::Geometry::Parallel::totalVolume<PFP>(::myMap, position);
+	vol = Algo::Geometry::Parallel::totalVolume<PFP>(::myMap, ::position);
+	vol += Algo::Geometry::Parallel::totalVolume<PFP>(::myMap, ::position);
+	vol += Algo::Geometry::Parallel::totalVolume<PFP>(::myMap, ::position);
+	vol += Algo::Geometry::Parallel::totalVolume<PFP>(::myMap, ::position);
 	std::cout << ch.elapsed()<< " ms //  val="<<vol<< std::endl;
 
 

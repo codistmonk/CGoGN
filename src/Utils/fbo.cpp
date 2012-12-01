@@ -97,6 +97,8 @@ void FBO::attachRender(GLenum internalformat)
                               GL_RENDERBUFFER, renderID);
 
     *m_renderID = renderID;
+    
+    unbind();
 }
 
 void FBO::attachColorTexture(GLenum internalformat, GLint filter)
@@ -146,6 +148,8 @@ void FBO::attachColorTexture(GLenum internalformat, GLint filter)
 
     m_colorTexID.push_back(CGoGNGLuint(texID));
     (*m_colorAttachmentPoints)[m_colorTexID.size() - 1] = attachment;
+    
+    unbind();
 }
 
 void FBO::attachDepthTexture(GLint filter)
@@ -178,6 +182,8 @@ void FBO::attachDepthTexture(GLint filter)
                            GL_TEXTURE_2D, texID, 0);
 
     m_depthTexID.push_back(CGoGNGLuint(texID));
+    
+    unbind();
 }
 
 void FBO::bindColorTexInput()
@@ -216,7 +222,7 @@ void FBO::bindColorTexOutput(int num)
 void FBO::bindDepthTexInput()
 {
     if (m_depthTexID.size() != 0)
-        glBindTexture(GL_TEXTURE_2D, *(m_depthTexID)[1]);
+        glBindTexture(GL_TEXTURE_2D, *(m_depthTexID)[0]);
 }
 
 void FBO::unbind()

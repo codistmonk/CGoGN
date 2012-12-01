@@ -53,6 +53,9 @@
 #include "Algo/Geometry/boundingbox.h"
 #include "Algo/Geometry/normal.h"
 
+#include "Utils/fbo.h"
+#include "Utils/textureSticker.h"
+
 using namespace CGoGN ;
 
 struct PFP: public PFP_STANDARD
@@ -110,6 +113,8 @@ public:
 	Utils::ShaderVectorPerVertex* m_vectorShader ;
 	Utils::ShaderSimpleColor* m_simpleColorShader ;
 	Utils::PointSprite* m_pointSprite ;
+	
+	Utils::FBO* m_fbo;
 
 	Viewer() ;
 

@@ -36,7 +36,8 @@ Viewer::Viewer() :
 	m_flatShader(NULL),
 	m_vectorShader(NULL),
 	m_simpleColorShader(NULL),
-	m_pointSprite(NULL)
+	m_pointSprite(NULL),
+	m_fbo(NULL)
 {
 	normalScaleFactor = 1.0f ;
 	vertexScaleFactor = 0.1f ;
@@ -120,10 +121,27 @@ void Viewer::cb_initGL()
 	registerShader(m_vectorShader) ;
 	registerShader(m_simpleColorShader) ;
 	registerShader(m_pointSprite) ;
+	
+	m_fbo = new Utils::FBO(1024, 1024);
+	m_fbo->attachRender(GL_DEPTH_COMPONENT);
+	m_fbo->attachColorTexture(GL_RGBA);
+	//m_fbo->attachDepthTexture();
 }
 
 void Viewer::cb_redraw()
 {
+	bool useFbo = false;
+
+	if (useFbo)
+	{
+		// Activation du Fbo avant rendu
+		m_fbo->bindColorTexOutput();
+		// TODO : gérer le viewport
+	
+		// Effaçage de l'ancien contenu des buffers de rendu du Fbo
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	}
+
 	if(m_drawVertices)
 	{
 		float size = vertexScaleFactor ;
@@ -169,6 +187,16 @@ void Viewer::cb_redraw()
 		m_vectorShader->setScale(size) ;
 		glLineWidth(1.0f) ;
 		m_render->draw(m_vectorShader, Algo::Render::GL2::POINTS) ;
+	}
+	
+	if (useFbo)
+	{
+		// Desactivation du Fbo après rendu
+		m_fbo->unbind();
+	
+		// Dessin de la texture de profondeur du fbo
+		//Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo->getDepthTexId());
+		Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo->getColorTexId(0));
 	}
 }
 

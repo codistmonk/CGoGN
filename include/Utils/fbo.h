@@ -64,8 +64,10 @@ public:
 
     void bindColorTexOutput();
     void bindColorTexOutput(int num);
+    CGoGNGLuint getColorTexId(int num) { return m_colorTexID[num]; }
     
     void bindDepthTexInput();
+    CGoGNGLuint getDepthTexId() { return m_depthTexID[0]; }
 
     void unbind();
 

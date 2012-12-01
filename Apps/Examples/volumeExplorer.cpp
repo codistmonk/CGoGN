@@ -466,6 +466,78 @@ static glm::vec4 project(glm::vec4 const & v, glm::mat4 const & mvp, glm::vec4 c
 	return viewportScale * tmp / tmp[3]  + viewportCenter;
 }
 
+class RasterizationContourDatum
+{
+
+	int m_firstX, m_lastX;
+
+	// Barycentric coordinates in triangle
+	float m_firstA, m_firstB, m_firstC;
+	float m_lastA, m_lastB, m_lastC;
+
+public:
+
+	void updateRange(int const x, float const a, float const b, float const c)
+	{
+		if (x < this->firstX())
+		{
+			m_firstX = x;
+			m_firstA = a;
+			m_firstB = b;
+			m_firstC = c;
+		}
+
+		if (this->firstX() < x)
+		{
+			m_lastX = x;
+			m_lastA = a;
+			m_lastB = b;
+			m_lastC = c;
+		}
+	}
+
+	int firstX() const
+	{
+		return m_firstX;
+	}
+
+	int firstA() const
+	{
+		return m_firstA;
+	}
+
+	int firstB() const
+	{
+		return m_firstB;
+	}
+
+	int firstC() const
+	{
+		return m_firstC;
+	}
+
+	int lastX() const
+	{
+		return m_lastX;
+	}
+
+	int lastA() const
+	{
+		return m_lastA;
+	}
+
+	int lastB() const
+	{
+		return m_lastB;
+	}
+
+	int lastC() const
+	{
+		return m_lastC;
+	}
+
+};
+
 // Scans a side of a triangle setting min X and max X in ContourX
 // using the Bresenham's line drawing algorithm.
 void updateCountourX(int * const contourX, int const screenHeight, int x1, int y1, int x2, int y2)
@@ -522,7 +594,48 @@ void updateCountourX(int * const contourX, int const screenHeight, int x1, int y
 	}
 }
 
-void rasterizeTriangle(int * const contourX, int const screenHeight, glm::vec4 const & p0, glm::vec4 const & p1, glm::vec4 const & p2, QImage & image, unsigned int color)
+class PixelFragment
+{
+
+	float m_z;
+
+	int m_rgba;
+
+public:
+
+	PixelFragment(): m_z(-INFINITY), m_rgba(0)
+	{
+		// NOP
+	}
+
+	PixelFragment(float const z, int const rgba): m_z(z), m_rgba(rgba)
+	{
+		// NOP
+	}
+
+	float z() const
+	{
+		return m_z;
+	}
+
+	int rgba() const
+	{
+		return m_rgba;
+	}
+
+	bool operator<(PixelFragment const & that) const
+	{
+		return this->z() < that.z();
+	}
+
+};
+
+typedef std::vector< PixelFragment > FragmentStack;
+typedef std::vector< FragmentStack > FragmentBuffer;
+
+void rasterizeTriangle(int * const contourX, int const screenWidth, int const screenHeight,
+		glm::vec4 const & p0, glm::vec4 const & p1, glm::vec4 const & p2,
+		QImage & image, unsigned int rgba, FragmentBuffer & fragmentBuffer)
 {
 	int const firstY = std::max(0.0f, std::min(std::min(p0.y, p1.y), p2.y));
 	int const lastY = std::min(screenHeight - 1.0f, std::max(std::max(p0.y, p1.y), p2.y));
@@ -537,13 +650,20 @@ void rasterizeTriangle(int * const contourX, int const screenHeight, glm::vec4 c
 	updateCountourX(contourX, screenHeight, p1.x, p1.y, p2.x, p2.y);
 	updateCountourX(contourX, screenHeight, p2.x, p2.y, p0.x, p0.y);
 
+	float const ySpan = std::max(1, lastY - firstY);
+
 	for (int y = firstY; y <= lastY; ++y)
 	{
+		float const ky = (y - firstY) / ySpan;
+		int firstX = contourX[y * 2 + 0];
 		int const lastX = contourX[y * 2 + 1];
+		float const xSpan = std::max(1, lastX - firstX);
 
-		for (int x = contourX[y * 2 + 0]; x <= lastX; ++x)
+		for (int x = firstX; x <= lastX; ++x)
 		{
-			image.setPixel(x, y, color);
+			float const kx = (x - firstX) / xSpan;
+//			image.setPixel(x, y, rgba);
+			fragmentBuffer[y * screenWidth + x].push_back(PixelFragment(p0.z, rgba));
 		}
 	}
 }
@@ -551,7 +671,7 @@ void rasterizeTriangle(int * const contourX, int const screenHeight, glm::vec4 c
 void MyQT::button_render_software()
 {
 	DEBUG_OUT << "Software rendering..." << std::endl;
-	static bool const debugRasterization = false;
+	static bool const debugShowRasterizationProgress = true;
 	static bool const debugUseQtRasterization = false;
 	static bool const debugDrawQtWireframe = true;
 
@@ -586,7 +706,11 @@ void MyQT::button_render_software()
 
 		painter.setPen(Qt::NoPen);
 
-		int * ContourX = new int[viewportHeight * 2];
+		int ContourX[viewportHeight * 2];
+//		FragmentBuffer fragmentBuffer(viewportHeight * viewportWidth, std::vector< PixelFragment >(64));
+		FragmentBuffer fragmentBuffer(viewportHeight * viewportWidth);
+
+		DEBUG_OUT << "Rasterizing triangles and accumulating fragments..." << std::endl;
 
 		for (unsigned int i = 0; i < vertices.elementCount(); i += 4)
 		{
@@ -608,11 +732,13 @@ void MyQT::button_render_software()
 			v2.y = viewportHeight - 1 - v2.y;
 			v3.y = viewportHeight - 1 - v3.y;
 
-			QColor const color(colors[i * 4 + 4 + 0] * 255.0, colors[i * 4 + 4 + 1] * 255.0, colors[i * 4 + 4 + 2] * 255.0);
+			QColor const color(colors[i * 4 + 4 + 0] * 255.0, colors[i * 4 + 4 + 1] * 255.0, colors[i * 4 + 4 + 2] * 255.0, colors[i * 4 + 4 + 3] * 255.0);
+
+//			DEBUG_OUT << color.alphaF() << ' ' << std::hex << color.rgba() << std::dec << ' ' << QColor(color.rgba()).alphaF() << std::endl;
 
 			if (!debugUseQtRasterization)
 			{
-				rasterizeTriangle(ContourX, viewportHeight, v1, v2, v3, image, color.rgba());
+				rasterizeTriangle(ContourX, viewportWidth, viewportHeight, v1, v2, v3, image, color.rgba(), fragmentBuffer);
 			}
 			else
 			{
@@ -631,13 +757,38 @@ void MyQT::button_render_software()
 				painter.drawConvexPolygon(triangle, 3);
 			}
 
-			if (debugRasterization)
+			if (debugShowRasterizationProgress)
 			{
-				DEBUG_OUT << i << " / " << vertices.elementCount() << '\r';
+				DEBUG_OUT << i << " / " << vertices.elementCount() << '\r' << std::flush;
 			}
 		}
 
-		delete[] ContourX;
+		DEBUG_OUT << "Sorting and blending fragments..." << std::endl;
+
+		for (int y = 0; y < viewportHeight; ++y)
+		{
+			for (int x = 0; x < viewportWidth; ++x)
+			{
+				FragmentStack & fragments = fragmentBuffer[y * viewportWidth + x];
+
+				std::sort(fragments.begin(), fragments.end());
+
+				float red = 0.0f;
+				float green = 0.0f;
+				float blue = 0.0f;
+
+				for (FragmentStack::const_iterator i = fragments.begin(); i != fragments.end(); ++i)
+				{
+					QColor const rgba(QColor::fromRgba(i->rgba()));
+					float const a = rgba.alphaF();
+					red = (1.0f - a) * red + a * rgba.redF();
+					green = (1.0f - a) * green + a * rgba.greenF();
+					blue = (1.0f - a) * blue + a * rgba.blueF();
+				}
+
+				image.setPixel(x, y, QColor(red * 255.0f, green * 255.0f, blue * 255.0f).rgba());
+			}
+		}
 
 		DEBUG_OUT << "Software rendering done in " << timer.elapsed() << " ms" << std::endl;
 

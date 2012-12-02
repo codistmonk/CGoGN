@@ -487,18 +487,14 @@ public:
 			m_firstC = c;
 		}
 
-		// XXX this is a dirty fix to the seam issue
-		//     to do it properly, the line algorithm
-		//     should be modified to generate only
-		//     one point per line segment (instead
-		//     of the whole segment)
-		if (m_firstX < x && x == m_lastX - 1)
-		{
-			m_lastX = x;
-			m_lastA = a;
-			m_lastB = b;
-			m_lastC = c;
-		}
+		// XXX dirty fix to the seam issue
+//		if (m_firstX <= x && x == m_lastX - 1)
+//		{
+//			m_lastX = x;
+//			m_lastA = a;
+//			m_lastB = b;
+//			m_lastC = c;
+//		}
 
 		if (m_lastX < x)
 		{
@@ -589,12 +585,33 @@ static void updateRasterizationCountourTopDown(RasterizationContourDatum * const
 
 	int x = x1;
 	int y = y1;
+	// XXX previousX and previousY are part of a 'dirty fix' to
+	//     a seam problem; the goal here is to use only the leftmost
+	//     pixel of each segment
+	int previousX = x;
+	int previousY = y - 1;
 	int pixelCount = m + 2;
 	int k = n / 2;
 
 	while (--pixelCount)
 	{
-		if (0 <= x && x < screenWidth && 0 <= y && y < screenHeight)
+		int nextX, nextY;
+
+		k += n;
+
+		if (k < m)
+		{
+			nextX = x + dx2;
+			nextY = y + dy2;
+		}
+		else
+		{
+			k -= m;
+			nextX = x + dx1;
+			nextY = y + 1;
+		}
+
+		if (0 <= x && x < screenWidth && 0 <= y && y < screenHeight && (previousY < y && 0 <= sx || y < nextY && sx < 0 || x == x2 && y == y2))
 		{
 			float const s = static_cast<float>(pixelCount - 1) / std::max(m, 1);
 
@@ -605,19 +622,10 @@ static void updateRasterizationCountourTopDown(RasterizationContourDatum * const
 //			DEBUG_OUT << x << ' ' << y << ' ' <<  contourX[y].firstX() << ' ' << contourX[y].lastX() << std::endl;
 		}
 
-		k += n;
-
-		if (k < m)
-		{
-			x += dx2;
-			y += dy2;
-		}
-		else
-		{
-			k -= m;
-			x += dx1;
-			++y;
-		}
+		previousX = x;
+		previousY = y;
+		x = nextX;
+		y = nextY;
 	}
 }
 
@@ -643,9 +651,6 @@ static void updateRasterizationCountour(RasterizationContourDatum * const contou
 
 //	DEBUG_OUT << y1 << ' ' << contourX[y1].firstX() << ' ' << contourX[y1].lastX() << std::endl;
 //	DEBUG_OUT << y2 << ' ' << contourX[y2].firstX() << ' ' << contourX[y2].lastX() << std::endl;
-
-//	assert(contourX[y1].firstX() == x1 || contourX[y1].lastX() == x1);
-//	assert(contourX[y2].firstX() == x2 || contourX[y2].lastX() == x2);
 }
 
 class PixelFragment
@@ -719,7 +724,7 @@ static void rasterizeTriangle(RasterizationContourDatum * const contourX, int co
 
 	float const dz = std::abs(std::min(std::min(p0.z, p1.z), p2.z)) + 1.0f;
 
-	for (int y = firstY; y <= lastY; ++y)
+	for (int y = firstY; y < lastY; ++y)
 	{
 		RasterizationContourDatum const & datum = contourX[y];
 		int const firstX = datum.firstX();
@@ -783,7 +788,7 @@ void MyQT::button_render_software()
 		GLint const viewportWidth = viewport[2];
 		GLint const viewportHeight = viewport[3];
 
-		DEBUG_OUT << viewportX << ' ' << viewportY << ' ' << viewportWidth << ' ' << viewportHeight << std::endl;
+		DEBUG_OUT << "viewport: " << viewportX << ' ' << viewportY << ' ' << viewportWidth << ' ' << viewportHeight << std::endl;
 
 		glm::vec4 const viewportCenter(viewportX + viewportWidth / 2.0, viewportY + viewportHeight / 2.0, 0.0, 0.0);
 		glm::vec4 const viewportScale(viewportWidth / 2.0, viewportHeight / 2.0, 1.0, 1.0);
@@ -848,7 +853,7 @@ void MyQT::button_render_software()
 				DEBUG_OUT << i << " / " << vertices.elementCount() << '\r' << std::flush;
 			}
 
-//			if (4 <= i)
+//			if (44 <= i)
 //			{
 //				break;
 //			}

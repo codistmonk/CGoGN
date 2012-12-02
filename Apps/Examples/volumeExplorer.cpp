@@ -487,15 +487,6 @@ public:
 			m_firstC = c;
 		}
 
-		// XXX dirty fix to the seam issue
-//		if (m_firstX <= x && x == m_lastX - 1)
-//		{
-//			m_lastX = x;
-//			m_lastA = a;
-//			m_lastB = b;
-//			m_lastC = c;
-//		}
-
 		if (m_lastX < x)
 		{
 			m_lastX = x;
@@ -567,7 +558,10 @@ static void updateRasterizationCountourTopDown(RasterizationContourDatum * const
 		int x1, int y1, float const a1, float const b1, float const c1,
 		int x2, int y2, float const a2, float const b2, float const c2)
 {
+	static bool const debug = false;
+
 	assert(y1 < y2);
+
 	int const sx = x2 - x1;
 	int const sy = y2 - y1;
 	int const dx1 = (0 < sx) - (sx < 0);
@@ -611,7 +605,7 @@ static void updateRasterizationCountourTopDown(RasterizationContourDatum * const
 			nextY = y + 1;
 		}
 
-		if (0 <= x && x < screenWidth && 0 <= y && y < screenHeight && (previousY < y && 0 <= sx || y < nextY && sx < 0 || x == x2 && y == y2))
+		if (0 <= x && x < screenWidth && 0 <= y && y < screenHeight && (0 <= sx && previousY < y || sx < 0 && (y < nextY || x == x2)))
 		{
 			float const s = static_cast<float>(pixelCount - 1) / std::max(m, 1);
 
@@ -619,7 +613,10 @@ static void updateRasterizationCountourTopDown(RasterizationContourDatum * const
 
 			contourX[y].updateRange(x, linerp(s, a1, a2), linerp(s, b1, b2), linerp(s, c1, c2));
 
-//			DEBUG_OUT << x << ' ' << y << ' ' <<  contourX[y].firstX() << ' ' << contourX[y].lastX() << std::endl;
+			if (debug)
+			{
+				DEBUG_OUT << x << ' ' << y << ' ' <<  contourX[y].firstX() << ' ' << contourX[y].lastX() << std::endl;
+			}
 		}
 
 		previousX = x;
@@ -633,7 +630,12 @@ static void updateRasterizationCountour(RasterizationContourDatum * const contou
 		int x1, int y1, float const a1, float const b1, float const c1,
 		int x2, int y2, float const a2, float const b2, float const c2)
 {
-//	DEBUG_OUT << x1 << ' ' << y1 << ' ' << x2 << ' ' << y2 << std::endl;
+	static bool const debug = false;
+
+	if (debug)
+	{
+		DEBUG_OUT << x1 << ' ' << y1 << ' ' << x2 << ' ' << y2 << std::endl;
+	}
 
 	if (y1 == y2)
 	{
@@ -649,8 +651,11 @@ static void updateRasterizationCountour(RasterizationContourDatum * const contou
 		updateRasterizationCountourTopDown(contourX, screenWidth, screenHeight, x2, y2, a2, b2, c2, x1, y1, a1, b1, c1);
 	}
 
-//	DEBUG_OUT << y1 << ' ' << contourX[y1].firstX() << ' ' << contourX[y1].lastX() << std::endl;
-//	DEBUG_OUT << y2 << ' ' << contourX[y2].firstX() << ' ' << contourX[y2].lastX() << std::endl;
+	if (debug)
+	{
+		DEBUG_OUT << y1 << ' ' << contourX[y1].firstX() << ' ' << contourX[y1].lastX() << std::endl;
+		DEBUG_OUT << y2 << ' ' << contourX[y2].firstX() << ' ' << contourX[y2].lastX() << std::endl;
+	}
 }
 
 class PixelFragment
@@ -705,8 +710,6 @@ static void rasterizeTriangle(RasterizationContourDatum * const contourX, int co
 	int const firstY = std::max(0, std::min(std::min(y0, y1), y2));
 	int const lastY = std::min(screenHeight - 1, std::max(std::max(y0, y1), y2));
 
-//	DEBUG_OUT << firstY << ' ' << lastY << std::endl;
-
 	for (int y = firstY; y <= lastY; ++y)
 	{
 		contourX[y].reset();
@@ -731,8 +734,6 @@ static void rasterizeTriangle(RasterizationContourDatum * const contourX, int co
 		int const lastX = datum.lastX();
 		float const xSpan = std::max(1, lastX - firstX);
 
-//		DEBUG_OUT << y << ' ' << firstX << ' ' << lastX << std::endl;
-
 		for (int x = firstX; x < lastX; ++x)
 		{
 			float const s = (x - firstX) / xSpan;
@@ -743,21 +744,23 @@ static void rasterizeTriangle(RasterizationContourDatum * const contourX, int co
 
 			assert(a || b || c);
 
-//			if (x == firstX)
-//			{
-//				fragmentBuffer[y * screenWidth + x].push_back(PixelFragment(z, 0xFF00FF00));
-//			}
-//			else if (x >= lastX - 1)
-//			{
-//				fragmentBuffer[y * screenWidth + x].push_back(PixelFragment(z, 0xFFFF0000));
-//			}
-//			else
+#define SHOW_SEGMENT_EXTREMITIES 0
+#if SHOW_SEGMENT_EXTREMITIES
+			if (x == firstX)
+			{
+				fragmentBuffer[y * screenWidth + x].push_back(PixelFragment(z, 0xFF00FF00));
+			}
+			else if (x >= lastX - 1)
+			{
+				fragmentBuffer[y * screenWidth + x].push_back(PixelFragment(z, 0xFFFF0000));
+			}
+			else
+#endif
+#undef SHOW_SEGMENT_EXTREMITIES
 			{
 				fragmentBuffer[y * screenWidth + x].push_back(PixelFragment(z, rgba));
 			}
 		}
-
-//		break;
 	}
 }
 
@@ -827,8 +830,6 @@ void MyQT::button_render_software()
 
 			if (!debugUseQtRasterization)
 			{
-//				using namespace Debug;
-//				DEBUG_OUT << v1 << ' ' << v2 << ' ' << v3 << std::endl;
 				rasterizeTriangle(ContourX, viewportWidth, viewportHeight, v1, v2, v3, image, color.rgba(), fragmentBuffer);
 			}
 			else
@@ -852,11 +853,6 @@ void MyQT::button_render_software()
 			{
 				DEBUG_OUT << i << " / " << vertices.elementCount() << '\r' << std::flush;
 			}
-
-//			if (44 <= i)
-//			{
-//				break;
-//			}
 		}
 
 		DEBUG_OUT << "Sorting and blending fragments..." << std::endl;
@@ -872,23 +868,14 @@ void MyQT::button_render_software()
 				float red = 0.0f;
 				float green = 0.0f;
 				float blue = 0.0f;
-				PixelFragment const * previous = NULL;
 
 				for (FragmentStack::const_iterator i = fragments.begin(); i != fragments.end(); ++i)
 				{
-//					bool const fragmentIsNotADuplicate = previous == NULL || 1E-6 < i->z() - previous->z();
-					bool const fragmentIsNotADuplicate = true;
-
-					if (fragmentIsNotADuplicate)
-					{
-						QColor const rgba(QColor::fromRgba(i->rgba()));
-						float const a = rgba.alphaF();
-						red = (1.0f - a) * red + a * rgba.redF();
-						green = (1.0f - a) * green + a * rgba.greenF();
-						blue = (1.0f - a) * blue + a * rgba.blueF();
-					}
-
-					previous = &*i;
+					QColor const rgba(QColor::fromRgba(i->rgba()));
+					float const a = rgba.alphaF();
+					red = (1.0f - a) * red + a * rgba.redF();
+					green = (1.0f - a) * green + a * rgba.greenF();
+					blue = (1.0f - a) * blue + a * rgba.blueF();
 				}
 
 				image.setPixel(x, y, QColor(red * 255.0f, green * 255.0f, blue * 255.0f).rgba());

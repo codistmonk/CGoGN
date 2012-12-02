@@ -123,9 +123,9 @@ void Viewer::cb_initGL()
 	registerShader(m_pointSprite) ;
 	
 	m_fbo = new Utils::FBO(1024, 1024);
-	m_fbo->attachRender(GL_DEPTH_COMPONENT);
-	m_fbo->attachColorTexture(GL_RGBA);
-	//m_fbo->attachDepthTexture();
+	m_fbo->AttachRender(GL_DEPTH_COMPONENT);
+	m_fbo->AttachColorTexture(GL_RGBA);
+	//m_fbo->AttachDepthTexture();
 }
 
 void Viewer::cb_redraw()
@@ -134,11 +134,11 @@ void Viewer::cb_redraw()
 
 	if (useFbo)
 	{
-		// Activation du Fbo avant rendu
-		m_fbo->bindColorTexOutput();
+		// Enable Fbo before rendering
+		m_fbo->BindColorTexOutput();
 		// TODO : gérer le viewport
 	
-		// Effaçage de l'ancien contenu des buffers de rendu du Fbo
+		// Clear old Fbo buffers content
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
 
@@ -191,12 +191,12 @@ void Viewer::cb_redraw()
 	
 	if (useFbo)
 	{
-		// Desactivation du Fbo après rendu
-		m_fbo->unbind();
+		// Disable Fbo after rendering
+		m_fbo->Unbind();
 	
-		// Dessin de la texture de profondeur du fbo
-		//Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo->getDepthTexId());
-		Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo->getColorTexId(0));
+		// Get and draw depth texture from Fbo
+		//Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo->GetDepthTexId());
+		Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo->GetColorTexId(0));
 	}
 }
 

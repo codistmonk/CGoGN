@@ -29,14 +29,6 @@ namespace CGoGN
 namespace Utils
 {
 
-FBO::FBO()
-{
-    glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &m_maxColorAttachments);
-    *m_colorAttachmentPoints = new GLenum[m_maxColorAttachments];
-
-    glGenFramebuffers(1, &(*m_fboID));
-}
-
 FBO::FBO(unsigned int width, unsigned int height)
 {
     glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &m_maxColorAttachments);
@@ -67,7 +59,7 @@ FBO::~FBO()
     delete[] *m_colorAttachmentPoints;
 }
 
-void FBO::attachRender(GLenum internalformat)
+void FBO::AttachRender(GLenum internalformat)
 {
     GLenum attachment;
     GLuint renderID;
@@ -98,10 +90,10 @@ void FBO::attachRender(GLenum internalformat)
 
     *m_renderID = renderID;
     
-    unbind();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void FBO::attachColorTexture(GLenum internalformat, GLint filter)
+void FBO::AttachColorTexture(GLenum internalformat, GLint filter)
 {
     GLenum attachment;
     GLenum format;
@@ -149,10 +141,10 @@ void FBO::attachColorTexture(GLenum internalformat, GLint filter)
     m_colorTexID.push_back(CGoGNGLuint(texID));
     (*m_colorAttachmentPoints)[m_colorTexID.size() - 1] = attachment;
     
-    unbind();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void FBO::attachDepthTexture(GLint filter)
+void FBO::AttachDepthTexture(GLint filter)
 {
     GLenum attachment;
     GLenum internalFormat;
@@ -183,24 +175,10 @@ void FBO::attachDepthTexture(GLint filter)
 
     m_depthTexID.push_back(CGoGNGLuint(texID));
     
-    unbind();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void FBO::bindColorTexInput()
-{
-    for( unsigned int i = 0; i < m_colorTexID.size(); ++i )
-    {
-        glActiveTexture(GL_TEXTURE0 + i);
-        glBindTexture(GL_TEXTURE_2D, *(m_colorTexID[i]));
-    }
-}
-
-void FBO::bindColorTexInput(int num)
-{
-    glBindTexture(GL_TEXTURE_2D, *(m_colorTexID[num]));
-}
-
-void FBO::bindColorTexOutput()
+void FBO::BindColorTexOutput()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, *m_fboID);
 
@@ -213,24 +191,18 @@ void FBO::bindColorTexOutput()
     }
 }
 
-void FBO::bindColorTexOutput(int num)
+void FBO::BindColorTexOutput(int num)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, *m_fboID);
     glDrawBuffer((*m_colorAttachmentPoints)[num]);
 }
 
-void FBO::bindDepthTexInput()
-{
-    if (m_depthTexID.size() != 0)
-        glBindTexture(GL_TEXTURE_2D, *(m_depthTexID)[0]);
-}
-
-void FBO::unbind()
+void FBO::Unbind()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void FBO::checkFBO()
+void FBO::CheckFBO()
 {
     GLenum status;
 

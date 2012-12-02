@@ -39,59 +39,43 @@ namespace Utils
 
 class FBO
 {
+
 public:
-	/// default constructor
-    FBO();
+	/**
+	 * constructor with size of frame buffer
+	 * @param width width in pixel
+	 * @param height heigt in pixel
+	 */
+	FBO(unsigned int width, unsigned int height);
 
-    /**
-     * constructor with size of frame buffer
-     * @param width width in pixel
-     * @param height heigt in pixel
-     */
-    FBO(unsigned int width, unsigned int height);
+	/// destructor
+	~FBO();
 
-    /// destructor
-    ~FBO();
+	void AttachRender(GLenum internalformat);
+	void AttachColorTexture(GLenum internalformat, GLint filter = GL_LINEAR);
+	void AttachDepthTexture(GLint filter = GL_LINEAR);
 
-    void attachRender(GLenum internalformat);
+	void BindColorTexOutput();
+	void BindColorTexOutput(int num);
+	CGoGNGLuint GetColorTexId(int num) { return m_colorTexID[num]; }
+	CGoGNGLuint GetDepthTexId() { return m_depthTexID[0]; }
 
-    void attachColorTexture(GLenum internalformat, GLint filter = GL_LINEAR);
-    
-    void attachDepthTexture(GLint filter = GL_LINEAR);
+	void Unbind();
 
-    void bindColorTexInput();
-    void bindColorTexInput(int num);
-
-    void bindColorTexOutput();
-    void bindColorTexOutput(int num);
-    CGoGNGLuint getColorTexId(int num) { return m_colorTexID[num]; }
-    
-    void bindDepthTexInput();
-    CGoGNGLuint getDepthTexId() { return m_depthTexID[0]; }
-
-    void unbind();
-
-    void setSize(unsigned int width, unsigned int height)
-    {
-        m_width = width;
-        m_height = height;
-    }
-
-    void checkFBO();
+	void CheckFBO();
 
 protected:
-    unsigned int m_width;
-    unsigned int m_height;
+	unsigned int m_width;
+	unsigned int m_height;
 
-    int m_maxColorAttachments;
+	int m_maxColorAttachments;
 
-    CGoGNGLuint m_fboID;
-    CGoGNGLuint m_renderID;
-    std::vector<CGoGNGLuint> m_colorTexID;
-    std::vector<CGoGNGLuint> m_depthTexID;
+	CGoGNGLuint m_fboID;
+	CGoGNGLuint m_renderID;
+	std::vector<CGoGNGLuint> m_colorTexID;
+	std::vector<CGoGNGLuint> m_depthTexID;
 
-
-    CGoGNGLenumTable m_colorAttachmentPoints;
+	CGoGNGLenumTable m_colorAttachmentPoints;
 
 };
 

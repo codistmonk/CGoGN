@@ -36,6 +36,7 @@ Viewer::Viewer() :
 	m_flatShader(NULL),
 	m_vectorShader(NULL),
 	m_simpleColorShader(NULL),
+	m_simpleNormalShader(NULL),
 	m_pointSprite(NULL),
 	m_fbo(NULL)
 {
@@ -112,6 +113,10 @@ void Viewer::cb_initGL()
 	m_simpleColorShader->setAttributePosition(m_positionVBO) ;
 	Geom::Vec4f c(0.1f, 0.1f, 0.1f, 1.0f) ;
 	m_simpleColorShader->setColor(c) ;
+	
+	m_simpleNormalShader = new Utils::ShaderSimpleNormal() ;
+	m_simpleNormalShader->setAttributePosition(m_positionVBO);
+	m_simpleNormalShader->setAttributeNormal(m_normalVBO);
 
 	m_pointSprite = new Utils::PointSprite() ;
 	m_pointSprite->setAttributePosition(m_positionVBO) ;
@@ -120,6 +125,7 @@ void Viewer::cb_initGL()
 	registerShader(m_flatShader) ;
 	registerShader(m_vectorShader) ;
 	registerShader(m_simpleColorShader) ;
+	registerShader(m_simpleNormalShader) ;
 	registerShader(m_pointSprite) ;
 	
 	m_fbo = new Utils::FBO(1024, 1024);
@@ -168,10 +174,18 @@ void Viewer::cb_redraw()
 			case FLAT :
 				m_flatShader->setExplode(faceShrinkage) ;
 				m_render->draw(m_flatShader, Algo::Render::GL2::TRIANGLES) ;
-				break ;
+				break;
+				
 			case PHONG :
 				m_render->draw(m_phongShader, Algo::Render::GL2::TRIANGLES) ;
-				break ;
+				break;
+				
+			case NORMALS :
+				m_render->draw(m_simpleNormalShader, Algo::Render::GL2::TRIANGLES) ;
+				break;
+				
+			default :
+				break;
 		}
 		glDisable(GL_POLYGON_OFFSET_FILL) ;
 	}

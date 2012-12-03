@@ -63,12 +63,17 @@
          <widget class="QComboBox" name="combo_faceLighting">
           <item>
            <property name="text">
-            <string>FLAT</string>
+            <string>Flat</string>
            </property>
           </item>
           <item>
            <property name="text">
-            <string>PHONG</string>
+            <string>Phong</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Normals</string>
            </property>
           </item>
          </widget>

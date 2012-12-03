@@ -41,14 +41,9 @@ class FBO
 {
 
 public:
-	/**
-	 * constructor with size of frame buffer
-	 * @param width width in pixel
-	 * @param height heigt in pixel
-	 */
+
 	FBO(unsigned int width, unsigned int height);
 
-	/// destructor
 	~FBO();
 
 	void AttachRender(GLenum internalformat);
@@ -65,6 +60,7 @@ public:
 	void CheckFBO();
 
 protected:
+
 	unsigned int m_width;
 	unsigned int m_height;
 

@@ -44,6 +44,7 @@
 #include "Utils/Shaders/shaderFlat.h"
 #include "Utils/Shaders/shaderSimpleColor.h"
 #include "Utils/Shaders/shaderVectorPerVertex.h"
+#include "Utils/Shaders/shaderSimpleNormal.h"
 #include "Utils/pointSprite.h"
 #include "Utils/text3d.h"
 #include "Utils/vboRender.h"
@@ -76,7 +77,7 @@ public:
 
     Utils::QT::uiDockInterface dock ;
 
-	enum renderMode { FLAT, PHONG } ;
+	enum renderMode { FLAT, PHONG, NORMALS } ;
 
 	Geom::Vec4f colDif ;
 	Geom::Vec4f colSpec ;
@@ -112,6 +113,8 @@ public:
 	Utils::ShaderFlat* m_flatShader ;
 	Utils::ShaderVectorPerVertex* m_vectorShader ;
 	Utils::ShaderSimpleColor* m_simpleColorShader ;
+	Utils::ShaderSimpleNormal* m_simpleNormalShader ;
+	
 	Utils::PointSprite* m_pointSprite ;
 	
 	Utils::FBO* m_fbo;

@@ -479,7 +479,7 @@ public:
 
 	void updateRange(int const x, float const a, float const b, float const c)
 	{
-		if (x < this->firstX())
+		if (x < m_firstX)
 		{
 			m_firstX = x;
 			m_firstA = a;
@@ -487,7 +487,7 @@ public:
 			m_firstC = c;
 		}
 
-		if (this->lastX() < x)
+		if (m_lastX < x)
 		{
 			m_lastX = x;
 			m_lastA = a;
@@ -549,18 +549,24 @@ static inline float linerp(float const s, float const a, float const b)
 	return s * a + (1.0f - s) * b;
 }
 
-// Scans a side of a triangle setting min X and max X in ContourX
-// using the Bresenham's line drawing algorithm.
-static void updateRasterizationCountour(RasterizationContourDatum * const contourX, int const screenWidth, int const screenHeight,
+/**
+ * Scans a side of a triangle setting firstX and lastX in ContourX
+ * using the Bresenham's line drawing algorithm.
+ * y1 must be strictly less than y2.
+ */
+static void updateRasterizationCountourTopDown(RasterizationContourDatum * const contourX, int const screenWidth, int const screenHeight,
 		int x1, int y1, float const a1, float const b1, float const c1,
 		int x2, int y2, float const a2, float const b2, float const c2)
 {
+	static bool const debug = false;
+
+	assert(y1 < y2);
+
 	int const sx = x2 - x1;
 	int const sy = y2 - y1;
 	int const dx1 = (0 < sx) - (sx < 0);
-	int const dy1 = (0 < sy) - (sy < 0);
 	int m = std::abs(sx);
-	int n = std::abs(sy);
+	int n = sy;
 	int dx2 = dx1;
 	int dy2 = 0;
 
@@ -568,38 +574,87 @@ static void updateRasterizationCountour(RasterizationContourDatum * const contou
 	{
 		std::swap(m, n);
 		dx2 = 0;
-		dy2 = dy1;
+		dy2 = 1;
 	}
 
 	int x = x1;
 	int y = y1;
+	// XXX previousX and previousY are part of a 'dirty fix' to
+	//     a seam problem; the goal here is to use only the leftmost
+	//     pixel of each segment
+	int previousX = x;
+	int previousY = y - 1;
 	int pixelCount = m + 2;
 	int k = n / 2;
 
 	while (--pixelCount)
 	{
-		if (0 <= x && x < screenWidth && 0 <= y && y < screenHeight)
+		int nextX, nextY;
+
+		k += n;
+
+		if (k < m)
+		{
+			nextX = x + dx2;
+			nextY = y + dy2;
+		}
+		else
+		{
+			k -= m;
+			nextX = x + dx1;
+			nextY = y + 1;
+		}
+
+		if (0 <= x && x < screenWidth && 0 <= y && y < screenHeight && (0 <= sx && previousY < y || sx < 0 && (y < nextY || x == x2)))
 		{
 			float const s = static_cast<float>(pixelCount - 1) / std::max(m, 1);
 
 			assert(linerp(s, a1, a2) || linerp(s, b1, b2) || linerp(s, c1, c2));
 
 			contourX[y].updateRange(x, linerp(s, a1, a2), linerp(s, b1, b2), linerp(s, c1, c2));
+
+			if (debug)
+			{
+				DEBUG_OUT << x << ' ' << y << ' ' <<  contourX[y].firstX() << ' ' << contourX[y].lastX() << std::endl;
+			}
 		}
 
-		k += n;
+		previousX = x;
+		previousY = y;
+		x = nextX;
+		y = nextY;
+	}
+}
 
-		if (k < m)
-		{
-			x += dx2;
-			y += dy2;
-		}
-		else
-		{
-			k -= m;
-			x += dx1;
-			y += dy1;
-		}
+static void updateRasterizationCountour(RasterizationContourDatum * const contourX, int const screenWidth, int const screenHeight,
+		int x1, int y1, float const a1, float const b1, float const c1,
+		int x2, int y2, float const a2, float const b2, float const c2)
+{
+	static bool const debug = false;
+
+	if (debug)
+	{
+		DEBUG_OUT << x1 << ' ' << y1 << ' ' << x2 << ' ' << y2 << std::endl;
+	}
+
+	if (y1 == y2)
+	{
+		contourX[y1].updateRange(x1, a1, b1, c1);
+		contourX[y2].updateRange(x2, a2, b2, c2);
+	}
+	else if (y1 < y2)
+	{
+		updateRasterizationCountourTopDown(contourX, screenWidth, screenHeight, x1, y1, a1, b1, c1, x2, y2, a2, b2, c2);
+	}
+	else
+	{
+		updateRasterizationCountourTopDown(contourX, screenWidth, screenHeight, x2, y2, a2, b2, c2, x1, y1, a1, b1, c1);
+	}
+
+	if (debug)
+	{
+		DEBUG_OUT << y1 << ' ' << contourX[y1].firstX() << ' ' << contourX[y1].lastX() << std::endl;
+		DEBUG_OUT << y2 << ' ' << contourX[y2].firstX() << ' ' << contourX[y2].lastX() << std::endl;
 	}
 }
 
@@ -646,8 +701,14 @@ static void rasterizeTriangle(RasterizationContourDatum * const contourX, int co
 		glm::vec4 const & p0, glm::vec4 const & p1, glm::vec4 const & p2,
 		QImage & image, unsigned int rgba, FragmentBuffer & fragmentBuffer)
 {
-	int const firstY = std::max(0.0f, std::min(std::min(p0.y, p1.y), p2.y));
-	int const lastY = std::min(screenHeight - 1.0f, std::max(std::max(p0.y, p1.y), p2.y));
+	int const x0 = roundf(p0.x);
+	int const x1 = roundf(p1.x);
+	int const x2 = roundf(p2.x);
+	int const y0 = roundf(p0.y);
+	int const y1 = roundf(p1.y);
+	int const y2 = roundf(p2.y);
+	int const firstY = std::max(0, std::min(std::min(y0, y1), y2));
+	int const lastY = std::min(screenHeight - 1, std::max(std::max(y0, y1), y2));
 
 	for (int y = firstY; y <= lastY; ++y)
 	{
@@ -655,25 +716,25 @@ static void rasterizeTriangle(RasterizationContourDatum * const contourX, int co
 	}
 
 	updateRasterizationCountour(contourX, screenWidth, screenHeight,
-			p0.x, p0.y, 1.0f, 0.0f, 0.0f,
-			p1.x, p1.y, 0.0f, 1.0f, 0.0f);
+			x1, y1, 0.0f, 1.0f, 0.0f,
+			x0, y0, 1.0f, 0.0f, 0.0f);
 	updateRasterizationCountour(contourX, screenWidth, screenHeight,
-			p1.x, p1.y, 0.0f, 1.0f, 0.0f,
-			p2.x, p2.y, 0.0f, 0.0f, 1.0f);
+			x1, y1, 0.0f, 1.0f, 0.0f,
+			x2, y2, 0.0f, 0.0f, 1.0f);
 	updateRasterizationCountour(contourX, screenWidth, screenHeight,
-			p2.x, p2.y, 0.0f, 0.0f, 1.0f,
-			p0.x, p0.y, 1.0f, 0.0f, 0.0f);
+			x2, y2, 0.0f, 0.0f, 1.0f,
+			x0, y0, 1.0f, 0.0f, 0.0f);
 
 	float const dz = std::abs(std::min(std::min(p0.z, p1.z), p2.z)) + 1.0f;
 
-	for (int y = firstY; y <= lastY; ++y)
+	for (int y = firstY; y < lastY; ++y)
 	{
 		RasterizationContourDatum const & datum = contourX[y];
 		int const firstX = datum.firstX();
 		int const lastX = datum.lastX();
 		float const xSpan = std::max(1, lastX - firstX);
 
-		for (int x = firstX; x <= lastX; ++x)
+		for (int x = firstX; x < lastX; ++x)
 		{
 			float const s = (x - firstX) / xSpan;
 			float const a = linerp(s, datum.firstA(), datum.lastA());
@@ -683,7 +744,22 @@ static void rasterizeTriangle(RasterizationContourDatum * const contourX, int co
 
 			assert(a || b || c);
 
-			fragmentBuffer[y * screenWidth + x].push_back(PixelFragment(z, rgba));
+#define SHOW_SEGMENT_EXTREMITIES 0
+#if SHOW_SEGMENT_EXTREMITIES
+			if (x == firstX)
+			{
+				fragmentBuffer[y * screenWidth + x].push_back(PixelFragment(z, 0xFF00FF00));
+			}
+			else if (x >= lastX - 1)
+			{
+				fragmentBuffer[y * screenWidth + x].push_back(PixelFragment(z, 0xFFFF0000));
+			}
+			else
+#endif
+#undef SHOW_SEGMENT_EXTREMITIES
+			{
+				fragmentBuffer[y * screenWidth + x].push_back(PixelFragment(z, rgba));
+			}
 		}
 	}
 }
@@ -715,7 +791,7 @@ void MyQT::button_render_software()
 		GLint const viewportWidth = viewport[2];
 		GLint const viewportHeight = viewport[3];
 
-		DEBUG_OUT << viewportX << ' ' << viewportY << ' ' << viewportWidth << ' ' << viewportHeight << std::endl;
+		DEBUG_OUT << "viewport: " << viewportX << ' ' << viewportY << ' ' << viewportWidth << ' ' << viewportHeight << std::endl;
 
 		glm::vec4 const viewportCenter(viewportX + viewportWidth / 2.0, viewportY + viewportHeight / 2.0, 0.0, 0.0);
 		glm::vec4 const viewportScale(viewportWidth / 2.0, viewportHeight / 2.0, 1.0, 1.0);
@@ -792,22 +868,14 @@ void MyQT::button_render_software()
 				float red = 0.0f;
 				float green = 0.0f;
 				float blue = 0.0f;
-				PixelFragment const * previous = NULL;
 
 				for (FragmentStack::const_iterator i = fragments.begin(); i != fragments.end(); ++i)
 				{
-					bool const fragmentIsNotADuplicate = previous == NULL || 1E-6 < i->z() - previous->z();
-
-					if (fragmentIsNotADuplicate)
-					{
-						QColor const rgba(QColor::fromRgba(i->rgba()));
-						float const a = rgba.alphaF();
-						red = (1.0f - a) * red + a * rgba.redF();
-						green = (1.0f - a) * green + a * rgba.greenF();
-						blue = (1.0f - a) * blue + a * rgba.blueF();
-					}
-
-					previous = &*i;
+					QColor const rgba(QColor::fromRgba(i->rgba()));
+					float const a = rgba.alphaF();
+					red = (1.0f - a) * red + a * rgba.redF();
+					green = (1.0f - a) * green + a * rgba.greenF();
+					blue = (1.0f - a) * blue + a * rgba.blueF();
 				}
 
 				image.setPixel(x, y, QColor(red * 255.0f, green * 255.0f, blue * 255.0f).rgba());

@@ -78,6 +78,8 @@ protected:
 	std::vector<CGoGNGLuint> m_depthTexID;
 
 	CGoGNGLenumTable m_colorAttachmentPoints;
+	
+	GLint m_oldViewport[4];
 };
 
 } // namespace Utils

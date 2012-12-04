@@ -232,24 +232,41 @@ void FBO::EnableColorAttachment(int num)
 
 void FBO::Bind()
 {
+	if (m_bound)
+	{
+		CGoGNerr << "FBO::Bind : This Fbo is already bound." << CGoGNendl;
+		return;
+	}
+
 	if (s_anyFboBound)
 	{
 		CGoGNerr << "FBO::Bind : Only one Fbo can be bound at the same time." << CGoGNendl;
 		return;
 	}
 
+	// Bind this Fbo
 	glBindFramebuffer(GL_FRAMEBUFFER, *m_fboID);
 	m_bound = true;
 	s_anyFboBound = true;
+	
+	// Get current viewport
+	glGetIntegerv(GL_VIEWPORT, m_oldViewport);
+	
+	// Set the viewport to the size of the Fbo
+	glViewport(0, 0, m_width, m_height);
 }
 
 void FBO::Unbind()
 {
 	if (m_bound)
 	{
+		// Unbind this Fbo
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		m_bound = false;
 		s_anyFboBound = false;
+		
+		// Reset the viewport to the main framebuffer size
+		glViewport(m_oldViewport[0], m_oldViewport[1], m_oldViewport[2], m_oldViewport[3]);
 	}
 }
 

@@ -131,17 +131,20 @@ void Viewer::cb_initGL()
 	m_fbo = new Utils::FBO(1024, 1024);
 	m_fbo->AttachRender(GL_DEPTH_COMPONENT);
 	m_fbo->AttachColorTexture(GL_RGBA);
+	m_fbo->AttachColorTexture(GL_RGBA);
 	//m_fbo->AttachDepthTexture();
 }
 
 void Viewer::cb_redraw()
 {
-	bool useFbo = false;
+	bool useFbo = true;
 
 	if (useFbo)
 	{
 		// Enable Fbo before rendering
-		m_fbo->BindColorTexOutput();
+		//m_fbo->BindColorTexOutput();
+		m_fbo->Bind();
+		m_fbo->EnableColorAttachments();
 		// TODO : gérer le viewport
 	
 		// Clear old Fbo buffers content

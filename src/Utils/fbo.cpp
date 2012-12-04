@@ -31,187 +31,189 @@ namespace Utils
 
 FBO::FBO(unsigned int width, unsigned int height)
 {
-    glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &m_maxColorAttachments);
-    *m_colorAttachmentPoints = new GLenum[m_maxColorAttachments];
+	glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &m_maxColorAttachments);
+	*m_colorAttachmentPoints = new GLenum[m_maxColorAttachments];
 
-    glGenFramebuffers(1, &(*m_fboID));
+	glGenFramebuffers(1, &(*m_fboID));
 
-    m_width = width;
-    m_height = height;
+	m_width = width;
+	m_height = height;
 }
 
 FBO::~FBO()
 {
-    GLuint tex_id;
+	GLuint tex_id;
 
-    for (unsigned int i = 0; i < m_colorTexID.size(); i++)
-    {
-        tex_id = *(m_colorTexID.at(i));
-        glDeleteTextures(1, &tex_id);
-    }
-    for (unsigned int i = 0; i < m_depthTexID.size(); i++)
-    {
-    	tex_id = *(m_depthTexID.at(i));
-    	glDeleteTextures(1, &tex_id);
-    }
+	for (unsigned int i = 0; i < m_colorTexID.size(); i++)
+	{
+		tex_id = *(m_colorTexID.at(i));
+		glDeleteTextures(1, &tex_id);
+	}
+	for (unsigned int i = 0; i < m_depthTexID.size(); i++)
+	{
+		tex_id = *(m_depthTexID.at(i));
+		glDeleteTextures(1, &tex_id);
+	}
 
-    glDeleteFramebuffers(1, &(*m_fboID));
-    delete[] *m_colorAttachmentPoints;
+	glDeleteFramebuffers(1, &(*m_fboID));
+	delete[] *m_colorAttachmentPoints;
 }
 
 void FBO::AttachRender(GLenum internalformat)
 {
-    GLenum attachment;
-    GLuint renderID;
+	GLenum attachment;
+	GLuint renderID;
 
-    if( internalformat == GL_DEPTH_COMPONENT ) {
-        attachment = GL_DEPTH_ATTACHMENT;
-    }
+	if( internalformat == GL_DEPTH_COMPONENT )
+	{
+		attachment = GL_DEPTH_ATTACHMENT;
+	}
 
-    else if( internalformat == GL_STENCIL_INDEX ) {
-        attachment = GL_STENCIL_ATTACHMENT;
-    }
+	else if( internalformat == GL_STENCIL_INDEX )
+	{
+		attachment = GL_STENCIL_ATTACHMENT;
+	}
 
-    else if( internalformat == GL_DEPTH_STENCIL ) {
-        attachment = GL_DEPTH_STENCIL_ATTACHMENT;
-    }
+	else if( internalformat == GL_DEPTH_STENCIL )
+	{
+		attachment = GL_DEPTH_STENCIL_ATTACHMENT;
+	}
 
-    else {
-        std::cout << "FBO::attachRender : Bad Internal Format" << std::endl;
-        return;
-    }
+	else
+	{
+		std::cout << "FBO::attachRender : Bad Internal Format" << std::endl;
+		return;
+	}
 
-    glGenRenderbuffers(1, &renderID);
-    glBindFramebuffer(GL_FRAMEBUFFER, *m_fboID);
-    glBindRenderbuffer(GL_RENDERBUFFER, renderID);
-    glRenderbufferStorage(GL_RENDERBUFFER, internalformat, m_width, m_height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment,
-                              GL_RENDERBUFFER, renderID);
+	glGenRenderbuffers(1, &renderID);
+	glBindFramebuffer(GL_FRAMEBUFFER, *m_fboID);
+	glBindRenderbuffer(GL_RENDERBUFFER, renderID);
+	glRenderbufferStorage(GL_RENDERBUFFER, internalformat, m_width, m_height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, renderID);
 
-    *m_renderID = renderID;
+	*m_renderID = renderID;
     
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void FBO::AttachColorTexture(GLenum internalformat, GLint filter)
 {
-    GLenum attachment;
-    GLenum format;
-    GLenum type;
-    GLuint texID;
+	GLenum attachment;
+	GLenum format;
+	GLenum type;
+	GLuint texID;
 
-    if( int(m_colorTexID.size()) == m_maxColorAttachments ) {
-        std::cout << "FBO::attachColorTexture : The number of color textures has been exceeded" << std::endl;
-        return;
-    }
+	if( int(m_colorTexID.size()) == m_maxColorAttachments )
+	{
+		std::cout << "FBO::attachColorTexture : The number of color textures has been exceeded" << std::endl;
+		return;
+	}
 
-    attachment = GL_COLOR_ATTACHMENT0 + m_colorTexID.size();
+	attachment = GL_COLOR_ATTACHMENT0 + m_colorTexID.size();
 
-    if( internalformat == GL_RGBA ) {
-        format = GL_RGBA;
-        type = GL_FLOAT;
-    }
+	if ( internalformat == GL_RGBA )
+	{
+		format = GL_RGBA;
+		type = GL_FLOAT;
+	}
 
-    if( internalformat == GL_RGB ) {
-        format = GL_RGB;
-        type = GL_FLOAT;
-    }
+	if ( internalformat == GL_RGB )
+	{
+		format = GL_RGB;
+		type = GL_FLOAT;
+	}
 
-    if( internalformat == GL_RGBA32F ) {
-        format = GL_RGBA;
-        type = GL_FLOAT;
-    }
+	if ( internalformat == GL_RGBA32F )
+	{
+		format = GL_RGBA;
+		type = GL_FLOAT;
+	}
 
-    if( internalformat == GL_RGB32F ) {
-        format = GL_RGB;
-        type = GL_FLOAT;
-    }
+	if ( internalformat == GL_RGB32F )
+	{
+		format = GL_RGB;
+		type = GL_FLOAT;
+	}
 
-    glGenTextures(1, &texID);
-    glBindFramebuffer(GL_FRAMEBUFFER, *m_fboID);
-    glBindTexture(GL_TEXTURE_2D, texID);
-    glTexImage2D(GL_TEXTURE_2D, 0, internalformat, m_width,
-                 m_height, 0, format, type, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+	glGenTextures(1, &texID);
+	glBindFramebuffer(GL_FRAMEBUFFER, *m_fboID);
+	glBindTexture(GL_TEXTURE_2D, texID);
+	glTexImage2D(GL_TEXTURE_2D, 0, internalformat, m_width, m_height, 0, format, type, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, attachment,
-                           GL_TEXTURE_2D, texID, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, texID, 0);
 
-    m_colorTexID.push_back(CGoGNGLuint(texID));
-    (*m_colorAttachmentPoints)[m_colorTexID.size() - 1] = attachment;
+	m_colorTexID.push_back(CGoGNGLuint(texID));
+	(*m_colorAttachmentPoints)[m_colorTexID.size() - 1] = attachment;
     
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void FBO::AttachDepthTexture(GLint filter)
 {
-    GLenum attachment;
-    GLenum internalFormat;
-    GLenum format;
-    GLenum type;
-    GLuint texID;
+	GLenum attachment;
+	GLenum internalFormat;
+	GLenum format;
+	GLenum type;
+	GLuint texID;
 
-    if( int(m_depthTexID.size()) == 1 ) {
-        std::cout << "FBO::attachDepthTexture : Only one depth texture can be attached" << std::endl;
-        return;
-    }
+	if( int(m_depthTexID.size()) == 1 )
+	{
+		std::cout << "FBO::attachDepthTexture : Only one depth texture can be attached" << std::endl;
+		return;
+	}
 
-    attachment = GL_DEPTH_ATTACHMENT;
-    internalFormat = GL_DEPTH_COMPONENT24;
-    format = GL_RGB;
-    type = GL_FLOAT;
+	attachment = GL_DEPTH_ATTACHMENT;
+	internalFormat = GL_DEPTH_COMPONENT24;
+	format = GL_RGB;
+	type = GL_FLOAT;
 
-    glGenTextures(1, &texID);
-    glBindFramebuffer(GL_FRAMEBUFFER, *m_fboID);
-    glBindTexture(GL_TEXTURE_2D, texID);
-    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, m_width,
-                 m_height, 0, format, type, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+	glGenTextures(1, &texID);
+	glBindFramebuffer(GL_FRAMEBUFFER, *m_fboID);
+	glBindTexture(GL_TEXTURE_2D, texID);
+	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, m_width, m_height, 0, format, type, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, attachment,
-                           GL_TEXTURE_2D, texID, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, texID, 0);
 
-    m_depthTexID.push_back(CGoGNGLuint(texID));
+	m_depthTexID.push_back(CGoGNGLuint(texID));
     
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void FBO::BindColorTexOutput()
+void FBO::EnableColorAttachments()
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, *m_fboID);
-
-    if( m_colorTexID.size() == 1 ) {
-        glDrawBuffer((*m_colorAttachmentPoints)[0]); // TODO : Pourquoi pas glDrawBuffers pour m_colorTexID.size == 1 ?
-    }
-
-    else {
-        glDrawBuffers(m_colorTexID.size(), *m_colorAttachmentPoints);
-    }
+	glDrawBuffers(m_colorTexID.size(), *m_colorAttachmentPoints);
 }
 
-void FBO::BindColorTexOutput(int num)
+void FBO::EnableColorAttachment(int num)
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, *m_fboID);
-    glDrawBuffer((*m_colorAttachmentPoints)[num]);
+	glDrawBuffers(1, &(*m_colorAttachmentPoints)[num]);
+}
+
+void FBO::Bind()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, *m_fboID);
 }
 
 void FBO::Unbind()
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void FBO::CheckFBO()
 {
-    GLenum status;
+	GLenum status;
 
-    glBindFramebuffer(GL_FRAMEBUFFER, *m_fboID);
-    status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	glBindFramebuffer(GL_FRAMEBUFFER, *m_fboID);
+	status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
-    if(status != GL_FRAMEBUFFER_COMPLETE) {
-        std::cout << "FBO STATUS ERROR : " << status << std::endl;
-    }
+	if (status != GL_FRAMEBUFFER_COMPLETE)
+	{
+		std::cout << "FBO STATUS ERROR : " << status << std::endl;
+	}
 }
 
 }

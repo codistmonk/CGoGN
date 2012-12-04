@@ -50,11 +50,12 @@ public:
 	void AttachColorTexture(GLenum internalformat, GLint filter = GL_LINEAR);
 	void AttachDepthTexture(GLint filter = GL_LINEAR);
 
-	void BindColorTexOutput();
-	void BindColorTexOutput(int num);
+	void EnableColorAttachments();
+	void EnableColorAttachment(int num);
 	CGoGNGLuint GetColorTexId(int num) { return m_colorTexID[num]; }
 	CGoGNGLuint GetDepthTexId() { return m_depthTexID[0]; }
 
+	void Bind();
 	void Unbind();
 
 	void CheckFBO();

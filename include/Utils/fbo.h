@@ -27,6 +27,7 @@
 
 #include <GL/glew.h>
 #include "Utils/gl_def.h"
+#include "Utils/cgognStream.h"
 
 #include <iostream>
 #include <vector>
@@ -46,7 +47,7 @@ public:
 
 	~FBO();
 
-	void AttachRender(GLenum internalformat);
+	void AttachRenderbuffer(GLenum internalformat);
 	void AttachColorTexture(GLenum internalformat, GLint filter = GL_LINEAR);
 	void AttachDepthTexture(GLint filter = GL_LINEAR);
 
@@ -64,6 +65,10 @@ protected:
 
 	unsigned int m_width;
 	unsigned int m_height;
+	
+	bool m_bound;
+	
+	static bool s_anyFboBound;
 
 	int m_maxColorAttachments;
 
@@ -76,7 +81,8 @@ protected:
 
 };
 
-}
-}
+} // namespace Utils
+
+} // namespace CGoGN
 
 #endif	/* FRAMEBUFFER_HPP */

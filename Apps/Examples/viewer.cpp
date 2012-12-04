@@ -129,7 +129,7 @@ void Viewer::cb_initGL()
 	registerShader(m_pointSprite) ;
 	
 	m_fbo = new Utils::FBO(1024, 1024);
-	m_fbo->AttachRender(GL_DEPTH_COMPONENT);
+	m_fbo->AttachRenderbuffer(GL_DEPTH_COMPONENT);
 	m_fbo->AttachColorTexture(GL_RGBA);
 	m_fbo->AttachColorTexture(GL_RGBA);
 	//m_fbo->AttachDepthTexture();

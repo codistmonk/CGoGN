@@ -47,8 +47,8 @@ public:
 
 	~FBO();
 
-	void AttachRenderbuffer(GLenum internalformat);
-	void AttachColorTexture(GLenum internalformat, GLint filter = GL_LINEAR);
+	void AttachRenderbuffer(GLenum internalFormat);
+	void AttachColorTexture(GLenum internalFormat, GLint filter = GL_LINEAR);
 	void AttachDepthTexture(GLint filter = GL_LINEAR);
 
 	void EnableColorAttachments();
@@ -78,7 +78,6 @@ protected:
 	std::vector<CGoGNGLuint> m_depthTexID;
 
 	CGoGNGLenumTable m_colorAttachmentPoints;
-
 };
 
 } // namespace Utils

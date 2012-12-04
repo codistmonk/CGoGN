@@ -63,7 +63,7 @@ FBO::~FBO()
 	delete[] *m_colorAttachmentPoints;
 }
 
-void FBO::AttachRenderbuffer(GLenum internalformat)
+void FBO::AttachRenderbuffer(GLenum internalFormat)
 {
 	if (s_anyFboBound)
 	{
@@ -74,22 +74,30 @@ void FBO::AttachRenderbuffer(GLenum internalformat)
 	GLenum attachment;
 	GLuint renderID;
 
-	if( internalformat == GL_DEPTH_COMPONENT )
-		attachment = GL_DEPTH_ATTACHMENT;
-	else if( internalformat == GL_STENCIL_INDEX )
-		attachment = GL_STENCIL_ATTACHMENT;
-	else if( internalformat == GL_DEPTH_STENCIL )
-		attachment = GL_DEPTH_STENCIL_ATTACHMENT;
-	else
+	switch (internalFormat)
 	{
-		std::cout << "FBO::attachRender : Bad Internal Format" << std::endl;
-		return;
+		case GL_DEPTH_COMPONENT :
+			attachment = GL_DEPTH_ATTACHMENT;
+			break;
+			
+		case GL_STENCIL_INDEX :
+			attachment = GL_STENCIL_ATTACHMENT;
+			break;
+			
+		case GL_DEPTH_STENCIL :
+			attachment = GL_DEPTH_STENCIL_ATTACHMENT;
+			break;
+			
+		default :
+			CGoGNerr << "FBO::AttachRenderbuffer : Bad internal format." << CGoGNendl;
+			return;
+			break;
 	}
 
 	glGenRenderbuffers(1, &renderID);
 	glBindFramebuffer(GL_FRAMEBUFFER, *m_fboID);
 	glBindRenderbuffer(GL_RENDERBUFFER, renderID);
-	glRenderbufferStorage(GL_RENDERBUFFER, internalformat, m_width, m_height);
+	glRenderbufferStorage(GL_RENDERBUFFER, internalFormat, m_width, m_height);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, renderID);
 
 	*m_renderID = renderID;
@@ -97,7 +105,7 @@ void FBO::AttachRenderbuffer(GLenum internalformat)
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void FBO::AttachColorTexture(GLenum internalformat, GLint filter)
+void FBO::AttachColorTexture(GLenum internalFormat, GLint filter)
 {
 	if (s_anyFboBound)
 	{
@@ -105,9 +113,9 @@ void FBO::AttachColorTexture(GLenum internalformat, GLint filter)
 		return;
 	}
 	
-	if( int(m_colorTexID.size()) == m_maxColorAttachments )
+	if ((int) m_colorTexID.size() == m_maxColorAttachments)
 	{
-		std::cout << "FBO::AttachColorTexture : The maximum number of color textures has been exceeded." << std::endl;
+		CGoGNerr << "FBO::AttachColorTexture : The maximum number of color textures has been exceeded." << CGoGNendl;
 		return;
 	}
 
@@ -118,34 +126,38 @@ void FBO::AttachColorTexture(GLenum internalformat, GLint filter)
 
 	attachment = GL_COLOR_ATTACHMENT0 + m_colorTexID.size();
 
-	if ( internalformat == GL_RGBA )
+	switch (internalFormat)
 	{
-		format = GL_RGBA;
-		type = GL_FLOAT;
-	}
-
-	if ( internalformat == GL_RGB )
-	{
-		format = GL_RGB;
-		type = GL_FLOAT;
-	}
-
-	if ( internalformat == GL_RGBA32F )
-	{
-		format = GL_RGBA;
-		type = GL_FLOAT;
-	}
-
-	if ( internalformat == GL_RGB32F )
-	{
-		format = GL_RGB;
-		type = GL_FLOAT;
+		case GL_RGBA :
+			format = GL_RGBA;
+			type = GL_FLOAT;
+			break;
+			
+		case GL_RGB :
+			format = GL_RGB;
+			type = GL_FLOAT;
+			break;
+			
+		case GL_RGBA32F :
+			format = GL_RGBA;
+			type = GL_FLOAT;
+			break;
+			
+		case GL_RGB32F :
+			format = GL_RGB;
+			type = GL_FLOAT;
+			break;
+			
+		default :
+			CGoGNerr << "FBO::AttachColorTexture : Specified internal format not handled." << CGoGNendl;
+			return;
+			break;
 	}
 
 	glGenTextures(1, &texID);
 	glBindFramebuffer(GL_FRAMEBUFFER, *m_fboID);
 	glBindTexture(GL_TEXTURE_2D, texID);
-	glTexImage2D(GL_TEXTURE_2D, 0, internalformat, m_width, m_height, 0, format, type, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, m_width, m_height, 0, format, type, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
 
@@ -260,6 +272,7 @@ void FBO::CheckFBO()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-}
-}
+} // namespace Utils
+
+} // namespace CGoGN
 

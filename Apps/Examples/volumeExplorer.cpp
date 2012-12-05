@@ -607,7 +607,7 @@ static void updateRasterizationSpansTopDown(RasterizationSpans & spans, int cons
 	int y = y1;
 	// XXX previousX and previousY are part of a 'dirty fix' to
 	//     a seam problem; the goal here is to use only the leftmost
-	//     pixel of each segment
+	//     pixel of each segment when sx >= 0
 	int previousX = x;
 	int previousY = y - 1;
 	int pixelCount = m + 2;
@@ -753,11 +753,11 @@ static void rasterizeTriangle(RasterizationSpans & spans, int const screenWidth,
 
 	float const dz = std::abs(std::min(std::min(p0.z, p1.z), p2.z)) + 1.0f;
 
-	for (int y = firstY; y < lastY; ++y)
+	for (int y = firstY + 1; y <= lastY; ++y)
 	{
-		RasterizationSpan const & datum = spans[y];
-		int const firstX = datum.firstX();
-		int const lastX = datum.lastX();
+		RasterizationSpan const & span = spans[y];
+		int const firstX = span.firstX();
+		int const lastX = span.lastX();
 		float const xSpan = std::max(1, lastX - firstX);
 
 		for (int x = firstX; x < lastX; ++x)
@@ -765,9 +765,9 @@ static void rasterizeTriangle(RasterizationSpans & spans, int const screenWidth,
 			if (0 <= x && x < screenWidth)
 			{
 				float const s = (x - firstX) / xSpan;
-				float const a = linerp(s, datum.firstA(), datum.lastA());
-				float const b = linerp(s, datum.firstB(), datum.lastB());
-				float const c = linerp(s, datum.firstC(), datum.lastC());
+				float const a = linerp(s, span.firstA(), span.lastA());
+				float const b = linerp(s, span.firstB(), span.lastB());
+				float const c = linerp(s, span.firstC(), span.lastC());
 				float const z = 1.0f / (a / (p0.z + dz) + b / (p1.z + dz) + c / (p2.z + dz));
 
 				assert(a || b || c);
@@ -945,7 +945,7 @@ static void testRasterizeTriangle()
 
 	GLint const viewportX = 0;
 	GLint const viewportY = 0;
-	GLint const viewportWidth = 20;
+	GLint const viewportWidth = 100;
 	GLint const viewportHeight = viewportWidth;
 	GLint const right = viewportWidth - 1;
 	GLint const top = viewportHeight - 1;
@@ -1083,7 +1083,7 @@ static void testRasterizeTriangle()
 	}
 	else
 	{
-		DEBUG_OUT << "rasterizeTriangle() is defective" << std::endl;
+		DEBUG_OUT << "rasterizeTriangle() is defective: " << totalErrorCount << " error(s) found" << std::endl;
 	}
 
 	assert(totalErrorCount == 0);

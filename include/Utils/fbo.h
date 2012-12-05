@@ -85,14 +85,14 @@ public:
 
 	/**
 	 * Enable every color attachments of the Fbo.\n
-	 * Useless for Fbos with only one color attachment.\n
+	 * Useless for Fbos containing only one color attachment.\n
 	 * When calling this function, this Fbo must be bound.\n
 	 */
 	void EnableColorAttachments();
 
 	/**
 	 * Enable a specific color attachment of the Fbo.\n
-	 * Useless for Fbos with only one color attachment.\n
+	 * Useless for Fbos containing only one color attachment.\n
 	 * When calling this function, this Fbo must be bound.\n
 	 * \param  num  Number of the color attachment that should be enabled
 	 */
@@ -154,7 +154,7 @@ protected:
 	/// Color attachments of the Fbo.
 	CGoGNGLenumTable m_colorAttachmentPoints;
 	
-	/// Original viewport, saved when binding the Fbo, restored when unbinding it.
+	/// Original viewport (x, y, width, height), saved when binding the Fbo, restored when unbinding it.
 	GLint m_oldViewport[4];
 	
 	/// Indicates wether the Fbo is bound or not.

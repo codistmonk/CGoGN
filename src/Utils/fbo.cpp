@@ -40,8 +40,10 @@ FBO::FBO(unsigned int width, unsigned int height)
 	, m_colorAttachmentPoints (CGoGNGLenumTable(NULL))
 	, m_bound                 (false)
 {
+	// Generate Fbo
 	glGenFramebuffers(1, &(*m_fboId));
 	
+	// Get the maximum number of available color attachments
 	glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &m_maxColorAttachments);
 	*m_colorAttachmentPoints = new GLenum[m_maxColorAttachments];
 }
@@ -56,17 +58,20 @@ FBO::~FBO()
 		if (glIsTexture(textureId))
 			glDeleteTextures(1, &textureId);
 	}
+	
 	for (unsigned int i = 0; i < m_depthTexId.size(); i++)
 	{
 		textureId = *(m_depthTexId.at(i));
 		if (glIsTexture(textureId))
 			glDeleteTextures(1, &textureId);
 	}
-
+	
 	if (glIsRenderbuffer(*m_renderBufferId))
 		glDeleteRenderbuffers(1, &(*m_renderBufferId));
+		
 	if (glIsFramebuffer(*m_fboId))
 		glDeleteFramebuffers(1, &(*m_fboId));
+		
 	delete[] *m_colorAttachmentPoints;
 }
 
@@ -105,15 +110,17 @@ void FBO::AttachRenderbuffer(GLenum internalFormat)
 	if (glIsRenderbuffer(*m_renderBufferId))
 		glDeleteRenderbuffers(1, &(*m_renderBufferId));
 
+	// Generate render buffer
 	glGenRenderbuffers(1, &renderBufferId);
-	glBindFramebuffer(GL_FRAMEBUFFER, *m_fboId);
 	glBindRenderbuffer(GL_RENDERBUFFER, renderBufferId);
 	glRenderbufferStorage(GL_RENDERBUFFER, internalFormat, m_width, m_height);
+	
+	// Attach render buffer to Fbo
+	glBindFramebuffer(GL_FRAMEBUFFER, *m_fboId);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, renderBufferId);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	*m_renderBufferId = renderBufferId;
-    
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void FBO::AttachColorTexture(GLenum internalFormat, GLint filter)
@@ -165,19 +172,20 @@ void FBO::AttachColorTexture(GLenum internalFormat, GLint filter)
 			break;
 	}
 
+	// Generate texture
 	glGenTextures(1, &textureId);
-	glBindFramebuffer(GL_FRAMEBUFFER, *m_fboId);
 	glBindTexture(GL_TEXTURE_2D, textureId);
 	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, m_width, m_height, 0, format, type, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
 
+	// Attach texture to Fbo
+	glBindFramebuffer(GL_FRAMEBUFFER, *m_fboId);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, textureId, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	m_colorTexId.push_back(CGoGNGLuint(textureId));
 	(*m_colorAttachmentPoints)[m_colorTexId.size() - 1] = attachment;
-    
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void FBO::AttachDepthTexture(GLint filter)
@@ -205,18 +213,19 @@ void FBO::AttachDepthTexture(GLint filter)
 	format = GL_RGB;
 	type = GL_FLOAT;
 
+	// Generate texture
 	glGenTextures(1, &textureId);
-	glBindFramebuffer(GL_FRAMEBUFFER, *m_fboId);
 	glBindTexture(GL_TEXTURE_2D, textureId);
 	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, m_width, m_height, 0, format, type, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
 
+	// Attach texture to Fbo
+	glBindFramebuffer(GL_FRAMEBUFFER, *m_fboId);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, textureId, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	m_depthTexId.push_back(CGoGNGLuint(textureId));
-    
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void FBO::EnableColorAttachments()
@@ -243,7 +252,7 @@ void FBO::EnableColorAttachment(int num)
 
 CGoGNGLuint FBO::GetColorTexId(int num)
 {
-	if (m_colorTexId.size() > num)
+	if ((int) m_colorTexId.size() > num)
 		return m_colorTexId[num];
 	else
 		return CGoGNGLuint(0);
@@ -251,7 +260,7 @@ CGoGNGLuint FBO::GetColorTexId(int num)
 
 CGoGNGLuint FBO::GetDepthTexId()
 {
-	if (m_depthTexId.size() > 0)
+	if ((int) m_depthTexId.size() > 0)
 		return m_depthTexId[0];
 	else
 		return CGoGNGLuint(0);
@@ -307,13 +316,13 @@ void FBO::CheckFBO()
 
 	GLenum status;
 
+	// Get Fbo status
 	glBindFramebuffer(GL_FRAMEBUFFER, *m_fboId);
 	status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	if (status != GL_FRAMEBUFFER_COMPLETE)
 		std::cout << "Fbo status error : " << status << std::endl;
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 } // namespace Utils

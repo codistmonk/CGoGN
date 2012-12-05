@@ -453,6 +453,28 @@ std::ostream & operator<<(std::ostream & out, QPointF const & p)
 	return out;
 }
 
+std::ostream & operator<<(std::ostream & out, std::vector< int > const & v)
+{
+	out << '[';
+
+	if (!v.empty())
+	{
+		std::vector< int >::const_iterator i = v.begin();
+		out << *i;
+		++i;
+
+		while (i != v.end())
+		{
+			out << ' ' << *i;
+			++i;
+		}
+	}
+
+	out << ']';
+
+	return out;
+}
+
 } // Debug
 
 static glm::vec4 explode(glm::vec4 const & v, glm::vec4 const & faceCenter, float const faceScale, glm::vec4 const & volumeCenter, float const volumeScale)
@@ -768,47 +790,36 @@ static void rasterizeTriangle(RasterizationSpans & spans, int const screenWidth,
 	}
 }
 
-template<typename T>
-class Array
+static void sortAndBlend(FragmentBuffer & fragmentBuffer, QImage & image)
 {
+	int const viewportWidth = image.width();
+	int const viewportHeight = image.height();
 
-	unsigned int const m_elementCount;
-
-	T * m_elements;
-
-public:
-
-	Array(unsigned int const elementCount): m_elementCount(elementCount), m_elements(new T[elementCount])
+	for (int y = 0; y < viewportHeight; ++y)
 	{
-			// NOP
-	}
-
-	~Array()
-	{
-		if (m_elements)
+		for (int x = 0; x < viewportWidth; ++x)
 		{
-			delete[] m_elements;
+			FragmentStack & fragments = fragmentBuffer[y * viewportWidth + x];
 
-			m_elements = NULL;
+			std::stable_sort(fragments.begin(), fragments.end());
+
+			float red = 0.0f;
+			float green = 0.0f;
+			float blue = 0.0f;
+
+			for (FragmentStack::const_iterator i = fragments.begin(); i != fragments.end(); ++i)
+			{
+				QColor const rgba(QColor::fromRgba(i->rgba()));
+				float const a = rgba.alphaF();
+				red = (1.0f - a) * red + a * rgba.redF();
+				green = (1.0f - a) * green + a * rgba.greenF();
+				blue = (1.0f - a) * blue + a * rgba.blueF();
+			}
+
+			image.setPixel(x, y, QColor(red * 255.0f, green * 255.0f, blue * 255.0f).rgba());
 		}
 	}
-
-	unsigned int elementCount() const
-	{
-		return m_elementCount;
-	}
-
-	operator T const *() const
-	{
-		return m_elements;
-	}
-
-	operator T *()
-	{
-		return m_elements;
-	}
-
-};
+}
 
 void MyQT::button_render_software()
 {
@@ -903,30 +914,7 @@ void MyQT::button_render_software()
 
 		DEBUG_OUT << "Sorting and blending fragments..." << std::endl;
 
-		for (int y = 0; y < viewportHeight; ++y)
-		{
-			for (int x = 0; x < viewportWidth; ++x)
-			{
-				FragmentStack & fragments = fragmentBuffer[y * viewportWidth + x];
-
-				std::stable_sort(fragments.begin(), fragments.end());
-
-				float red = 0.0f;
-				float green = 0.0f;
-				float blue = 0.0f;
-
-				for (FragmentStack::const_iterator i = fragments.begin(); i != fragments.end(); ++i)
-				{
-					QColor const rgba(QColor::fromRgba(i->rgba()));
-					float const a = rgba.alphaF();
-					red = (1.0f - a) * red + a * rgba.redF();
-					green = (1.0f - a) * green + a * rgba.greenF();
-					blue = (1.0f - a) * blue + a * rgba.blueF();
-				}
-
-				image.setPixel(x, y, QColor(red * 255.0f, green * 255.0f, blue * 255.0f).rgba());
-			}
-		}
+		sortAndBlend(fragmentBuffer, image);
 
 		DEBUG_OUT << "Software rendering done in " << timer.elapsed() << " ms" << std::endl;
 
@@ -940,28 +928,129 @@ void MyQT::button_render_software()
 	}
 }
 
-#if 0
+static void clearStacks(FragmentBuffer & fragmentBuffer)
+{
+	for (FragmentBuffer::iterator i = fragmentBuffer.begin(); i != fragmentBuffer.end(); ++i)
+	{
+		i->clear();
+	}
+}
+
 static void testRasterizeTriangle()
 {
-	DEBUG_OUT << "Testing rasterizeTriangle()" << std::endl;
+	DEBUG_OUT << "Testing rasterizeTriangle()..." << std::endl;
 
 	GLint const viewportX = 0;
 	GLint const viewportY = 0;
-	GLint const viewportWidth = 100;
-	GLint const viewportHeight = 100;
+	GLint const viewportWidth = 4;
+	GLint const viewportHeight = viewportWidth;
+	GLint const right = viewportWidth - 1;
+	GLint const top = viewportHeight - 1;
+	int errorCount = 0;
 
 	DEBUG_OUT << "viewport: " << viewportX << ' ' << viewportY << ' ' << viewportWidth << ' ' << viewportHeight << std::endl;
 
-	Array<RasterizationSpan> spans(viewportHeight);
+	RasterizationSpans spans(viewportHeight);
 	FragmentBuffer fragmentBuffer(viewportHeight * viewportWidth);
 
-	// TODO
-//	rasterizeTriangle(spans, viewportWidth, viewportHeight, v1, v2, v3, color.rgba(), fragmentBuffer);
+	int const rgba1 = 0xFFFF00FF;
+	int const rgba2 = 0xFF00FFFF;
+
+	std::vector< int > expectedRowSummary0;
+	expectedRowSummary0.push_back(0);
+
+	std::vector< int > expectedRowSummary1;
+	expectedRowSummary1.push_back(0);
+	expectedRowSummary1.push_back(rgba1);
+	expectedRowSummary1.push_back(0);
+
+	std::vector< int > expectedRowSummary2;
+	expectedRowSummary2.push_back(0);
+	expectedRowSummary2.push_back(rgba2);
+	expectedRowSummary2.push_back(0);
+
+	std::vector< int > expectedRowSummary3;
+	expectedRowSummary3.push_back(0);
+	expectedRowSummary3.push_back(rgba1);
+	expectedRowSummary3.push_back(rgba2);
+	expectedRowSummary3.push_back(0);
+
+	for (int i = 0; i <= viewportWidth; ++i)
+	{
+		glm::vec4 const v1(i, 0.0f, 0.0f, 1.0f);
+		glm::vec4 const v2(right - i, top, 0.0f, 1.0f);
+		glm::vec4 const v3(0.0f, top - i, 0.0f, 1.0f);
+		glm::vec4 const v4(0.0f, i, 0.0f, 1.0f);
+
+		clearStacks(fragmentBuffer);
+
+		rasterizeTriangle(spans, viewportWidth, viewportHeight, v1, v2, v3, rgba1, fragmentBuffer);
+		rasterizeTriangle(spans, viewportWidth, viewportHeight, v1, v4, v2, rgba2, fragmentBuffer);
+
+		for (int y = 0; y < viewportHeight; ++y)
+		{
+			std::vector< int > actualRowSummary(1, 0);
+
+			for (int x = 0; x < viewportWidth; ++x)
+			{
+				FragmentStack const & fragments = fragmentBuffer[y * viewportWidth + x];
+
+				if (!fragments.empty())
+				{
+					if (fragments.size() != 1)
+					{
+						++errorCount;
+
+						DEBUG_OUT << "i: " << i << " y: " << y << " x: " << x << " badFragmentCount: " << fragments.size() << std::endl;
+					}
+
+					int const rgba = fragments[0].rgba();
+
+					if (actualRowSummary.back() != rgba)
+					{
+						actualRowSummary.push_back(rgba);
+					}
+				}
+				else
+				{
+					if (actualRowSummary.back() != 0)
+					{
+						actualRowSummary.push_back(0);
+					}
+				}
+			}
+
+			if (actualRowSummary.back() != 0)
+			{
+				actualRowSummary.push_back(0);
+			}
+
+			if (!(expectedRowSummary0 == actualRowSummary || expectedRowSummary1 == actualRowSummary ||
+					expectedRowSummary2 == actualRowSummary || expectedRowSummary3 == actualRowSummary))
+			{
+				++errorCount;
+
+				using namespace Debug;
+
+				DEBUG_OUT << "i: " << i << " y: " << y << " badRowSummary: " << actualRowSummary << std::endl;
+			}
+		}
+	}
+
+	if (errorCount == 0)
+	{
+		DEBUG_OUT << "rasterizeTriangle() seems OK" << std::endl;
+	}
+	else
+	{
+		DEBUG_OUT << "rasterizeTriangle() is defective" << std::endl;
+	}
 }
-#endif
 
 int main(int argc, char **argv)
 {
+	testRasterizeTriangle();
+
 	if (argc>1)
 	{
 		std::vector<std::string> attrNames ;

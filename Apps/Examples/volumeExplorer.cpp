@@ -468,7 +468,7 @@ static glm::vec4 project(glm::vec4 const & v, glm::mat4 const & mvp, glm::vec4 c
 	return viewportScale * tmp / tmp[3]  + viewportCenter;
 }
 
-class RasterizationContourDatum
+class RasterizationSpan
 {
 
 	int m_firstX, m_lastX;
@@ -546,6 +546,8 @@ public:
 
 };
 
+typedef std::vector< RasterizationSpan > RasterizationSpans;
+
 static inline float linerp(float const s, float const a, float const b)
 {
 	return s * a + (1.0f - s) * b;
@@ -556,7 +558,7 @@ static inline float linerp(float const s, float const a, float const b)
  * using the Bresenham's line drawing algorithm.
  * y1 must be strictly less than y2.
  */
-static void updateRasterizationCountourTopDown(RasterizationContourDatum * const contourX, int const screenWidth, int const screenHeight,
+static void updateRasterizationSpansTopDown(RasterizationSpans & spans, int const screenWidth, int const screenHeight,
 		int x1, int y1, float const a1, float const b1, float const c1,
 		int x2, int y2, float const a2, float const b2, float const c2)
 {
@@ -613,11 +615,11 @@ static void updateRasterizationCountourTopDown(RasterizationContourDatum * const
 
 			assert(linerp(s, a1, a2) || linerp(s, b1, b2) || linerp(s, c1, c2));
 
-			contourX[y].updateRange(x, linerp(s, a1, a2), linerp(s, b1, b2), linerp(s, c1, c2));
+			spans[y].updateRange(x, linerp(s, a1, a2), linerp(s, b1, b2), linerp(s, c1, c2));
 
 			if (debug)
 			{
-				DEBUG_OUT << x << ' ' << y << ' ' <<  contourX[y].firstX() << ' ' << contourX[y].lastX() << std::endl;
+				DEBUG_OUT << x << ' ' << y << ' ' <<  spans[y].firstX() << ' ' << spans[y].lastX() << std::endl;
 			}
 		}
 
@@ -628,7 +630,7 @@ static void updateRasterizationCountourTopDown(RasterizationContourDatum * const
 	}
 }
 
-static void updateRasterizationCountour(RasterizationContourDatum * const contourX, int const screenWidth, int const screenHeight,
+static void updateRasterizationSpans(RasterizationSpans & spans, int const screenWidth, int const screenHeight,
 		int x1, int y1, float const a1, float const b1, float const c1,
 		int x2, int y2, float const a2, float const b2, float const c2)
 {
@@ -641,22 +643,22 @@ static void updateRasterizationCountour(RasterizationContourDatum * const contou
 
 	if (y1 == y2)
 	{
-		contourX[y1].updateRange(x1, a1, b1, c1);
-		contourX[y2].updateRange(x2, a2, b2, c2);
+		spans[y1].updateRange(x1, a1, b1, c1);
+		spans[y2].updateRange(x2, a2, b2, c2);
 	}
 	else if (y1 < y2)
 	{
-		updateRasterizationCountourTopDown(contourX, screenWidth, screenHeight, x1, y1, a1, b1, c1, x2, y2, a2, b2, c2);
+		updateRasterizationSpansTopDown(spans, screenWidth, screenHeight, x1, y1, a1, b1, c1, x2, y2, a2, b2, c2);
 	}
 	else
 	{
-		updateRasterizationCountourTopDown(contourX, screenWidth, screenHeight, x2, y2, a2, b2, c2, x1, y1, a1, b1, c1);
+		updateRasterizationSpansTopDown(spans, screenWidth, screenHeight, x2, y2, a2, b2, c2, x1, y1, a1, b1, c1);
 	}
 
 	if (debug)
 	{
-		DEBUG_OUT << y1 << ' ' << contourX[y1].firstX() << ' ' << contourX[y1].lastX() << std::endl;
-		DEBUG_OUT << y2 << ' ' << contourX[y2].firstX() << ' ' << contourX[y2].lastX() << std::endl;
+		DEBUG_OUT << y1 << ' ' << spans[y1].firstX() << ' ' << spans[y1].lastX() << std::endl;
+		DEBUG_OUT << y2 << ' ' << spans[y2].firstX() << ' ' << spans[y2].lastX() << std::endl;
 	}
 }
 
@@ -699,7 +701,7 @@ public:
 typedef std::vector< PixelFragment > FragmentStack;
 typedef std::vector< FragmentStack > FragmentBuffer;
 
-static void rasterizeTriangle(RasterizationContourDatum * const contourX, int const screenWidth, int const screenHeight,
+static void rasterizeTriangle(RasterizationSpans & spans, int const screenWidth, int const screenHeight,
 		glm::vec4 const & p0, glm::vec4 const & p1, glm::vec4 const & p2,
 		unsigned int rgba, FragmentBuffer & fragmentBuffer)
 {
@@ -714,16 +716,16 @@ static void rasterizeTriangle(RasterizationContourDatum * const contourX, int co
 
 	for (int y = firstY; y <= lastY; ++y)
 	{
-		contourX[y].reset();
+		spans[y].reset();
 	}
 
-	updateRasterizationCountour(contourX, screenWidth, screenHeight,
+	updateRasterizationSpans(spans, screenWidth, screenHeight,
 			x1, y1, 0.0f, 1.0f, 0.0f,
 			x0, y0, 1.0f, 0.0f, 0.0f);
-	updateRasterizationCountour(contourX, screenWidth, screenHeight,
+	updateRasterizationSpans(spans, screenWidth, screenHeight,
 			x1, y1, 0.0f, 1.0f, 0.0f,
 			x2, y2, 0.0f, 0.0f, 1.0f);
-	updateRasterizationCountour(contourX, screenWidth, screenHeight,
+	updateRasterizationSpans(spans, screenWidth, screenHeight,
 			x2, y2, 0.0f, 0.0f, 1.0f,
 			x0, y0, 1.0f, 0.0f, 0.0f);
 
@@ -731,7 +733,7 @@ static void rasterizeTriangle(RasterizationContourDatum * const contourX, int co
 
 	for (int y = firstY; y < lastY; ++y)
 	{
-		RasterizationContourDatum const & datum = contourX[y];
+		RasterizationSpan const & datum = spans[y];
 		int const firstX = datum.firstX();
 		int const lastX = datum.lastX();
 		float const xSpan = std::max(1, lastX - firstX);
@@ -846,7 +848,7 @@ void MyQT::button_render_software()
 
 		painter.setPen(Qt::NoPen);
 
-		Array<RasterizationContourDatum> ContourX(viewportHeight);
+		RasterizationSpans spans(viewportHeight);
 		FragmentBuffer fragmentBuffer(viewportHeight * viewportWidth);
 
 		DEBUG_OUT << "Rasterizing triangles and accumulating fragments..." << std::endl;
@@ -874,7 +876,7 @@ void MyQT::button_render_software()
 
 			if (!debugUseQtRasterization)
 			{
-				rasterizeTriangle(ContourX, viewportWidth, viewportHeight, v1, v2, v3, color.rgba(), fragmentBuffer);
+				rasterizeTriangle(spans, viewportWidth, viewportHeight, v1, v2, v3, color.rgba(), fragmentBuffer);
 			}
 			else
 			{
@@ -937,6 +939,26 @@ void MyQT::button_render_software()
 		DEBUG_OUT << "Software rendering aborted" << std::endl;
 	}
 }
+
+#if 0
+static void testRasterizeTriangle()
+{
+	DEBUG_OUT << "Testing rasterizeTriangle()" << std::endl;
+
+	GLint const viewportX = 0;
+	GLint const viewportY = 0;
+	GLint const viewportWidth = 100;
+	GLint const viewportHeight = 100;
+
+	DEBUG_OUT << "viewport: " << viewportX << ' ' << viewportY << ' ' << viewportWidth << ' ' << viewportHeight << std::endl;
+
+	Array<RasterizationSpan> spans(viewportHeight);
+	FragmentBuffer fragmentBuffer(viewportHeight * viewportWidth);
+
+	// TODO
+//	rasterizeTriangle(spans, viewportWidth, viewportHeight, v1, v2, v3, color.rgba(), fragmentBuffer);
+}
+#endif
 
 int main(int argc, char **argv)
 {

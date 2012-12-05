@@ -439,21 +439,21 @@ glm::vec4 MyQT::viewpoint() const
 namespace Debug
 {
 
-std::ostream & operator<<(std::ostream & out, glm::vec4 const & v)
+static std::ostream & operator<<(std::ostream & out, glm::vec4 const & v)
 {
 	out << '[' << v[0] << ' ' << v[1] << ' ' << v[2] << ' ' << v[3] << ']';
 
 	return out;
 }
 
-std::ostream & operator<<(std::ostream & out, QPointF const & p)
+static std::ostream & operator<<(std::ostream & out, QPointF const & p)
 {
 	out << '[' << p.x() << ' ' << p.y() << ']';
 
 	return out;
 }
 
-std::ostream & operator<<(std::ostream & out, std::vector< int > const & v)
+static std::ostream & operator<<(std::ostream & out, std::vector< int > const & v)
 {
 	out << '[';
 
@@ -824,48 +824,29 @@ static void sortAndBlend(FragmentBuffer & fragmentBuffer, QImage & image)
 	}
 }
 
-void MyQT::button_render_software()
+static void rasterizeTrianglesAndAccumulateFragments(Algo::Render::GL2::ExplodeVolumeAlphaRender const * const evr,
+		float const faceScale, float const volumeScale,
+		GLint const viewport[4], glm::mat4 const & mvp, FragmentBuffer & fragmentBuffer)
 {
-	DEBUG_OUT << "Software rendering..." << std::endl;
 	static bool const debugShowRasterizationProgress = false;
-	static bool const debugUseQtRasterization = false;
-	static bool const debugDrawQtWireframe = false;
-
-	Algo::Render::GL2::ExplodeVolumeAlphaRender const * const evr = m_explode_render;
-
 	VBODataPointer const colors(evr->colors());
 	VBODataPointer const vertices(evr->vertices());
 
 	if (colors && vertices)
 	{
-		Utils::Chrono timer;
-
-		timer.start();
-
 		assert(colors.elementCount() == vertices.elementCount());
-		GLint viewport[4];
 
-		glGetIntegerv(GL_VIEWPORT, viewport);
 		GLint const viewportX = viewport[0];
 		GLint const viewportY = viewport[1];
 		GLint const viewportWidth = viewport[2];
 		GLint const viewportHeight = viewport[3];
 
-		DEBUG_OUT << "viewport: " << viewportX << ' ' << viewportY << ' ' << viewportWidth << ' ' << viewportHeight << std::endl;
-
 		glm::vec4 const viewportCenter(viewportX + viewportWidth / 2.0, viewportY + viewportHeight / 2.0, 0.0, 0.0);
 		glm::vec4 const viewportScale(viewportWidth / 2.0, viewportHeight / 2.0, 1.0, 1.0);
-		QImage image(viewportWidth, viewportHeight, QImage::Format_ARGB32);
-		image.fill(QColor(0, 0, 0));
-		QPainter painter(&image);
-		glm::mat4 const mvp = projectionMatrix() * modelViewMatrix() * transfoMatrix();
-
-		painter.setPen(Qt::NoPen);
 
 		RasterizationSpans spans(viewportHeight);
-		FragmentBuffer fragmentBuffer(viewportHeight * viewportWidth);
 
-		DEBUG_OUT << "Rasterizing triangles and accumulating fragments..." << std::endl;
+		fragmentBuffer.resize(viewportHeight * viewportWidth);
 
 		for (unsigned int i = 0; i < vertices.elementCount(); i += 4)
 		{
@@ -875,11 +856,11 @@ void MyQT::button_render_software()
 			glm::vec4 v2(vertices[i * 3 + 6 + 0], vertices[i * 3 + 6 + 1], vertices[i * 3 + 6 + 2], 1.0);
 			glm::vec4 v3(vertices[i * 3 + 9 + 0], vertices[i * 3 + 9 + 1], vertices[i * 3 + 9 + 2], 1.0);
 
-			v1 = project(explode(v1, faceCenter, m_explode_factorf, volumeCenter, m_explode_factor),
+			v1 = project(explode(v1, faceCenter, faceScale, volumeCenter, volumeScale),
 					mvp, viewportCenter, viewportScale);
-			v2 = project(explode(v2, faceCenter, m_explode_factorf, volumeCenter, m_explode_factor),
+			v2 = project(explode(v2, faceCenter, faceScale, volumeCenter, volumeScale),
 					mvp, viewportCenter, viewportScale);
-			v3 = project(explode(v3, faceCenter, m_explode_factorf, volumeCenter, m_explode_factor),
+			v3 = project(explode(v3, faceCenter, faceScale, volumeCenter, volumeScale),
 					mvp, viewportCenter, viewportScale);
 
 			v1.y = viewportHeight - 1 - v1.y;
@@ -888,34 +869,94 @@ void MyQT::button_render_software()
 
 			QColor const color(colors[i * 4 + 4 + 0] * 255.0, colors[i * 4 + 4 + 1] * 255.0, colors[i * 4 + 4 + 2] * 255.0, colors[i * 4 + 4 + 3] * 255.0);
 
-			if (!debugUseQtRasterization)
-			{
-				rasterizeTriangle(spans, viewportWidth, viewportHeight, v1, v2, v3, color.rgba(), fragmentBuffer);
-			}
-			else
-			{
-				painter.setBrush(color);
-			}
-
-			if (debugDrawQtWireframe)
-			{
-				painter.setPen(QColor(255, 0, 255));
-			}
-
-			if (debugUseQtRasterization || debugDrawQtWireframe)
-			{
-				QPointF const triangle[3] = { QPointF(v1.x, v1.y), QPointF(v2.x, v2.y), QPointF(v3.x, v3.y) };
-
-				painter.drawConvexPolygon(triangle, 3);
-			}
+			rasterizeTriangle(spans, viewportWidth, viewportHeight, v1, v2, v3, color.rgba(), fragmentBuffer);
 
 			if (debugShowRasterizationProgress)
 			{
 				DEBUG_OUT << i << " / " << vertices.elementCount() << '\r' << std::flush;
 			}
 		}
+	}
+}
 
+class Viewport
+{
+
+	GLint m_viewport[4];
+
+public:
+
+	Viewport()
+	{
+		glGetIntegerv(GL_VIEWPORT, m_viewport); DEBUG_GL;
+	}
+
+	GLint x() const
+	{
+		return m_viewport[0];
+	}
+
+	GLint y() const
+	{
+		return m_viewport[1];
+	}
+
+	GLint width() const
+	{
+		return m_viewport[2];
+	}
+
+	GLint height() const
+	{
+		return m_viewport[3];
+	}
+
+	operator GLint const *() const
+	{
+		return m_viewport;
+	}
+
+};
+
+namespace Debug
+{
+
+static std::ostream & operator<<(std::ostream & out, Viewport const & v)
+{
+	out << '[' << v.x() << ' ' << v.y() << ' ' << v.width() << ' ' << v.height() << ']';
+
+	return out;
+}
+
+} // namespace Debug
+
+void MyQT::button_render_software()
+{
+	DEBUG_OUT << "Software rendering..." << std::endl;
+
+	Utils::Chrono timer;
+
+	timer.start();
+
+	Viewport viewport;
+
+	{
+		using namespace Debug;
+		DEBUG_OUT << "viewport: " << viewport << std::endl;
+	}
+
+	FragmentBuffer fragmentBuffer;
+
+	DEBUG_OUT << "Rasterizing triangles and accumulating fragments..." << std::endl;
+
+	rasterizeTrianglesAndAccumulateFragments(m_explode_render, m_explode_factorf, m_explode_factor,
+			viewport, projectionMatrix() * modelViewMatrix() * transfoMatrix(), fragmentBuffer);
+
+	if (!fragmentBuffer.empty()) {
 		DEBUG_OUT << "Sorting and blending fragments..." << std::endl;
+
+		QImage image(viewport.width(), viewport.height(), QImage::Format_ARGB32);
+		image.fill(QColor(0, 0, 0));
 
 		sortAndBlend(fragmentBuffer, image);
 

@@ -631,7 +631,7 @@ static void updateRasterizationSpansTopDown(RasterizationSpans & spans, int cons
 			nextY = y + 1;
 		}
 
-		if (0 <= x && x < screenWidth && 0 <= y && y < screenHeight && (0 <= sx && previousY < y || sx < 0 && (y < nextY || x == x2)))
+		if (0 <= y && y < screenHeight && (0 <= sx && previousY < y || sx < 0 && (y < nextY || x == x2)))
 		{
 			float const s = static_cast<float>(pixelCount - 1) / std::max(m, 1);
 
@@ -762,29 +762,32 @@ static void rasterizeTriangle(RasterizationSpans & spans, int const screenWidth,
 
 		for (int x = firstX; x < lastX; ++x)
 		{
-			float const s = (x - firstX) / xSpan;
-			float const a = linerp(s, datum.firstA(), datum.lastA());
-			float const b = linerp(s, datum.firstB(), datum.lastB());
-			float const c = linerp(s, datum.firstC(), datum.lastC());
-			float const z = 1.0f / (a / (p0.z + dz) + b / (p1.z + dz) + c / (p2.z + dz));
-
-			assert(a || b || c);
-
-#define SHOW_SEGMENT_EXTREMITIES 0
-#if SHOW_SEGMENT_EXTREMITIES
-			if (x == firstX)
+			if (0 <= x && x < screenWidth)
 			{
-				fragmentBuffer[y * screenWidth + x].push_back(PixelFragment(z, 0xFF00FF00));
-			}
-			else if (x >= lastX - 1)
-			{
-				fragmentBuffer[y * screenWidth + x].push_back(PixelFragment(z, 0xFFFF0000));
-			}
-			else
+				float const s = (x - firstX) / xSpan;
+				float const a = linerp(s, datum.firstA(), datum.lastA());
+				float const b = linerp(s, datum.firstB(), datum.lastB());
+				float const c = linerp(s, datum.firstC(), datum.lastC());
+				float const z = 1.0f / (a / (p0.z + dz) + b / (p1.z + dz) + c / (p2.z + dz));
+
+				assert(a || b || c);
+
+#define DEBUG_HIGHLIGHT_SPAN_EXTREMITIES 0
+#if DEBUG_HIGHLIGHT_SPAN_EXTREMITIES
+				if (x == firstX)
+				{
+					fragmentBuffer[y * screenWidth + x].push_back(PixelFragment(z, 0xFF00FF00));
+				}
+				else if (x >= lastX - 1)
+				{
+					fragmentBuffer[y * screenWidth + x].push_back(PixelFragment(z, 0xFFFF0000));
+				}
+				else
 #endif
-#undef SHOW_SEGMENT_EXTREMITIES
-			{
-				fragmentBuffer[y * screenWidth + x].push_back(PixelFragment(z, rgba));
+#undef DEBUG_HIGHLIGHT_SPAN_EXTREMITIES
+				{
+					fragmentBuffer[y * screenWidth + x].push_back(PixelFragment(z, rgba));
+				}
 			}
 		}
 	}
@@ -1088,7 +1091,9 @@ static void testRasterizeTriangle()
 
 int main(int argc, char **argv)
 {
+#ifndef NDEBUG
 	testRasterizeTriangle();
+#endif
 
 	if (argc>1)
 	{

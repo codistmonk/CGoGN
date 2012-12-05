@@ -142,10 +142,8 @@ void Viewer::cb_redraw()
 	if (useFbo)
 	{
 		// Enable Fbo before rendering
-		//m_fbo->BindColorTexOutput();
 		m_fbo->Bind();
 		m_fbo->EnableColorAttachments();
-		// TODO : gérer le viewport
 	
 		// Clear old Fbo buffers content
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

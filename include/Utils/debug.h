@@ -14,7 +14,7 @@ static std::stringstream ignore;
 
 } // namespace Debug
 
-#define DEBUG_OUT Debug::ignore
+#define DEBUG_OUT ::Debug::ignore
 #define DEBUG_GL
 #endif
 

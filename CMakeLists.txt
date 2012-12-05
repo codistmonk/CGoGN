@@ -6,6 +6,20 @@ project(CGoGN)
 
 SET(CGoGN_ROOT_DIR ${CMAKE_SOURCE_DIR})
 
+IF(MORE_WARNINGS)
+IF(MSVC)
+  # Force to always compile with W4
+  IF(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
+    string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  ELSE()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
+  ENDIF()
+ELSEIF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+  # Update if necessary
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Wno-long-long")
+ENDIF()
+ENDIF(MORE_WARNINGS)
+
 # for GLEW
 SET(CMAKE_MODULE_PATH ${CGoGN_ROOT_DIR}/cmake_modules/)
 

@@ -43,19 +43,21 @@ PFP::MAP myMap;
 VertexAttribute<PFP::VEC3> position ;
 VolumeAttribute<PFP::VEC4> color ;
 
-void MyQT::volumes_onoff(bool x)
+#define UNUSED(x)
+
+void MyQT::volumes_onoff(bool UNUSED(x))
 {
 	render_volumes = !render_volumes;
 	updateGL();
 }
 
-void MyQT::edges_onoff(bool x)
+void MyQT::edges_onoff(bool UNUSED(x))
 {
 	render_edges = !render_edges;
 	updateGL();
 }
 
-void MyQT::topo_onoff(bool x)
+void MyQT::topo_onoff(bool UNUSED(x))
 {
 	render_topo = !render_topo;
 	if (render_topo)
@@ -92,7 +94,7 @@ void MyQT::clipping_onoff(bool x)
 	updateGL();
 }
 
-void MyQT::hide_onoff(bool x)
+void MyQT::hide_onoff(bool UNUSED(x))
 {
 	hide_clipping = !hide_clipping;
 	updateGL();
@@ -321,7 +323,7 @@ void MyQT::cb_redraw()
 }
 
 
-void  MyQT::cb_mousePress(int button, int x, int y)
+void  MyQT::cb_mousePress(int UNUSED(button), int x, int y)
 {
 	if (!Shift())
 		return;
@@ -350,7 +352,7 @@ void  MyQT::cb_mousePress(int button, int x, int y)
 	}
 }
 
-void  MyQT::cb_mouseRelease(int button, int x, int y)
+void  MyQT::cb_mouseRelease(int UNUSED(button), int UNUSED(x), int UNUSED(y))
 {
 
 	if (hide_clipping || !clip_volume)
@@ -699,7 +701,7 @@ typedef std::vector< FragmentStack > FragmentBuffer;
 
 static void rasterizeTriangle(RasterizationContourDatum * const contourX, int const screenWidth, int const screenHeight,
 		glm::vec4 const & p0, glm::vec4 const & p1, glm::vec4 const & p2,
-		QImage & image, unsigned int rgba, FragmentBuffer & fragmentBuffer)
+		unsigned int rgba, FragmentBuffer & fragmentBuffer)
 {
 	int const x0 = roundf(p0.x);
 	int const x1 = roundf(p1.x);
@@ -764,6 +766,48 @@ static void rasterizeTriangle(RasterizationContourDatum * const contourX, int co
 	}
 }
 
+template<typename T>
+class Array
+{
+
+	unsigned int const m_elementCount;
+
+	T * m_elements;
+
+public:
+
+	Array(unsigned int const elementCount): m_elementCount(elementCount), m_elements(new T[elementCount])
+	{
+			// NOP
+	}
+
+	~Array()
+	{
+		if (m_elements)
+		{
+			delete[] m_elements;
+
+			m_elements = NULL;
+		}
+	}
+
+	unsigned int elementCount() const
+	{
+		return m_elementCount;
+	}
+
+	operator T const *() const
+	{
+		return m_elements;
+	}
+
+	operator T *()
+	{
+		return m_elements;
+	}
+
+};
+
 void MyQT::button_render_software()
 {
 	DEBUG_OUT << "Software rendering..." << std::endl;
@@ -802,7 +846,7 @@ void MyQT::button_render_software()
 
 		painter.setPen(Qt::NoPen);
 
-		RasterizationContourDatum ContourX[viewportHeight];
+		Array<RasterizationContourDatum> ContourX(viewportHeight);
 		FragmentBuffer fragmentBuffer(viewportHeight * viewportWidth);
 
 		DEBUG_OUT << "Rasterizing triangles and accumulating fragments..." << std::endl;
@@ -830,7 +874,7 @@ void MyQT::button_render_software()
 
 			if (!debugUseQtRasterization)
 			{
-				rasterizeTriangle(ContourX, viewportWidth, viewportHeight, v1, v2, v3, image, color.rgba(), fragmentBuffer);
+				rasterizeTriangle(ContourX, viewportWidth, viewportHeight, v1, v2, v3, color.rgba(), fragmentBuffer);
 			}
 			else
 			{

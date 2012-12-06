@@ -22,6 +22,8 @@
 *                                                                              *
 *******************************************************************************/
 
+#include "Utils/commons.h"
+
 namespace CGoGN
 {
 
@@ -160,7 +162,7 @@ inline void ImplicitHierarchicalMap::next(Dart& d) const
 	} while(d != Map2::end() && m_dartLevel[d] > m_curLevel) ;
 }
 
-inline bool ImplicitHierarchicalMap::foreach_dart_of_vertex(Dart d, FunctorType& f, unsigned int thread)
+inline bool ImplicitHierarchicalMap::foreach_dart_of_vertex(Dart d, FunctorType& f, unsigned int UNUSED(thread))
 {
 	Dart dNext = d;
 	do
@@ -172,7 +174,7 @@ inline bool ImplicitHierarchicalMap::foreach_dart_of_vertex(Dart d, FunctorType&
  	return false;
 }
 
-inline bool ImplicitHierarchicalMap::foreach_dart_of_edge(Dart d, FunctorType& f, unsigned int thread)
+inline bool ImplicitHierarchicalMap::foreach_dart_of_edge(Dart d, FunctorType& f, unsigned int UNUSED(thread))
 {
 	if (f(d))
 		return true;
@@ -184,7 +186,7 @@ inline bool ImplicitHierarchicalMap::foreach_dart_of_edge(Dart d, FunctorType& f
 		return false;
 }
 
-inline bool ImplicitHierarchicalMap::foreach_dart_of_oriented_face(Dart d, FunctorType& f, unsigned int thread)
+inline bool ImplicitHierarchicalMap::foreach_dart_of_oriented_face(Dart d, FunctorType& f, unsigned int UNUSED(thread))
 {
 	Dart dNext = d ;
 	do
@@ -196,12 +198,12 @@ inline bool ImplicitHierarchicalMap::foreach_dart_of_oriented_face(Dart d, Funct
 	return false ;
 }
 
-inline bool ImplicitHierarchicalMap::foreach_dart_of_face(Dart d, FunctorType& f, unsigned int thread)
+inline bool ImplicitHierarchicalMap::foreach_dart_of_face(Dart d, FunctorType& f, unsigned int UNUSED(thread))
 {
 	return foreach_dart_of_oriented_face(d, f) ;
 }
 
-inline bool ImplicitHierarchicalMap::foreach_dart_of_oriented_volume(Dart d, FunctorType& f, unsigned int thread)
+inline bool ImplicitHierarchicalMap::foreach_dart_of_oriented_volume(Dart d, FunctorType& f, unsigned int UNUSED(thread))
 {
 	DartMarkerStore mark(*this);	// Lock a marker
 	bool found = false;				// Last functor return value
@@ -237,12 +239,12 @@ inline bool ImplicitHierarchicalMap::foreach_dart_of_oriented_volume(Dart d, Fun
 	return found;
 }
 
-inline bool ImplicitHierarchicalMap::foreach_dart_of_volume(Dart d, FunctorType& f, unsigned int thread)
+inline bool ImplicitHierarchicalMap::foreach_dart_of_volume(Dart d, FunctorType& f, unsigned int UNUSED(thread))
 {
 	return foreach_dart_of_oriented_volume(d, f) ;
 }
 
-inline bool ImplicitHierarchicalMap::foreach_dart_of_cc(Dart d, FunctorType& f, unsigned int thread)
+inline bool ImplicitHierarchicalMap::foreach_dart_of_cc(Dart d, FunctorType& f, unsigned int UNUSED(thread))
 {
 	return foreach_dart_of_oriented_volume(d, f) ;
 }
@@ -275,7 +277,6 @@ inline unsigned int ImplicitHierarchicalMap::getCurrentLevel()
 
 inline void ImplicitHierarchicalMap::setCurrentLevel(unsigned int l)
 {
-	assert(l >= 0 || !"Trying to set current level to a negative value") ;
 	m_curLevel = l ;
 }
 

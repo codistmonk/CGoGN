@@ -23,6 +23,7 @@
  *******************************************************************************/
 
 #include "Utils/pickables.h"
+#include "Utils/commons.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtx/norm.hpp"
 #include "Geometry/distances.h"
@@ -363,7 +364,7 @@ void Grid::updatePrecisionDrawing(unsigned int sub, unsigned int sub2)
 }
 
 
-unsigned int Grid::pick(const Geom::Vec3f& P, const Geom::Vec3f& V, Geom::Vec3f& I, float epsilon)
+unsigned int Grid::pick(const Geom::Vec3f& P, const Geom::Vec3f& V, Geom::Vec3f& I, float UNUSED(epsilon))
 {
 	if (fabs(V[2])>=0.0000001f)
 	{
@@ -503,7 +504,7 @@ void Sphere::draw()
 }
 
 
-unsigned int Sphere::pick(const Geom::Vec3f& P, const Geom::Vec3f& V, Geom::Vec3f& I, float epsilon)
+unsigned int Sphere::pick(const Geom::Vec3f& P, const Geom::Vec3f& V, Geom::Vec3f& I, float UNUSED(epsilon))
 {
 	float dist = Geom::squaredDistanceLine2Point<Geom::Vec3f>(P,V,V*V, Geom::Vec3f(0.0f,0.0f,0.0f));
 
@@ -615,7 +616,7 @@ void Cone::updatePrecisionDrawing(unsigned int sub, unsigned int sub2)
 
 
 
-unsigned int Cone::pick(const Geom::Vec3f& P, const Geom::Vec3f& V, Geom::Vec3f& I, float epsilon)
+unsigned int Cone::pick(const Geom::Vec3f& P, const Geom::Vec3f& V, Geom::Vec3f& I, float UNUSED(epsilon))
 {
 	Geom::Vec3f Z,Q;
 	if (Geom::lineLineClosestPoints<Geom::Vec3f>(P, V, Geom::Vec3f(0.0f,0.0f,0.0f), Geom::Vec3f(0.0f,0.0f,1.0f), Q, Z))
@@ -748,7 +749,7 @@ void Cylinder::updatePrecisionDrawing(unsigned int sub, unsigned int sub2)
 
 
 
-unsigned int Cylinder::pick(const Geom::Vec3f& P, const Geom::Vec3f& V,  Geom::Vec3f& I, float epsilon)
+unsigned int Cylinder::pick(const Geom::Vec3f& P, const Geom::Vec3f& V,  Geom::Vec3f& I, float UNUSED(epsilon))
 {
 	Geom::Vec3f Z,Q;
 	if (Geom::lineLineClosestPoints<Geom::Vec3f>(P, V, Geom::Vec3f(0.0f,0.0f,0.0f), Geom::Vec3f(0.0f,0.0f,1.0f), Q, Z))
@@ -892,7 +893,7 @@ void Cube::draw()
 }
 
 
-unsigned int Cube::pick(const Geom::Vec3f& P, const Geom::Vec3f& V, Geom::Vec3f& I, float epsilon)
+unsigned int Cube::pick(const Geom::Vec3f& P, const Geom::Vec3f& V, Geom::Vec3f& I, float UNUSED(epsilon))
 {
 
 //	// firs quick picking with bounding sphere

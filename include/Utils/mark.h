@@ -29,6 +29,7 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include "Utils/commons.h"
 
 namespace CGoGN
 {
@@ -167,10 +168,10 @@ public:
 	}
 
 	// math operator (fake, juste here to enable compilation)
-	void operator +=(const Mark& m) {}
-	void operator -=(const Mark& m) {}
-	void operator *=(double a) {}
-	void operator /=(double a) {}
+	void operator +=(const Mark& UNUSED(m)) {}
+	void operator -=(const Mark& UNUSED(m)) {}
+	void operator *=(double UNUSED(a)) {}
+	void operator /=(double UNUSED(a)) {}
 };
 
 } // namespace CGoGN

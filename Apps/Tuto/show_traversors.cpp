@@ -35,6 +35,7 @@
 #include "Topology/generic/traversorFactory.h"
 
 #include "Algo/Render/GL2/drawerCells.h"
+#include "Utils/commons.h"
 
 
 MAP myMap;
@@ -141,7 +142,7 @@ void MyQT::cb_redraw()
 	m_drawer.callList();
 }
 
-void MyQT::cb_mousePress(int button, int x, int y)
+void MyQT::cb_mousePress(int UNUSED(button), int x, int y)
 {
 	if (Shift())
 	{

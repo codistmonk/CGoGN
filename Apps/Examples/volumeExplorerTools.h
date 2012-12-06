@@ -3,8 +3,6 @@
 
 #include <vector>
 
-#define UNUSED(x)
-
 namespace CGoGN
 {
 
@@ -285,21 +283,21 @@ static void sortData(Algo::Render::GL2::ExplodeVolumeAlphaRender const * const e
 namespace Debug
 {
 
-static std::ostream & operator<<(std::ostream & out, glm::vec4 const & v)
+static inline std::ostream & operator<<(std::ostream & out, glm::vec4 const & v)
 {
 	out << '[' << v[0] << ' ' << v[1] << ' ' << v[2] << ' ' << v[3] << ']';
 
 	return out;
 }
 
-static std::ostream & operator<<(std::ostream & out, QPointF const & p)
+static inline std::ostream & operator<<(std::ostream & out, QPointF const & p)
 {
 	out << '[' << p.x() << ' ' << p.y() << ']';
 
 	return out;
 }
 
-static std::ostream & operator<<(std::ostream & out, std::vector< int > const & v)
+static inline std::ostream & operator<<(std::ostream & out, std::vector< int > const & v)
 {
 	out << '[';
 
@@ -767,7 +765,7 @@ public:
 namespace Debug
 {
 
-static std::ostream & operator<<(std::ostream & out, Viewport const & v)
+static inline std::ostream & operator<<(std::ostream & out, Viewport const & v)
 {
 	out << '[' << v.x() << ' ' << v.y() << ' ' << v.width() << ' ' << v.height() << ']';
 
@@ -776,7 +774,7 @@ static std::ostream & operator<<(std::ostream & out, Viewport const & v)
 
 } // namespace Debug
 
-static void clearStacks(FragmentBuffer & fragmentBuffer)
+static inline void clearStacks(FragmentBuffer & fragmentBuffer)
 {
 	for (FragmentBuffer::iterator i = fragmentBuffer.begin(); i != fragmentBuffer.end(); ++i)
 	{

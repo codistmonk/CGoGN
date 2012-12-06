@@ -22,6 +22,8 @@
 *                                                                              *
 *******************************************************************************/
 
+#include "Utils/commons.h"
+
 namespace CGoGN
 {
 
@@ -289,7 +291,7 @@ inline bool GMap1::isCycleTriangle(Dart d)
  *  Apply functors to all darts of a cell
  *************************************************************************/
 
-inline bool GMap1::foreach_dart_of_vertex(Dart d, FunctorType& f, unsigned int thread)
+inline bool GMap1::foreach_dart_of_vertex(Dart d, FunctorType& f, unsigned int UNUSED(thread))
 {
 	if (f(d)) return true;
 	Dart d1 = beta1(d);
@@ -297,7 +299,7 @@ inline bool GMap1::foreach_dart_of_vertex(Dart d, FunctorType& f, unsigned int t
 	return false;
 }
 
-inline bool GMap1::foreach_dart_of_edge(Dart d, FunctorType& f, unsigned int thread)
+inline bool GMap1::foreach_dart_of_edge(Dart d, FunctorType& f, unsigned int UNUSED(thread))
 {
 	if (f(d)) return true;
 	Dart d1 = beta0(d);
@@ -305,7 +307,7 @@ inline bool GMap1::foreach_dart_of_edge(Dart d, FunctorType& f, unsigned int thr
 	return false;
 }
 
-inline bool GMap1::foreach_dart_of_oriented_cc(Dart d, FunctorType& f, unsigned int thread)
+inline bool GMap1::foreach_dart_of_oriented_cc(Dart d, FunctorType& f, unsigned int UNUSED(thread))
 {
 	Dart it = d ;
 	do
@@ -320,18 +322,6 @@ inline bool GMap1::foreach_dart_of_oriented_cc(Dart d, FunctorType& f, unsigned 
 inline bool GMap1::foreach_dart_of_cc(Dart d, FunctorType& f, unsigned int thread)
 {
 	return GMap1::foreach_dart_of_oriented_cc(d, f, thread) || GMap1::foreach_dart_of_oriented_cc(beta0(d), f, thread) ;
-
-//	Dart it = d ;
-//	do
-//	{
-//		if (f(it))
-//			return true ;
-//		it = beta0(it);
-//		if (f(it))
-//			return true ;
-//		it = beta1(it) ;
-//	} while (it != d) ;
-//	return false ;
 }
 
 } // namespace CGoGN

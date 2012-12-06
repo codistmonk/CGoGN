@@ -25,6 +25,7 @@
 #define NAMETYPES_H_
 
 #include <string>
+#include "Utils/commons.h"
 
 namespace CGoGN
 {
@@ -38,31 +39,31 @@ std::string nameOfType(const T& v)
 	return v.CGoGNnameOfType();
 }
 
-template <> inline std::string nameOfType(const char& v) { return "char"; }
+template <> inline std::string nameOfType(const char& UNUSED(v)) { return "char"; }
 
-template <> inline std::string nameOfType(const short int& v) { return "short int"; }
+template <> inline std::string nameOfType(const short int& UNUSED(v)) { return "short int"; }
 
-template <> inline std::string nameOfType(const int& v) { return "int"; }
+template <> inline std::string nameOfType(const int& UNUSED(v)) { return "int"; }
 
-template <> inline std::string nameOfType(const long int& v) { return "long int"; }
+template <> inline std::string nameOfType(const long int& UNUSED(v)) { return "long int"; }
 
-template <> inline std::string nameOfType(const long long& v) { return "long long"; }
+template <> inline std::string nameOfType(const long long& UNUSED(v)) { return "long long"; }
 
-template <> inline std::string nameOfType(const unsigned long long& v) { return "long long"; }
+template <> inline std::string nameOfType(const unsigned long long& UNUSED(v)) { return "long long"; }
 
-template <> inline std::string nameOfType(const unsigned char& v) { return "unsigned char"; }
+template <> inline std::string nameOfType(const unsigned char& UNUSED(v)) { return "unsigned char"; }
 
-template <> inline std::string nameOfType(const unsigned short int& v) { return "unsigned short int"; }
+template <> inline std::string nameOfType(const unsigned short int& UNUSED(v)) { return "unsigned short int"; }
 
-template <> inline std::string nameOfType(const unsigned int& v) { return "unsigned int"; }
+template <> inline std::string nameOfType(const unsigned int& UNUSED(v)) { return "unsigned int"; }
 
-template <> inline std::string nameOfType(const unsigned long int& v) { return "unsigned long int"; }
+template <> inline std::string nameOfType(const unsigned long int& UNUSED(v)) { return "unsigned long int"; }
 
-template <> inline std::string nameOfType(const float& v) { return "float"; }
+template <> inline std::string nameOfType(const float& UNUSED(v)) { return "float"; }
 
-template <> inline std::string nameOfType(const double& v) { return "double"; }
+template <> inline std::string nameOfType(const double& UNUSED(v)) { return "double"; }
 
-template <> inline std::string nameOfType(const std::string& v) { return "std::string"; }
+template <> inline std::string nameOfType(const std::string& UNUSED(v)) { return "std::string"; }
 
 // Ply compatibility
 template <typename T>
@@ -71,27 +72,27 @@ std::string nameOfTypePly(const T& v)
 	return v.CGoGNnameOfType();
 }
 
-template <> inline std::string nameOfTypePly(const char& v) { return "int8"; }
+template <> inline std::string nameOfTypePly(const char& UNUSED(v)) { return "int8"; }
 
-template <> inline std::string nameOfTypePly(const short int& v) { return "int16"; }
+template <> inline std::string nameOfTypePly(const short int& UNUSED(v)) { return "int16"; }
 
-template <> inline std::string nameOfTypePly(const int& v) { return "int32"; }
+template <> inline std::string nameOfTypePly(const int& UNUSED(v)) { return "int32"; }
 
-template <> inline std::string nameOfTypePly(const long int& v) { return "invalid"; }
+template <> inline std::string nameOfTypePly(const long int& UNUSED(v)) { return "invalid"; }
 
-template <> inline std::string nameOfTypePly(const unsigned char& v) { return "uint8"; }
+template <> inline std::string nameOfTypePly(const unsigned char& UNUSED(v)) { return "uint8"; }
 
-template <> inline std::string nameOfTypePly(const unsigned short int& v) { return "uint16"; }
+template <> inline std::string nameOfTypePly(const unsigned short int& UNUSED(v)) { return "uint16"; }
 
-template <> inline std::string nameOfTypePly(const unsigned int& v) { return "uint32"; }
+template <> inline std::string nameOfTypePly(const unsigned int& UNUSED(v)) { return "uint32"; }
 
-template <> inline std::string nameOfTypePly(const unsigned long int& v) { return "invalid"; }
+template <> inline std::string nameOfTypePly(const unsigned long int& UNUSED(v)) { return "invalid"; }
 
-template <> inline std::string nameOfTypePly(const float& v) { return "float32"; }
+template <> inline std::string nameOfTypePly(const float& UNUSED(v)) { return "float32"; }
 
-template <> inline std::string nameOfTypePly(const double& v) { return "float64"; }
+template <> inline std::string nameOfTypePly(const double& UNUSED(v)) { return "float64"; }
 
-template <> inline std::string nameOfTypePly(const std::string& v) { return "invalid"; }
+template <> inline std::string nameOfTypePly(const std::string& UNUSED(v)) { return "invalid"; }
 
 }
 

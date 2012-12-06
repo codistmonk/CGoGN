@@ -31,6 +31,7 @@
 #include <QColorDialog>
 #include <QListWidget>
 #include "Utils/Qt/qtpopup.h"
+#include "Utils/commons.h"
 
 
 namespace CGoGN
@@ -74,7 +75,7 @@ protected:
 	 *  Called only if interface ptr has been given
 	 *  Do not forget to cast interf in the type of your interface !!
 	 */
-	virtual void updateCallBack(SimpleQT *interf) {}
+	virtual void updateCallBack(SimpleQT *UNUSED(interf)) {}
 
 public:
 	/**

@@ -132,7 +132,7 @@ void Viewer::cb_initGL()
 	m_fbo->AttachRenderbuffer(GL_DEPTH_COMPONENT);
 	m_fbo->AttachColorTexture(GL_RGBA);
 	m_fbo->AttachColorTexture(GL_RGBA);
-	//m_fbo->AttachDepthTexture();
+	m_fbo->AttachDepthTexture();
 }
 
 void Viewer::cb_redraw()
@@ -210,9 +210,13 @@ void Viewer::cb_redraw()
 		m_fbo->Unbind();
 	
 		// Get and draw depth texture from Fbo
-		//Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo->GetDepthTexId());
-		Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo->GetColorTexId(0));
+		Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo->GetDepthTexId());
+		//Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo->GetColorTexId(0));
 	}
+	
+	GLenum glError = glGetError();
+	if (glError != GL_NO_ERROR)
+		std::cout << "GL error : " << gluErrorString(glError) << std::endl;
 }
 
 void Viewer::cb_Open()

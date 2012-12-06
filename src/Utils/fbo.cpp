@@ -178,6 +178,8 @@ void FBO::AttachColorTexture(GLenum internalFormat, GLint filter)
 	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, m_width, m_height, 0, format, type, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Attach texture to Fbo
 	glBindFramebuffer(GL_FRAMEBUFFER, *m_fboId);
@@ -210,7 +212,7 @@ void FBO::AttachDepthTexture(GLint filter)
 
 	attachment = GL_DEPTH_ATTACHMENT;
 	internalFormat = GL_DEPTH_COMPONENT24;
-	format = GL_RGB;
+	format = GL_DEPTH_COMPONENT;
 	type = GL_FLOAT;
 
 	// Generate texture
@@ -219,6 +221,8 @@ void FBO::AttachDepthTexture(GLint filter)
 	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, m_width, m_height, 0, format, type, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Attach texture to Fbo
 	glBindFramebuffer(GL_FRAMEBUFFER, *m_fboId);

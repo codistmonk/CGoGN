@@ -26,6 +26,7 @@
 #include <QPen>
 
 #include "Utils/Qt/qthistodraw.h"
+#include "Utils/commons.h"
 
 namespace CGoGN
 {
@@ -257,7 +258,7 @@ void RenderHistogram::drawQuantiles(QPainter& painter)
 }
 
 
-void RenderHistogram::paintEvent(QPaintEvent* ev)
+void RenderHistogram::paintEvent(QPaintEvent* UNUSED(ev))
 {
 	QPainter painter;
 	painter.begin(this);

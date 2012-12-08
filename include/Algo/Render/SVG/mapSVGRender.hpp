@@ -22,6 +22,8 @@
 *                                                                              *
 *******************************************************************************/
 
+#include "Utils/commons.h"
+
 namespace CGoGN
 {
 
@@ -35,7 +37,7 @@ namespace SVG
 {
 
 template <typename PFP>
-void renderVertices(Utils::SVG::SVGOut& svg, typename PFP::MAP& map, const VertexAttribute<typename PFP::VEC3>& position, const FunctorSelect& good, unsigned int thread)
+void renderVertices(Utils::SVG::SVGOut& svg, typename PFP::MAP& map, const VertexAttribute<typename PFP::VEC3>& position, const FunctorSelect& good, unsigned int UNUSED(thread))
 {
 	TraversorV<typename PFP::MAP> trac(map, good);
 	svg.beginPoints();
@@ -45,7 +47,7 @@ void renderVertices(Utils::SVG::SVGOut& svg, typename PFP::MAP& map, const Verte
 }
 
 template <typename PFP>
-void renderVertices(Utils::SVG::SVGOut& svg, typename PFP::MAP& map, const VertexAttribute<typename PFP::VEC3>& position, const VertexAttribute<typename PFP::VEC3>& color, const FunctorSelect& good, unsigned int thread)
+void renderVertices(Utils::SVG::SVGOut& svg, typename PFP::MAP& map, const VertexAttribute<typename PFP::VEC3>& position, const VertexAttribute<typename PFP::VEC3>& color, const FunctorSelect& good, unsigned int UNUSED(thread))
 {
 	TraversorV<typename PFP::MAP> trac(map, good);
 	svg.beginPoints();
@@ -55,7 +57,7 @@ void renderVertices(Utils::SVG::SVGOut& svg, typename PFP::MAP& map, const Verte
 }
 
 template <typename PFP>
-void renderEdges(Utils::SVG::SVGOut& svg, typename PFP::MAP& map, const VertexAttribute<typename PFP::VEC3>& position, const FunctorSelect& good, unsigned int thread)
+void renderEdges(Utils::SVG::SVGOut& svg, typename PFP::MAP& map, const VertexAttribute<typename PFP::VEC3>& position, const FunctorSelect& good, unsigned int UNUSED(thread))
 {
 	TraversorE<typename PFP::MAP> trac(map, good);
 	svg.beginLines();
@@ -65,7 +67,7 @@ void renderEdges(Utils::SVG::SVGOut& svg, typename PFP::MAP& map, const VertexAt
 }
 
 template <typename PFP>
-void renderEdges(Utils::SVG::SVGOut& svg, typename PFP::MAP& map, const VertexAttribute<typename PFP::VEC3>& position, const VertexAttribute<typename PFP::VEC3>& color, const FunctorSelect& good, unsigned int thread)
+void renderEdges(Utils::SVG::SVGOut& svg, typename PFP::MAP& map, const VertexAttribute<typename PFP::VEC3>& position, const VertexAttribute<typename PFP::VEC3>& color, const FunctorSelect& good, unsigned int UNUSED(thread))
 {
 	TraversorE<typename PFP::MAP> trac(map, good);
 	svg.beginLines();

@@ -24,6 +24,7 @@
 
 #include "Topology/gmap/gmap2.h"
 #include "Topology/generic/traversorCell.h"
+#include "Utils/commons.h"
 
 namespace CGoGN
 {
@@ -312,20 +313,6 @@ bool GMap2::flipBackEdge(Dart d)
 	}
 	return false ; // cannot flip a border edge
 }
-
-//void GMap2::insertEdgeInVertex(Dart d, Dart e)
-//{
-//	assert(!sameVertex(d,e) && phi2(e)==phi_1(e));
-//
-//	phi1sew(phi_1(d),phi_1(e));
-//}
-//
-//void GMap2::removeEdgeFromVertex(Dart d)
-//{
-//	assert(phi2(d)!=d);
-//
-//	phi1sew(phi_1(d),phi2(d));
-//}
 
 void GMap2::sewFaces(Dart d, Dart e, bool withBoundary)
 {
@@ -803,7 +790,7 @@ bool GMap2::checkSimpleOrientedPath(std::vector<Dart>& vd)
  *  Apply functors to all darts of a cell
  *************************************************************************/
 
-bool GMap2::foreach_dart_of_oriented_vertex(Dart d, FunctorType& f, unsigned int thread)
+bool GMap2::foreach_dart_of_oriented_vertex(Dart d, FunctorType& f, unsigned int UNUSED(thread))
 {
 	Dart it = d;
 	do
@@ -815,7 +802,7 @@ bool GMap2::foreach_dart_of_oriented_vertex(Dart d, FunctorType& f, unsigned int
  	return false;
 }
 
-bool GMap2::foreach_dart_of_oriented_edge(Dart d, FunctorType& f, unsigned int thread)
+bool GMap2::foreach_dart_of_oriented_edge(Dart d, FunctorType& f, unsigned int UNUSED(thread))
 {
 	if (f(d))
 		return true ;
@@ -826,7 +813,7 @@ bool GMap2::foreach_dart_of_oriented_edge(Dart d, FunctorType& f, unsigned int t
 	return false ;
 }
 
-bool GMap2::foreach_dart_of_edge(Dart d, FunctorType& f, unsigned int thread)
+bool GMap2::foreach_dart_of_edge(Dart d, FunctorType& f, unsigned int UNUSED(thread))
 {
 	if (f(d))
 		return true ;

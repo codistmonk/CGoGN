@@ -23,6 +23,7 @@
 *******************************************************************************/
 #include "Utils/svg.h"
 #include "Utils/cgognStream.h"
+#include "Utils/commons.h"
 #include <algorithm>
 #include <typeinfo>
 #include <GL/glew.h>
@@ -161,7 +162,7 @@ void SvgPoints::save(std::ofstream& out) const
 }
 
 
-void SvgPoints::saveOne(std::ofstream& out, unsigned int i, unsigned int bbl) const
+void SvgPoints::saveOne(std::ofstream& out, unsigned int i, unsigned int UNUSED(bbl)) const
 {
 	std::stringstream ss;
 
@@ -209,7 +210,7 @@ void SvgLines::save(std::ofstream& out) const
 		saveOne(out,i);
 }
 
-void SvgLines::saveOne(std::ofstream& out, unsigned int i, unsigned int bbl) const
+void SvgLines::saveOne(std::ofstream& out, unsigned int i, unsigned int UNUSED(bbl)) const
 {
 	std::stringstream ss;
 

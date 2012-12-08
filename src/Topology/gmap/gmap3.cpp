@@ -24,6 +24,7 @@
 
 #include "Topology/gmap/gmap3.h"
 #include "Topology/generic/dartmarker.h"
+#include "Utils/commons.h"
 
 namespace CGoGN
 {
@@ -431,19 +432,6 @@ void GMap3::splitVolume(std::vector<Dart>& vd)
 
 	//sew the two connected components
 	GMap3::sewVolumes(phi2(e), phi2(e2), false);
-
-//	Dart e = vd.front();
-//	Dart e2 = phi2(e);
-//
-//	//unsew the edge path
-//	for(std::vector<Dart>::iterator it = vd.begin() ; it != vd.end() ; ++it)
-//		GMap2::unsewFaces(*it);
-//
-//	GMap2::fillHole(e) ;
-//	GMap2::fillHole(e2) ;
-//
-//	//sew the two connected components
-//	GMap3::sewVolumes(beta2(e), beta2(e2), false);
 }
 
 /*! @name Topological Queries
@@ -918,7 +906,7 @@ bool GMap3::foreach_dart_of_cc(Dart d, FunctorType& f, unsigned int thread)
  *  These functions must be used with care, generally only by import/creation algorithms
  *************************************************************************/
 
-unsigned int GMap3::closeHole(Dart d, bool forboundary)
+unsigned int GMap3::closeHole(Dart d, bool UNUSED(forboundary))
 {
 	assert(beta3(d) == d);		// Nothing to close
 	DartMarkerStore m(*this) ;

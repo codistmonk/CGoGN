@@ -36,6 +36,7 @@
 #include <string>
 #include "Geometry/vector_gen.h"
 #include "Utils/gl_matrices.h"
+#include "Utils/commons.h"
 
 namespace CGoGN { namespace Utils { class GLSLShader; } }
 
@@ -315,37 +316,37 @@ public:
 	/**
 	 * Mouse button has been pressed
 	 */
-	virtual void cb_mousePress(int button, int x, int y) {}
+	virtual void cb_mousePress(int UNUSED(button), int UNUSED(x), int UNUSED(y)) {}
 
 	/**
 	 * Mouse button has been released
 	 */
-	virtual void cb_mouseRelease(int button, int x, int y) {}
+	virtual void cb_mouseRelease(int UNUSED(button), int UNUSED(x), int UNUSED(y)) {}
 
 	/**
 	 * Mouse button has been clicked
 	 */
-	virtual void cb_mouseClick(int button, int x, int y) {}
+	virtual void cb_mouseClick(int UNUSED(button), int UNUSED(x), int UNUSED(y)) {}
 
 	/**
 	 * the mouse has been move (with buttons still pressed)
 	 */
-	virtual void cb_mouseMove(int buttons, int x, int y) {}
+	virtual void cb_mouseMove(int UNUSED(buttons), int UNUSED(x), int UNUSED(y)) {}
 
 	/**
 	 * the mouse has been move (with button still pressed)
 	 */
-	virtual void cb_wheelEvent(int delta, int x, int y) {}
+	virtual void cb_wheelEvent(int UNUSED(delta), int UNUSED(x), int UNUSED(y)) {}
 
 	/**
 	 * key press CB (context is ok)
 	 */
-	virtual void cb_keyPress(int code) {}
+	virtual void cb_keyPress(int UNUSED(code)) {}
 
 	/**
 	 * key releaase CB (context is ok)
 	 */
-	virtual void cb_keyRelease(int code) {}
+	virtual void cb_keyRelease(int UNUSED(code)) {}
 
 	/**
 	 * matrices need to be updated (context is ok)

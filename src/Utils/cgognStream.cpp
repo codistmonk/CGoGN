@@ -23,6 +23,7 @@
  *******************************************************************************/
 
 #include "Utils/cgognStream.h"
+#include "Utils/commons.h"
 #ifdef WITH_QT
 #include "Utils/Qt/qtSimple.h"
 #include <QtGui/QTextEdit>
@@ -175,7 +176,7 @@ void Out::toBuffer(std::stringstream* ss)
 	m_oss = ss;
 }
 
-Out&  Out::operator<< (Out& os)
+Out&  Out::operator<< (Out& UNUSED(os))
 {
 	return *this;
 }

@@ -26,6 +26,7 @@
 #include <algorithm>
 
 #include "Topology/gmap/embeddedGMap2.h"
+#include "Utils/commons.h"
 
 namespace CGoGN
 {
@@ -240,56 +241,6 @@ bool EmbeddedGMap2::flipBackEdge(Dart d)
 	return false ;
 }
 
-//void EmbeddedGMap2::insertEdgeInVertex(Dart d, Dart e)
-//{
-//	GMap2::insertEdgeInVertex(d, e);
-//
-//	if (isOrbitEmbedded<VERTEX>())
-//	{
-//		copyDartEmbedding<VERTEX>(e, d) ;
-//		copyDartEmbedding<VERTEX>(beta2(e), d) ;
-//	}
-//
-//	if (isOrbitEmbedded<FACE>())
-//	{
-//		if(!sameFace(d,e))
-//		{
-//			embedNewCell<FACE>(e);
-//			copyCell<FACE>(e, d) ;
-//		}
-//		else
-//		{
-//			embedOrbit<FACE>(d, getEmbedding<FACE>(d)) ;
-//		}
-//	}
-//}
-//
-//void EmbeddedGMap2::removeEdgeFromVertex(Dart d)
-//{
-//	Dart dPrev = alpha_1(d);
-//
-//	GMap2::removeEdgeFromVertex(d);
-//
-//	if (isOrbitEmbedded<VERTEX>())
-//	{
-//		embedNewCell<VERTEX>(d);
-//		copyCell<VERTEX>(d, dPrev);
-//	}
-//
-//	if (isOrbitEmbedded<FACE>())
-//	{
-//		if(!sameFace(d, dPrev))
-//		{
-//			embedNewCell<FACE>(d);
-//			copyCell<FACE>(d, dPrev) ;
-//		}
-//		else
-//		{
-//			embedOrbit<FACE>(d, getEmbedding<FACE>(d)) ;
-//		}
-//	}
-//}
-
 void EmbeddedGMap2::sewFaces(Dart d, Dart e, bool withBoundary)
 {
 	// for fixed point construction (import & primitives)
@@ -449,7 +400,7 @@ bool EmbeddedGMap2::mergeVolumes(Dart d, Dart e)
 	return false ;
 }
 
-unsigned int EmbeddedGMap2::closeHole(Dart d, bool forboundary)
+unsigned int EmbeddedGMap2::closeHole(Dart d, bool UNUSED(forboundary))
 {
 	unsigned int nbE = GMap2::closeHole(d) ;
 	Dart dd = phi2(d) ;

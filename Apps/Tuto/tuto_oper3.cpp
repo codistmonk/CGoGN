@@ -31,6 +31,7 @@
 #include "Algo/Geometry/normal.h"
 #include "Algo/Import/import.h"
 #include "Algo/Export/export.h"
+#include "Utils/commons.h"
 
 using namespace CGoGN ;
 
@@ -87,7 +88,7 @@ void MyQT::clipping_onoff(bool x)
 	updateGL();
 }
 
-void MyQT::hide_onoff(bool x)
+void MyQT::hide_onoff(bool UNUSED(x))
 {
 	hide_clipping = !hide_clipping;
 	updateMap();
@@ -374,7 +375,7 @@ void MyQT::cb_mousePress(int button, int x, int y)
 	}
 }
 
-void  MyQT::cb_mouseRelease(int button, int x, int y)
+void  MyQT::cb_mouseRelease(int UNUSED(button), int UNUSED(x), int UNUSED(y))
 {
 
 	if (hide_clipping || !clip_volume)

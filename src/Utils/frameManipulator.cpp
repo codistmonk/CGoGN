@@ -23,6 +23,7 @@
  *******************************************************************************/
 
 #include "Utils/frameManipulator.h"
+#include "Utils/commons.h"
 
 #include "Geometry/distances.h"
 #include "Geometry/intersection.h"
@@ -316,7 +317,7 @@ void FrameManipulator::highlight(unsigned int axis)
 
 
 
-unsigned int FrameManipulator::pick(const Geom::Vec3f& PP, const Geom::Vec3f& VV, float epsilon)
+unsigned int FrameManipulator::pick(const Geom::Vec3f& PP, const Geom::Vec3f& VV, float UNUSED(epsilon))
 {
 	Geom::Vec3f P,V;
 

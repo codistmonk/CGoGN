@@ -24,6 +24,7 @@
 
 #include "clipping.h"
 #include "Utils/static_assert.h"
+#include "Utils/commons.h"
 
 /*******************************************************************************
  *														MISCELLANOUS
@@ -964,7 +965,7 @@ void Clipping::cb_keyPress(int code)
 	}
 }
 
-void Clipping::cb_mousePress(int button, int x, int y)
+void Clipping::cb_mousePress(int UNUSED(button), int x, int y)
 {
 	// Check if no animation is active
 	if (m_lastAnimatedClippingPreset != NULL)

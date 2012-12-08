@@ -40,6 +40,7 @@
 #include "Algo/Render/GL2/mapRender.h"
 #include "Utils/Shaders/shaderFlat.h"
 #include "Utils/Shaders/shaderSimpleColor.h"
+#include "Utils/commons.h"
 
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_precision.hpp"
@@ -145,7 +146,7 @@ void MyQT::cb_redraw()
 
 }
 
-void  MyQT::cb_mousePress(int button, int x, int y)
+void  MyQT::cb_mousePress(int UNUSED(button), int x, int y)
 {
 	if (!Shift())
 		return;
@@ -249,7 +250,7 @@ void  MyQT::cb_mouseMove(int buttons, int x, int y)
 }
 
 
-void  MyQT::cb_wheelEvent(int delta, int x, int y)
+void  MyQT::cb_wheelEvent(int delta, int UNUSED(x), int UNUSED(y))
 {
 	if (!Shift())
 		return;

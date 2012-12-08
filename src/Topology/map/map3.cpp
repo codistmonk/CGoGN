@@ -24,6 +24,7 @@
 
 #include "Topology/map/map3.h"
 #include "Topology/generic/traversor3.h"
+#include "Utils/commons.h"
 
 namespace CGoGN
 {
@@ -1151,7 +1152,7 @@ bool Map3::foreach_dart_of_cc(Dart d, FunctorType& f, unsigned int thread)
  *  These functions must be used with care, generally only by import/creation algorithms
  *************************************************************************/
 
-unsigned int Map3::closeHole(Dart d, bool forboundary)
+unsigned int Map3::closeHole(Dart d, bool UNUSED(forboundary))
 {
 	assert(phi3(d) == d);		// Nothing to close
 	DartMarkerStore m(*this) ;

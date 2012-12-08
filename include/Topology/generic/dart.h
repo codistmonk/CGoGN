@@ -26,6 +26,7 @@
 #define DART_H_
 
 #include <iostream>
+#include "Utils/commons.h"
 
 namespace CGoGN
 {
@@ -96,10 +97,10 @@ struct Dart
 	friend std::ostream& operator<<( std::ostream &out, const Dart& fa ) { return out << fa.index; }
 	friend std::istream& operator>>( std::istream &in, Dart& fa ) { in >> fa.index; return in; }
 
-	void operator += (const Dart& fa) {}
-	void operator -= (const Dart& fa) {}
-	void operator *= (double v) {}
-	void operator /= (double v) {}
+	void operator += (const Dart& UNUSED(fa)) {}
+	void operator -= (const Dart& UNUSED(fa)) {}
+	void operator *= (double UNUSED(v)) {}
+	void operator /= (double UNUSED(v)) {}
 
 	/**
 	 * CGoGN name

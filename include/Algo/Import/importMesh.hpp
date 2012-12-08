@@ -26,6 +26,7 @@
 #include "Topology/generic/autoAttributeHandler.h"
 #include "Container/fakeAttribute.h"
 #include "Algo/Modelisation/polyhedron.h"
+#include "Utils/commons.h"
 
 namespace CGoGN
 {
@@ -478,7 +479,7 @@ bool importMesh(typename PFP::MAP& map, const std::string& filename, std::vector
 }
 
 template <typename PFP>
-bool importMeshV(typename PFP::MAP& map, const std::string& filename, std::vector<std::string>& attrNames, bool mergeCloseVertices)
+bool importMeshV(typename PFP::MAP& map, const std::string& filename, std::vector<std::string>& attrNames, bool UNUSED(mergeCloseVertices))
 {
 	ImportVolumique::ImportType kind = ImportVolumique::UNKNOWNVOLUME;
 

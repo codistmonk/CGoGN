@@ -26,6 +26,7 @@
 #define FAKEATTRIBUTE_H_
 
 #include <fstream>
+#include "Utils/commons.h"
 
 namespace CGoGN
 {
@@ -182,18 +183,18 @@ class NoMathIONameAttribute: public T
 {
 public:
 	NoMathIONameAttribute() : T() {}
-	NoMathIONameAttribute(int i) : T() {}
+	NoMathIONameAttribute(int UNUSED(i)) : T() {}
 
 	NoMathIONameAttribute(const T& att) : T(att) {}
 	NoMathIONameAttribute<T>& operator = (const T& fa) { return *this = NoMathIONameAttribute<T>(fa); }
 
-	friend std::ostream& operator<<( std::ostream &out, const NoMathIONameAttribute<T>& fa ) { return out ; }
-	friend const std::istream& operator>>( const std::istream &in, NoMathIONameAttribute<T>& fa ) { return in ; }
+	friend std::ostream& operator<<( std::ostream &out, const NoMathIONameAttribute<T>& UNUSED(fa) ) { return out ; }
+	friend const std::istream& operator>>( const std::istream &in, NoMathIONameAttribute<T>& UNUSED(fa) ) { return in ; }
 
-	void operator += (const NoMathIONameAttribute<T>& fa) {}
-	void operator -= (const NoMathIONameAttribute<T>& fa) {}
-	void operator *= (double v) {}
-	void operator /= (double v) {}
+	void operator += (const NoMathIONameAttribute<T>& UNUSED(fa)) {}
+	void operator -= (const NoMathIONameAttribute<T>& UNUSED(fa)) {}
+	void operator *= (double UNUSED(v)) {}
+	void operator /= (double UNUSED(v)) {}
 
 	static std::string CGoGNnameOfType() { return ""; }
 };

@@ -34,10 +34,11 @@ namespace CGoGN
 namespace Utils
 {
 
-bool TextureSticker::m_isInitialized                               = false;
-Utils::VBO* TextureSticker::m_quadPositionsVbo                     = NULL;
-Utils::VBO* TextureSticker::m_quadTexCoordsVbo                     = NULL;
-Utils::ShaderSimpleTexture* TextureSticker::m_textureMappingShader = NULL;
+// Initialize static variables and constants
+bool TextureSticker::sm_isInitialized = false;
+Utils::VBO* TextureSticker::sm_quadPositionsVbo = NULL;
+Utils::VBO* TextureSticker::sm_quadTexCoordsVbo = NULL;
+Utils::ShaderSimpleTexture* TextureSticker::sm_textureMappingShader = NULL;
 
 TextureSticker::TextureSticker()
 {
@@ -50,49 +51,49 @@ TextureSticker::~TextureSticker()
 void TextureSticker::StickTextureOnWholeScreen(CGoGNGLuint texId)
 {
 	// Check if TextureSticker's elements have been initialized before
-	if (!m_isInitialized)
+	if (!sm_isInitialized)
 	{
 		InitializeElements();
-		m_isInitialized = true;
+		sm_isInitialized = true;
 	}
 
 	// Bind texture mapping shader
-	m_textureMappingShader->bind();
+	sm_textureMappingShader->bind();
 	
 	// Set texture uniform
-	m_textureMappingShader->setTextureUnit(GL_TEXTURE0);
-	m_textureMappingShader->activeTexture(texId);
+	sm_textureMappingShader->setTextureUnit(GL_TEXTURE0);
+	sm_textureMappingShader->activeTexture(texId);
 	
 	// Set matrices uniforms
-	glm::mat4 projMatrix = glm::ortho(-0.5f, 0.5f, -0.5f, 0.5f, -1.0f, 1.0f);
+	glm::mat4 projMatrix = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
 	glm::mat4 viewMatrix(1.0f);
-	m_textureMappingShader->updateMatrices(projMatrix, viewMatrix);
+	sm_textureMappingShader->updateMatrices(projMatrix, viewMatrix);
 
-	// Draw quad	
-	m_textureMappingShader->enableVertexAttribs();
+	// Draw quad
+	sm_textureMappingShader->enableVertexAttribs();
 	glDrawArrays(GL_QUADS, 0, 4);
-	m_textureMappingShader->disableVertexAttribs();
+	sm_textureMappingShader->disableVertexAttribs();
 
 	// Unbind texture mapping shader
-	m_textureMappingShader->unbind();
+	sm_textureMappingShader->unbind();
 }
 
 void TextureSticker::InitializeElements()
 {
 	// Initialize positions and texture coords Vbos
 	
-	m_quadPositionsVbo = new Utils::VBO();
-	m_quadTexCoordsVbo = new Utils::VBO();
-	m_quadPositionsVbo->setDataSize(3);
-	m_quadTexCoordsVbo->setDataSize(2);
-	m_quadPositionsVbo->allocate(4);
-	m_quadTexCoordsVbo->allocate(4);
+	sm_quadPositionsVbo = new Utils::VBO();
+	sm_quadTexCoordsVbo = new Utils::VBO();
+	sm_quadPositionsVbo->setDataSize(3);
+	sm_quadTexCoordsVbo->setDataSize(2);
+	sm_quadPositionsVbo->allocate(4);
+	sm_quadTexCoordsVbo->allocate(4);
 
 	GLfloat positions[] = {
-		-0.5f, -0.5f, 0.0f,
-		+0.5f, -0.5f, 0.0f,
-		+0.5f, +0.5f, 0.0f,
-		-0.5f, +0.5f, 0.0f
+		-1.0f, -1.0f, 0.0f,
+		+1.0f, -1.0f, 0.0f,
+		+1.0f, +1.0f, 0.0f,
+		-1.0f, +1.0f, 0.0f
 		};
 	GLfloat texCoords[] = {
 		0.0f, 0.0f,
@@ -101,18 +102,17 @@ void TextureSticker::InitializeElements()
 		0.0f, 1.0f
 		};
 		
-	GLfloat* positionsPtr = (GLfloat*) m_quadPositionsVbo->lockPtr();
+	GLfloat* positionsPtr = (GLfloat*) sm_quadPositionsVbo->lockPtr();
 	memcpy(positionsPtr, positions, 3 * 4 * sizeof(GLfloat));
-	m_quadPositionsVbo->releasePtr();
-	GLfloat* texCoordsPtr = (GLfloat*) m_quadTexCoordsVbo->lockPtr();
+	sm_quadPositionsVbo->releasePtr();
+	GLfloat* texCoordsPtr = (GLfloat*) sm_quadTexCoordsVbo->lockPtr();
 	memcpy(texCoordsPtr, texCoords, 2 * 4 * sizeof(GLfloat));
-	m_quadTexCoordsVbo->releasePtr();
+	sm_quadTexCoordsVbo->releasePtr();
 	
 	// Initialize simple texture mapping shader
-	
-	m_textureMappingShader = new Utils::ShaderSimpleTexture();
-	m_textureMappingShader->setAttributePosition(m_quadPositionsVbo);
-	m_textureMappingShader->setAttributeTexCoord(m_quadTexCoordsVbo);
+	sm_textureMappingShader = new Utils::ShaderSimpleTexture();
+	sm_textureMappingShader->setAttributePosition(sm_quadPositionsVbo);
+	sm_textureMappingShader->setAttributeTexCoord(sm_quadTexCoordsVbo);
 }
 
 } // namespace Utils

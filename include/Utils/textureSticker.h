@@ -35,30 +35,51 @@ namespace CGoGN
 namespace Utils
 {
 
+/**
+ * Static class that can be used to "stick" textures easily on the screen.
+ */
 class TextureSticker
 {
 
 private :
 
+	/**
+	 * Constructor (not accesssible since the class is static).
+	 */
 	TextureSticker();
 	
+	/**
+	 * Destructor (not accesssible since the class is static).
+	 */
 	~TextureSticker();
 	
 public :
 
+	/**
+	 * Sticks a texture on the whole screen.
+	 * \param  texId  Id of the texture
+	 */
 	static void StickTextureOnWholeScreen(CGoGNGLuint texId);
 	
 private :
 
+	/**
+	 * Initializes static elements of the class.\n
+	 * Automatically called when it's needed.\n
+	 */
 	static void InitializeElements();
 	
-	static bool m_isInitialized;
+	/// Indicates wether the static elements of the class were already initialized or not.
+	static bool sm_isInitialized;
 	
-	static Utils::VBO* m_quadPositionsVbo;
+	/// Vbo of the vertices positions of the fullscreen quad.
+	static Utils::VBO* sm_quadPositionsVbo;
 	
-	static Utils::VBO* m_quadTexCoordsVbo;
+	/// Vbo of the vertices texture coords of the fullscreen quad.
+	static Utils::VBO* sm_quadTexCoordsVbo;
 	
-	static Utils::ShaderSimpleTexture* m_textureMappingShader;
+	/// Shader for mapping the texture on the fullscreen quad.
+	static Utils::ShaderSimpleTexture* sm_textureMappingShader;
 };
 
 } // namespace Utils

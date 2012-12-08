@@ -210,8 +210,7 @@ void Viewer::cb_redraw()
 		m_fbo->Unbind();
 	
 		// Get and draw depth texture from Fbo
-		Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo->GetDepthTexId());
-		//Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo->GetColorTexId(0));
+		Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo->GetColorTexId(0));
 	}
 	
 	GLenum glError = glGetError();

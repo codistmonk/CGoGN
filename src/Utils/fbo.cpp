@@ -29,7 +29,8 @@ namespace CGoGN
 namespace Utils
 {
 
-bool FBO::s_anyFboBound = false;
+// Initialize static variables and constants
+bool FBO::sm_anyFboBound = false;
 
 FBO::FBO(unsigned int width, unsigned int height)
 	: m_width                 (width)
@@ -77,7 +78,7 @@ FBO::~FBO()
 
 void FBO::AttachRenderbuffer(GLenum internalFormat)
 {
-	if (s_anyFboBound)
+	if (sm_anyFboBound)
 	{
 		CGoGNerr << "FBO::AttachRenderbuffer : No Fbo should be bound when attaching a render buffer." << CGoGNendl;
 		return;
@@ -125,7 +126,7 @@ void FBO::AttachRenderbuffer(GLenum internalFormat)
 
 void FBO::AttachColorTexture(GLenum internalFormat, GLint filter)
 {
-	if (s_anyFboBound)
+	if (sm_anyFboBound)
 	{
 		CGoGNerr << "FBO::AttachColorTexture : No Fbo should be bound when attaching a texture." << CGoGNendl;
 		return;
@@ -192,7 +193,7 @@ void FBO::AttachColorTexture(GLenum internalFormat, GLint filter)
 
 void FBO::AttachDepthTexture(GLint filter)
 {
-	if (s_anyFboBound)
+	if (sm_anyFboBound)
 	{
 		CGoGNerr << "FBO::AttachDepthTexture : No Fbo should be bound when attaching a texture." << CGoGNendl;
 		return;
@@ -278,7 +279,7 @@ void FBO::Bind()
 		return;
 	}
 
-	if (s_anyFboBound)
+	if (sm_anyFboBound)
 	{
 		CGoGNerr << "FBO::Bind : Only one Fbo can be bound at the same time." << CGoGNendl;
 		return;
@@ -287,7 +288,7 @@ void FBO::Bind()
 	// Bind this Fbo
 	glBindFramebuffer(GL_FRAMEBUFFER, *m_fboId);
 	m_bound = true;
-	s_anyFboBound = true;
+	sm_anyFboBound = true;
 	
 	// Get current viewport
 	glGetIntegerv(GL_VIEWPORT, m_oldViewport);
@@ -303,7 +304,7 @@ void FBO::Unbind()
 		// Unbind this Fbo
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		m_bound = false;
-		s_anyFboBound = false;
+		sm_anyFboBound = false;
 		
 		// Reset the viewport to the main framebuffer size
 		glViewport(m_oldViewport[0], m_oldViewport[1], m_oldViewport[2], m_oldViewport[3]);
@@ -312,7 +313,7 @@ void FBO::Unbind()
 
 void FBO::CheckFBO()
 {
-	if (s_anyFboBound)
+	if (sm_anyFboBound)
 	{
 		CGoGNerr << "FBO::CheckFBO : No Fbo should be bound when checking a Fbo's status." << CGoGNendl;
 		return;

@@ -161,7 +161,7 @@ protected:
 	bool m_bound;
 	
 	/// Indicates wether any Fbo is bound or not.
-	static bool s_anyFboBound;
+	static bool sm_anyFboBound;
 };
 
 } // namespace Utils

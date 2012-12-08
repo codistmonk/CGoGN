@@ -65,24 +65,22 @@ m_wcpf(withColorPerFace), m_wef(withExplodeFace)
 	//Default values
 	m_explodeV = 0.9f;
 	m_explodeF = 0.9f;
-	m_ambiant = Geom::Vec4f(0.05f, 0.05f, 0.1f, 0.0f);
+	m_ambient = Geom::Vec4f(0.05f, 0.05f, 0.1f, 0.0f);
 	m_backColor = Geom::Vec4f(1.0f, 0.1f, 0.1f, 0.0f);
 	m_light_pos = Geom::Vec3f(10.0f, 10.0f, 1000.0f);
 	m_plane   = Geom::Vec4f(0.0f, 0.0f, 1000.f, 1000000000000000000000000000.0f);
-	m_alpha = 0.5;
 
-	setParams(m_explodeV, m_explodeF, m_ambiant, m_backColor, m_light_pos, m_plane);
+	setParams(m_explodeV, m_explodeF, m_ambient, m_backColor, m_light_pos, m_plane);
 }
 
 void ShaderExplodeVolumesAlpha::getLocations()
 {
 	*m_unif_explodeV  = glGetUniformLocation(program_handler(),"explodeV");
 	*m_unif_explodeF  = glGetUniformLocation(program_handler(),"explodeF");
-	*m_unif_ambiant  = glGetUniformLocation(program_handler(),"ambient");
+	*m_unif_ambient  = glGetUniformLocation(program_handler(),"ambient");
 	*m_unif_backColor  = glGetUniformLocation(program_handler(),"backColor");
 	*m_unif_lightPos = glGetUniformLocation(program_handler(),"lightPosition");
 	*m_unif_plane   = glGetUniformLocation(program_handler(),"plane");
-	*m_unif_alpha   = glGetUniformLocation(program_handler(),"alpha");
 }
 
 void ShaderExplodeVolumesAlpha::setAttributePosition(VBO* vbo)
@@ -97,15 +95,15 @@ void ShaderExplodeVolumesAlpha::setAttributeColor(VBO* vbo)
 	bindVA_VBO("VertexColor", vbo);
 }
 
-void ShaderExplodeVolumesAlpha::setParams(float const explV, float const explF, const Geom::Vec4f& ambiant, const Geom::Vec4f& backColor, const Geom::Vec3f& lightPos, const Geom::Vec4f& plane)
+void ShaderExplodeVolumesAlpha::setParams(float const explV, float const explF, const Geom::Vec4f& ambient, const Geom::Vec4f& backColor, const Geom::Vec3f& lightPos, const Geom::Vec4f& plane)
 {
 	bind();
 	m_explodeV = explV;
 	glUniform1f(*m_unif_explodeV, explV);
 	m_explodeF = explF;
 	glUniform1f(*m_unif_explodeF, explF);
-	m_ambiant = ambiant;
-	glUniform4fv(*m_unif_ambiant, 1, ambiant.data());
+	m_ambient = ambient;
+	glUniform4fv(*m_unif_ambient, 1, ambient.data());
 	m_backColor = backColor;
 	glUniform4fv(*m_unif_backColor, 1, backColor.data());
 
@@ -134,11 +132,11 @@ void ShaderExplodeVolumesAlpha::setExplodeFaces(float explode)
 }
 
 
-void ShaderExplodeVolumesAlpha::setAmbiant(const Geom::Vec4f& ambiant)
+void ShaderExplodeVolumesAlpha::setAmbient(const Geom::Vec4f& ambient)
 {
-	m_ambiant = ambiant;
+	m_ambient = ambient;
 	bind();
-	glUniform4fv(*m_unif_ambiant,1, ambiant.data());
+	glUniform4fv(*m_unif_ambient,1, ambient.data());
 }
 
 void ShaderExplodeVolumesAlpha::setBackColor(const Geom::Vec4f& backColor)
@@ -163,13 +161,6 @@ void ShaderExplodeVolumesAlpha::setClippingPlane(const Geom::Vec4f& plane)
 	glUniform4fv(*m_unif_plane,1, plane.data());
 }
 
-void ShaderExplodeVolumesAlpha::setAlpha(float const alpha)
-{
-	m_alpha = alpha;
-	bind();
-	glUniform1f(*m_unif_alpha, alpha);
-}
-
 void ShaderExplodeVolumesAlpha::restoreUniformsAttribs()
 {
 	bind();
@@ -180,8 +171,8 @@ void ShaderExplodeVolumesAlpha::restoreUniformsAttribs()
 	*m_unif_explodeF   = glGetUniformLocation(program_handler(),"explodeF");
 	glUniform1f (*m_unif_explodeF, m_explodeF);
 
-	*m_unif_ambiant   = glGetUniformLocation(program_handler(),"ambient");
-	glUniform4fv(*m_unif_ambiant,  1, m_ambiant.data());
+	*m_unif_ambient   = glGetUniformLocation(program_handler(),"ambient");
+	glUniform4fv(*m_unif_ambient,  1, m_ambient.data());
 
 	*m_unif_backColor = glGetUniformLocation(program_handler(),"backColor");
 	glUniform4fv(*m_unif_backColor, 1, m_backColor.data());

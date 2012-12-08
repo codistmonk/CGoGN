@@ -258,10 +258,7 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP & map, VertexAttribu
 inline void ExplodeVolumeAlphaRender::drawFaces()
 {
 	m_shader->enableVertexAttribs();
-//	if (m_cpf)
-//		glDrawArrays(GL_TRIANGLES_ADJACENCY_EXT , 0 , m_nbTris*6 );
-//	else
-		glDrawArrays(GL_LINES_ADJACENCY_EXT , 0 , m_nbTris*4 );
+	glDrawArrays(GL_LINES_ADJACENCY_EXT , 0 , m_nbTris*4 );
 	m_shader->disableVertexAttribs();
 }
 
@@ -297,9 +294,9 @@ inline void ExplodeVolumeAlphaRender::setNoClippingPlane()
 	m_shaderL->setClippingPlane(p);
 }
 
-inline void ExplodeVolumeAlphaRender::setAmbiant(const Geom::Vec4f& ambiant)
+inline void ExplodeVolumeAlphaRender::setAmbient(const Geom::Vec4f& ambient)
 {
-	m_shader->setAmbiant(ambiant);
+	m_shader->setAmbient(ambient);
 }
 
 inline void ExplodeVolumeAlphaRender::setBackColor(const Geom::Vec4f& color)
@@ -315,11 +312,6 @@ inline void ExplodeVolumeAlphaRender::setLightPosition(const Geom::Vec3f& lp)
 inline void ExplodeVolumeAlphaRender::setColorLine(const Geom::Vec4f& col)
 {
 	m_shaderL->setColor(col);
-}
-
-inline void ExplodeVolumeAlphaRender::setAlpha(float const alpha)
-{
-	m_shader->setAlpha(alpha);
 }
 
 inline Utils::GLSLShader* ExplodeVolumeAlphaRender::shaderFaces()

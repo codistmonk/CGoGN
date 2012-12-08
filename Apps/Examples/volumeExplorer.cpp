@@ -137,7 +137,6 @@ void MyQT::slider_released()
 void MyQT::slider_opacity(int const x)
 {
 	m_opacity = 0.01f * x;
-	m_explode_render->setAlpha(m_opacity); DEBUG_GL;
 	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts, m_depths, m_lastDepth);
 	m_explode_render->updateData<PFP>(::myMap, ::position, color);
 	updateGL(); DEBUG_GL;
@@ -247,10 +246,9 @@ void MyQT::cb_initGL()
 	m_explode_render->updateData<PFP>(::myMap, ::position, color);
 	m_explode_render->setExplodeVolumes(0.8f);
 	m_explode_render->setExplodeFaces(0.9f);
-	m_explode_render->setAmbiant(Geom::Vec4f(0.2f,0.2f,0.2f,1.0f));
+	m_explode_render->setAmbient(Geom::Vec4f(0.2f,0.2f,0.2f,1.0f));
 	m_explode_render->setBackColor(Geom::Vec4f(0.9f,0.9f,0.9f,1.0f));
 	m_explode_render->setColorLine(Geom::Vec4f(0.8f,0.2f,0.2f,1.0f));
-	m_explode_render->setAlpha(m_opacity);
 
 	registerShader(m_explode_render->shaderFaces());
 	registerShader(m_explode_render->shaderLines());
@@ -506,7 +504,9 @@ int main(int argc, char **argv)
 				return 1;
 			}
 			else
+			{
 				::position = ::myMap.getAttribute<PFP::VEC3,VERTEX>(attrNames[0]) ;
+			}
 		}
 
 
@@ -533,7 +533,9 @@ int main(int argc, char **argv)
 			float v = Algo::Geometry::tetrahedronVolume<PFP>(::myMap, d, ::position);
 			::color[d] = PFP::VEC4(v,0,0,1);
 			if (v>maxV)
+			{
 				maxV=v;
+			}
 		}
 		for (unsigned int i = ::color.begin(); i != ::color.end(); ::color.next(i))
 		{

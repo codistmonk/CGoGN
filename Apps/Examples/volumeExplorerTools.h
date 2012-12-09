@@ -750,7 +750,6 @@ static void sortAndBlend(FragmentBuffer & fragmentBuffer, QImage & image)
 }
 
 static void rasterizeTrianglesAndAccumulateFragments(Algo::Render::GL2::ExplodeVolumeAlphaRender const * const evr,
-		float const faceScale, float const volumeScale,
 		GLint const viewport[4], glm::mat4 const & mvp, FragmentBuffer & fragmentBuffer)
 {
 	static bool const debugShowRasterizationProgress = false;

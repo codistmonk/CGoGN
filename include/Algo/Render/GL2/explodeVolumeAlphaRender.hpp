@@ -41,8 +41,8 @@ namespace Render
 namespace GL2
 {
 
-inline ExplodeVolumeAlphaRender::ExplodeVolumeAlphaRender(bool withColorPerFace, bool withExplodeFace):
-		m_cpf(withColorPerFace),m_ef(withExplodeFace),m_globalColor(0.7f,0.7f,0.7f)
+inline ExplodeVolumeAlphaRender::ExplodeVolumeAlphaRender(bool withColorPerFace):
+		m_cpf(withColorPerFace), m_globalColor(0.7f,0.7f,0.7f)
 {
 	m_vboPos = new Utils::VBO();
 	m_vboPos->setDataSize(3);
@@ -54,7 +54,7 @@ inline ExplodeVolumeAlphaRender::ExplodeVolumeAlphaRender(bool withColorPerFace,
 	m_vboPosLine = new Utils::VBO();
 	m_vboPosLine->setDataSize(3);
 
-	m_shader = new Utils::ShaderExplodeVolumesAlpha(withColorPerFace,withExplodeFace);
+	m_shader = new Utils::ShaderExplodeVolumesAlpha(withColorPerFace);
 	m_shaderL = new Utils::ShaderExplodeVolumesLines();
 
 	m_shaderL->setColor(Geom::Vec4f(1.0f,1.0f,1.0f,0.0f));
@@ -270,15 +270,14 @@ inline void ExplodeVolumeAlphaRender::drawEdges()
 	m_shaderL->disableVertexAttribs();
 }
 
-inline void ExplodeVolumeAlphaRender::setExplodeVolumes(float explode)
+inline void ExplodeVolumeAlphaRender::setExplodeVolumes(float const explode)
 {
-	m_shader->setExplodeVolumes(explode);
 	m_shaderL->setExplodeVolumes(explode);
 }
 
-inline void ExplodeVolumeAlphaRender::setExplodeFaces(float explode)
+inline void ExplodeVolumeAlphaRender::setExplodeFaces(float const UNUSED(explode))
 {
-	m_shader->setExplodeFaces(explode);
+	// NOP
 }
 
 inline void ExplodeVolumeAlphaRender::setClippingPlane(const Geom::Vec4f& p)

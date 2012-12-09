@@ -1,6 +1,4 @@
 // ShaderExplodeVolumesAlpha::geometryShaderText
-uniform float explodeV;
-uniform float explodeF;
 uniform mat4 ModelViewProjectionMatrix;
 uniform mat4 NormalMatrix;
 uniform mat4 ModelViewMatrix;

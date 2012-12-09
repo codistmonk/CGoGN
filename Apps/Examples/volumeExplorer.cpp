@@ -239,7 +239,7 @@ void MyQT::cb_initGL()
 
 	// create the renders
     m_topo_render = new Algo::Render::GL2::Topo3Render();
-    m_explode_render = new Algo::Render::GL2::ExplodeVolumeAlphaRender(true,true);
+    m_explode_render = new Algo::Render::GL2::ExplodeVolumeAlphaRender(true);
 
 	SelectorDartNoBoundary<PFP::MAP> nb(::myMap);
 	m_topo_render->updateData<PFP>(::myMap, ::position,  0.8f, 0.8f, 0.8f, nb);
@@ -453,8 +453,8 @@ void MyQT::button_render_software()
 
 	DEBUG_OUT << "Rasterizing triangles and accumulating fragments..." << std::endl;
 
-	rasterizeTrianglesAndAccumulateFragments(m_explode_render, m_explode_factorf, m_explode_factor,
-			viewport, projectionMatrix() * modelViewMatrix() * transfoMatrix(), fragmentBuffer);
+	rasterizeTrianglesAndAccumulateFragments(m_explode_render, viewport,
+			projectionMatrix() * modelViewMatrix() * transfoMatrix(), fragmentBuffer);
 
 	if (!fragmentBuffer.empty()) {
 		DEBUG_OUT << "Sorting and blending fragments..." << std::endl;

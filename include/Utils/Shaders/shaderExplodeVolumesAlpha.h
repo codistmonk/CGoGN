@@ -46,8 +46,6 @@ protected:
 	CGoGNGLuint m_unif_ambient;
 	CGoGNGLuint m_unif_backColor;
 	CGoGNGLuint m_unif_lightPos;
-	CGoGNGLuint m_unif_explodeV;
-	CGoGNGLuint m_unif_explodeF;
 	CGoGNGLuint m_unif_plane;
 	CGoGNGLuint m_unif_alpha;
 
@@ -64,18 +62,13 @@ protected:
 	VBO* m_vboColors;
 
 	bool m_wcpf;
-	bool m_wef;
 
 	void getLocations();
 
 	void restoreUniformsAttribs();
 
 public:
-	ShaderExplodeVolumesAlpha(bool withColorPerFace=false, bool withExplodeFace=false);
-
-	void setExplodeVolumes(float explode);
-
-	void setExplodeFaces(float explode);
+	ShaderExplodeVolumesAlpha(bool withColorPerFace=false);
 
 	void setAmbient(const Geom::Vec4f& ambient);
 
@@ -85,7 +78,7 @@ public:
 
 	void setClippingPlane(const Geom::Vec4f& plane);
 
-	void setParams(float explodeV, float explodeF, const Geom::Vec4f& ambient, const Geom::Vec4f& diffuse, const Geom::Vec3f& lightPos, const Geom::Vec4f& plane);
+	void setParams(const Geom::Vec4f& ambient, const Geom::Vec4f& diffuse, const Geom::Vec3f& lightPos, const Geom::Vec4f& plane);
 
 	void setAttributePosition(VBO* vbo);
 

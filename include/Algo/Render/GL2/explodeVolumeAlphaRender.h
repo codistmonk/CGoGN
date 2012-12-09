@@ -81,9 +81,8 @@ public:
 	/**
 	* Constructor
 	* @param withColorPerFace affect a color per face
-	* @param withExplodeFace shrinj each face
 	*/
-	ExplodeVolumeAlphaRender(bool withColorPerFace = false, bool withExplodeFace = false) ;
+	ExplodeVolumeAlphaRender(bool withColorPerFace = false) ;
 
 	/**
 	 * Destructor

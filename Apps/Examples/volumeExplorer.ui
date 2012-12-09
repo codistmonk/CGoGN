@@ -171,6 +171,13 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="button_depth_peeling">
+        <property name="text">
+         <string>Depth peeling</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="verticalSpacer">
         <property name="orientation">
          <enum>Qt::Vertical</enum>

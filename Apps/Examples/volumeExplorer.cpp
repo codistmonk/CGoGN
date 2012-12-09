@@ -476,6 +476,13 @@ void MyQT::button_render_software()
 	}
 }
 
+void MyQT::button_depth_peeling()
+{
+	DEBUG_OUT << "Depth peeling..." << std::endl;
+	// TODO
+	DEBUG_OUT << "Depth peeling done" << std::endl;
+}
+
 int main(int argc, char **argv)
 {
 	testRasterizeTriangle();
@@ -603,6 +610,8 @@ int main(int argc, char **argv)
 	sqt.setCallBack( dock.slider_opacity_gradient, SIGNAL(sliderReleased()), SLOT(slider_released()) );
 
 	sqt.setCallBack( dock.button_render_software, SIGNAL(released()), SLOT(button_render_software()) );
+
+	sqt.setCallBack( dock.button_depth_peeling, SIGNAL(released()), SLOT(button_depth_peeling()) );
 
 
 	sqt.show();

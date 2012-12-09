@@ -152,6 +152,7 @@ public slots:
 	void slider_opacity(int x);
 	void slider_opacity_gradient(int x);
 	void button_render_software();
+	void button_depth_peeling();
 };
 
 #endif

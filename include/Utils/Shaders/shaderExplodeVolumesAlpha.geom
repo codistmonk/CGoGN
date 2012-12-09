@@ -38,8 +38,8 @@ void main(void)
 				color = ambient + colorVertex[i]*lambertTerm;
 			else
 				color = ambient - backColor*lambertTerm;
-//			ColorFS = vec4(color.xyz, colorVertex[i].w);
-			ColorFS = colorVertex[i];
+			ColorFS = vec4(color.xyz, colorVertex[i].w);
+//			ColorFS = colorVertex[i];
 			EmitVertex();
 		}
 		EndPrimitive();

@@ -330,6 +330,16 @@ void FBO::CheckFBO()
 		std::cout << "Fbo status error : " << status << std::endl;
 }
 
+unsigned int FBO::GetWidth() const
+{
+	return m_width;
+}
+
+unsigned int FBO::GetHeight() const
+{
+	return m_height;
+}
+
 } // namespace Utils
 
 } // namespace CGoGN

@@ -66,7 +66,11 @@ m_wcpf(withColorPerFace)
 	m_light_pos = Geom::Vec3f(10.0f, 10.0f, 1000.0f);
 	m_plane   = Geom::Vec4f(0.0f, 0.0f, 1000.f, 1000000000000000000000000000.0f);
 
-	setParams(m_ambient, m_backColor, m_light_pos, m_plane);
+//	setParams(m_ambient, m_backColor, m_light_pos, m_plane);
+	setAmbient(m_ambient);
+	setBackColor(m_backColor);
+	setLightPosition(m_light_pos);
+	setClippingPlane(m_plane);
 }
 
 void ShaderExplodeVolumesAlpha::getLocations()
@@ -75,6 +79,7 @@ void ShaderExplodeVolumesAlpha::getLocations()
 	*m_unif_backColor  = glGetUniformLocation(program_handler(),"backColor");
 	*m_unif_lightPos = glGetUniformLocation(program_handler(),"lightPosition");
 	*m_unif_plane   = glGetUniformLocation(program_handler(),"plane");
+	*m_unif_unit   = glGetUniformLocation(program_handler(),"textureUnit");
 }
 
 void ShaderExplodeVolumesAlpha::setAttributePosition(VBO* vbo)
@@ -89,6 +94,7 @@ void ShaderExplodeVolumesAlpha::setAttributeColor(VBO* vbo)
 	bindVA_VBO("VertexColor", vbo);
 }
 
+/*
 void ShaderExplodeVolumesAlpha::setParams(const Geom::Vec4f& ambient, const Geom::Vec4f& backColor, const Geom::Vec3f& lightPos, const Geom::Vec4f& plane)
 {
 	bind();
@@ -105,6 +111,7 @@ void ShaderExplodeVolumesAlpha::setParams(const Geom::Vec4f& ambient, const Geom
 
 	unbind(); // ??
 }
+*/
 
 void ShaderExplodeVolumesAlpha::setAmbient(const Geom::Vec4f& ambient)
 {
@@ -150,6 +157,9 @@ void ShaderExplodeVolumesAlpha::restoreUniformsAttribs()
 
 	*m_unif_plane   = glGetUniformLocation(program_handler(),"plane");
 	glUniform4fv(*m_unif_plane,    1, m_plane.data());
+
+	*m_unif_unit   = glGetUniformLocation(program_handler(),"textureUnit");
+	glUniform1iARB(*m_unif_unit, 0);
 
 	bindVA_VBO("VertexPosition", m_vboPos);
 	bindVA_VBO("VertexColor", m_vboColors);

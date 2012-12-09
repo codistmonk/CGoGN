@@ -48,6 +48,7 @@ protected:
 	CGoGNGLuint m_unif_lightPos;
 	CGoGNGLuint m_unif_plane;
 	CGoGNGLuint m_unif_alpha;
+	CGoGNGLuint m_unif_unit;
 
 //	local storage for uniforms
 	float m_explodeV;
@@ -78,7 +79,7 @@ public:
 
 	void setClippingPlane(const Geom::Vec4f& plane);
 
-	void setParams(const Geom::Vec4f& ambient, const Geom::Vec4f& diffuse, const Geom::Vec3f& lightPos, const Geom::Vec4f& plane);
+//	void setParams(const Geom::Vec4f& ambient, const Geom::Vec4f& diffuse, const Geom::Vec3f& lightPos, const Geom::Vec4f& plane);
 
 	void setAttributePosition(VBO* vbo);
 

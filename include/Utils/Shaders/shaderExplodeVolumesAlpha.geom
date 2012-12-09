@@ -34,18 +34,14 @@ void main(void)
 	
 		for (int i=1; i<=3; i++)
 		{
-			// explode in face
-			vec4 P = explodeF * POSITION_IN(i)  + (1.0-explodeF) * colorVertex[0];
-
-			// explode in volume
-			vec4 Q = explodeV *  P + (1.0-explodeV)* POSITION_IN(0);
-			gl_Position = ModelViewProjectionMatrix *  Q;
+			gl_Position = ModelViewProjectionMatrix *  POSITION_IN(i);
 			vec4 color;
 			if (lambertTerm > 0.0)
 				color = ambient + colorVertex[i]*lambertTerm;
 			else
 				color = ambient - backColor*lambertTerm;
-			ColorFS = vec4(color.xyz, colorVertex[i].w);
+//			ColorFS = vec4(color.xyz, colorVertex[i].w);
+			ColorFS = colorVertex[i];
 			EmitVertex();
 		}
 		EndPrimitive();

@@ -103,6 +103,7 @@ void MyQT::slider_explode(int x)
 {
 	m_explode_factor = 0.01f*(x+1)-0.0001f;
 	m_explode_render->setExplodeVolumes(m_explode_factor);
+	explodeModel<PFP>(::myMap, ::position, allDarts, m_explode_factor, m_explode_factorf, m_explode_render);
 	updateGL();
 }
 
@@ -110,6 +111,7 @@ void MyQT::slider_explodeF(int x)
 {
 	m_explode_factorf = 0.01f*(x+1);
 	m_explode_render->setExplodeFaces(m_explode_factorf);
+	explodeModel<PFP>(::myMap, ::position, allDarts, m_explode_factor, m_explode_factorf, m_explode_render);
 	updateGL();
 }
 
@@ -138,7 +140,7 @@ void MyQT::slider_opacity(int const x)
 {
 	m_opacity = 0.01f * x;
 	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts, m_depths, m_lastDepth);
-	m_explode_render->updateData<PFP>(::myMap, ::position, color);
+	updateColorVBO<PFP>(::myMap, ::color, allDarts, m_explode_render);
 	updateGL(); DEBUG_GL;
 }
 
@@ -146,7 +148,7 @@ void MyQT::slider_opacity_gradient(int const x)
 {
 	m_opacity_gradient = 0.01f * x;
 	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts, m_depths, m_lastDepth);
-	m_explode_render->updateData<PFP>(::myMap, ::position, color);
+	updateColorVBO<PFP>(::myMap, ::color, allDarts, m_explode_render);
 	updateGL(); DEBUG_GL;
 }
 

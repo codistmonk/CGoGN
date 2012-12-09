@@ -78,6 +78,32 @@ void TextureSticker::StickTextureOnWholeScreen(CGoGNGLuint texId)
 	sm_textureMappingShader->unbind();
 }
 
+void TextureSticker::DrawFullscreenQuadWithShader(Utils::GLSLShader* shader)
+{
+	// Check if TextureSticker's elements have been initialized before
+	if (!sm_isInitialized)
+	{
+		InitializeElements();
+		sm_isInitialized = true;
+	}
+	
+	// Bind shader
+	shader->bind();
+	
+	// Set matrices uniforms
+	glm::mat4 projMatrix = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
+	glm::mat4 viewMatrix(1.0f);
+	sm_textureMappingShader->updateMatrices(projMatrix, viewMatrix);
+
+	// Draw quad
+	sm_textureMappingShader->enableVertexAttribs();
+	glDrawArrays(GL_QUADS, 0, 4);
+	sm_textureMappingShader->disableVertexAttribs();
+	
+	// Unbind shader
+	shader->unbind();
+}
+
 void TextureSticker::InitializeElements()
 {
 	// Initialize positions and texture coords Vbos

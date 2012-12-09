@@ -39,17 +39,6 @@ namespace Utils
 class ShaderSimpleNormal : public ClippingShader
 {
 
-protected:
-
-	// shader sources
-	static std::string vertexShaderText;
-	static std::string fragmentShaderText;
-
-	VBO* m_vboPos;
-	VBO* m_vboNormal;
-
-	void restoreUniformsAttribs();
-
 public:
 
 	ShaderSimpleNormal();
@@ -57,6 +46,16 @@ public:
 	unsigned int setAttributePosition(VBO* vbo);
 
 	unsigned int setAttributeNormal(VBO* vbo);
+
+protected:
+
+	static std::string vertexShaderText;
+	static std::string fragmentShaderText;
+
+	VBO* m_vboPos;
+	VBO* m_vboNormal;
+
+	void restoreUniformsAttribs();
 };
 
 } // namespace Utils

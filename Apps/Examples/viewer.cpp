@@ -209,7 +209,7 @@ void Viewer::cb_redraw()
 		// Disable Fbo after rendering
 		m_fbo->Unbind();
 	
-		// Get and draw depth texture from Fbo
+		// Get and draw color texture from Fbo
 		Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo->GetColorTexId(0));
 	}
 	

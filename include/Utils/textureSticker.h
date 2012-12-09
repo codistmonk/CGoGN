@@ -61,6 +61,13 @@ public :
 	 */
 	static void StickTextureOnWholeScreen(CGoGNGLuint texId);
 	
+	/**
+	 * Draw a fullscreen quad with the specified shader.\n
+	 * Uniforms other than matrices must have been sent to the shader before the call to this function.\n
+	 * \param  shader  Shader that will be used to render the quad
+	 */
+	static void DrawFullscreenQuadWithShader(Utils::GLSLShader* shader);
+	
 private :
 
 	/**

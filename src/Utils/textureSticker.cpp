@@ -93,15 +93,39 @@ void TextureSticker::DrawFullscreenQuadWithShader(Utils::GLSLShader* shader)
 	// Set matrices uniforms
 	glm::mat4 projMatrix = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
 	glm::mat4 viewMatrix(1.0f);
-	sm_textureMappingShader->updateMatrices(projMatrix, viewMatrix);
+	shader->updateMatrices(projMatrix, viewMatrix);
 
 	// Draw quad
-	sm_textureMappingShader->enableVertexAttribs();
+	shader->enableVertexAttribs();
 	glDrawArrays(GL_QUADS, 0, 4);
-	sm_textureMappingShader->disableVertexAttribs();
+	shader->disableVertexAttribs();
 	
 	// Unbind shader
 	shader->unbind();
+}
+
+VBO* TextureSticker::GetQuadPositionsVbo()
+{
+	// Check if TextureSticker's elements have been initialized before
+	if (!sm_isInitialized)
+	{
+		InitializeElements();
+		sm_isInitialized = true;
+	}
+	
+	return sm_quadPositionsVbo;
+}
+
+VBO* TextureSticker::GetQuadTexCoordsVbo()
+{
+	// Check if TextureSticker's elements have been initialized before
+	if (!sm_isInitialized)
+	{
+		InitializeElements();
+		sm_isInitialized = true;
+	}
+	
+	return sm_quadTexCoordsVbo;
 }
 
 void TextureSticker::InitializeElements()

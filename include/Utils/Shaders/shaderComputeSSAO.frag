@@ -10,5 +10,5 @@ void main()
 	vec4 normal = texture2D(normalTextureUnit, texCoord);
 	float depth = texture2D(depthTextureUnit, texCoord).r;
 	
-	gl_FragColor = normal * depth;
+	gl_FragColor = normal * (1.0 - depth);
 }

@@ -45,6 +45,7 @@
 #include "Utils/Shaders/shaderSimpleColor.h"
 #include "Utils/Shaders/shaderVectorPerVertex.h"
 #include "Utils/Shaders/shaderSimpleNormal.h"
+#include "Utils/Shaders/shaderComputeSSAO.h"
 #include "Utils/pointSprite.h"
 #include "Utils/text3d.h"
 #include "Utils/vboRender.h"
@@ -114,10 +115,13 @@ public:
 	Utils::ShaderVectorPerVertex* m_vectorShader ;
 	Utils::ShaderSimpleColor* m_simpleColorShader ;
 	Utils::ShaderSimpleNormal* m_simpleNormalShader ;
+	Utils::ShaderComputeSSAO* m_computeSSAOShader ;
 	
 	Utils::PointSprite* m_pointSprite ;
 	
-	Utils::FBO* m_fbo;
+	Utils::FBO* m_facesNormalsAndDepthFbo;
+	Utils::FBO* m_SSAOFbo;
+	Utils::FBO* m_finalRenderFbo;
 
 	Viewer() ;
 
@@ -142,4 +146,11 @@ public slots:
 	void slot_drawTopo(bool b) ;
 	void slot_drawNormals(bool b) ;
 	void slot_normalsSize(int i) ;
+	
+private :
+	void drawVertices();
+	void drawEdges();
+	void drawFaces();
+	void drawTopo();
+	void drawNormals();
 };

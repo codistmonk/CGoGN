@@ -37,8 +37,11 @@ Viewer::Viewer() :
 	m_vectorShader(NULL),
 	m_simpleColorShader(NULL),
 	m_simpleNormalShader(NULL),
+	m_computeSSAOShader(NULL),
 	m_pointSprite(NULL),
-	m_fbo(NULL)
+	m_facesNormalsAndDepthFbo(NULL),
+	m_SSAOFbo(NULL),
+	m_finalRenderFbo(NULL)
 {
 	normalScaleFactor = 1.0f ;
 	vertexScaleFactor = 0.1f ;
@@ -117,6 +120,10 @@ void Viewer::cb_initGL()
 	m_simpleNormalShader = new Utils::ShaderSimpleNormal() ;
 	m_simpleNormalShader->setAttributePosition(m_positionVBO);
 	m_simpleNormalShader->setAttributeNormal(m_normalVBO);
+	
+	m_computeSSAOShader = new Utils::ShaderComputeSSAO();
+	m_computeSSAOShader->setAttributePosition(Utils::TextureSticker::GetQuadPositionsVbo());
+	m_computeSSAOShader->setAttributeTexCoord(Utils::TextureSticker::GetQuadTexCoordsVbo());
 
 	m_pointSprite = new Utils::PointSprite() ;
 	m_pointSprite->setAttributePosition(m_positionVBO) ;
@@ -128,11 +135,18 @@ void Viewer::cb_initGL()
 	registerShader(m_simpleNormalShader) ;
 	registerShader(m_pointSprite) ;
 	
-	m_fbo = new Utils::FBO(1024, 1024);
-	m_fbo->AttachRenderbuffer(GL_DEPTH_COMPONENT);
-	m_fbo->AttachColorTexture(GL_RGBA);
-	m_fbo->AttachColorTexture(GL_RGBA);
-	m_fbo->AttachDepthTexture();
+	m_facesNormalsAndDepthFbo = new Utils::FBO(1024, 1024);
+	m_facesNormalsAndDepthFbo->AttachRenderbuffer(GL_DEPTH_COMPONENT);
+	m_facesNormalsAndDepthFbo->AttachColorTexture(GL_RGBA);
+	m_facesNormalsAndDepthFbo->AttachDepthTexture();
+	
+	m_SSAOFbo = new Utils::FBO(1024, 1024);
+	m_SSAOFbo->AttachColorTexture(GL_RGBA);
+	
+	m_finalRenderFbo = new Utils::FBO(1024, 1024);
+	m_finalRenderFbo->AttachRenderbuffer(GL_DEPTH_COMPONENT);
+	m_finalRenderFbo->AttachColorTexture(GL_RGBA);
+	m_finalRenderFbo->AttachDepthTexture();
 }
 
 void Viewer::cb_redraw()
@@ -141,81 +155,120 @@ void Viewer::cb_redraw()
 
 	if (useFbo)
 	{
-		// Enable Fbo before rendering
-		m_fbo->Bind();
-		m_fbo->EnableColorAttachments();
-	
-		// Clear old Fbo buffers content
+		// Render in normals and depth Fbo
+		m_facesNormalsAndDepthFbo->Bind();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		
+		// Render faces normals and depth
+		int oldRenderStyle = m_renderStyle;
+		m_renderStyle = NORMALS;
+		drawFaces();
+		m_renderStyle = oldRenderStyle;
+		
+		// Disable Fbo after rendering
+		m_facesNormalsAndDepthFbo->Unbind();
+		
+		// Render in SSAO Fbo
+		m_SSAOFbo->Bind();
+		glClear(GL_COLOR_BUFFER_BIT);
+		
+		// Send textures to SSAO shader
+		m_computeSSAOShader->bind();
+		m_computeSSAOShader->setNormalTextureUnit(GL_TEXTURE0);
+		m_computeSSAOShader->activeNormalTexture(m_facesNormalsAndDepthFbo->GetColorTexId(0));
+		m_computeSSAOShader->setDepthTextureUnit(GL_TEXTURE1);
+		m_computeSSAOShader->activeDepthTexture(m_facesNormalsAndDepthFbo->GetDepthTexId());
+		m_computeSSAOShader->unbind();
+		
+		// Draw fullscreen quad with SSAO shader
+		Utils::TextureSticker::DrawFullscreenQuadWithShader(m_computeSSAOShader);
+		
+		// Disable Fbo after rendering
+		m_SSAOFbo->Unbind();
+		
+		// Get and draw color texture from Fbo
+		Utils::TextureSticker::StickTextureOnWholeScreen(m_SSAOFbo->GetColorTexId(0));
 	}
 
-	if(m_drawVertices)
-	{
-		float size = vertexScaleFactor ;
-		m_pointSprite->setSize(size) ;
-		m_pointSprite->predraw(Geom::Vec3f(0.0f, 0.0f, 1.0f)) ;
-		m_render->draw(m_pointSprite, Algo::Render::GL2::POINTS) ;
-		m_pointSprite->postdraw() ;
-	}
-
+	// Draw everything else
+	/*if(m_drawVertices)
+		drawVertices();
 	if(m_drawEdges)
-	{
-		glLineWidth(1.0f) ;
-		m_render->draw(m_simpleColorShader, Algo::Render::GL2::LINES) ;
-	}
-
+		drawEdges();
 	if(m_drawFaces)
-	{
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL) ;
-		glEnable(GL_LIGHTING) ;
-		glEnable(GL_POLYGON_OFFSET_FILL) ;
-		glPolygonOffset(1.0f, 1.0f) ;
-		switch(m_renderStyle)
-		{
-			case FLAT :
-				m_flatShader->setExplode(faceShrinkage) ;
-				m_render->draw(m_flatShader, Algo::Render::GL2::TRIANGLES) ;
-				break;
-				
-			case PHONG :
-				m_render->draw(m_phongShader, Algo::Render::GL2::TRIANGLES) ;
-				break;
-				
-			case NORMALS :
-				m_render->draw(m_simpleNormalShader, Algo::Render::GL2::TRIANGLES) ;
-				break;
-				
-			default :
-				break;
-		}
-		glDisable(GL_POLYGON_OFFSET_FILL) ;
-	}
-
+		drawFaces();
 	if(m_drawTopo)
-	{
-		m_topoRender->drawTopo() ;
-	}
-
+		drawTopo();
 	if(m_drawNormals)
-	{
-		float size = normalBaseSize * normalScaleFactor ;
-		m_vectorShader->setScale(size) ;
-		glLineWidth(1.0f) ;
-		m_render->draw(m_vectorShader, Algo::Render::GL2::POINTS) ;
-	}
+		drawNormals();*/
 	
-	if (useFbo)
+	/*if (useFbo)
 	{
 		// Disable Fbo after rendering
 		m_fbo->Unbind();
 	
 		// Get and draw color texture from Fbo
 		Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo->GetColorTexId(0));
-	}
+	}*/
 	
 	GLenum glError = glGetError();
 	if (glError != GL_NO_ERROR)
 		std::cout << "GL error : " << gluErrorString(glError) << std::endl;
+}
+
+void Viewer::drawVertices()
+{
+	float size = vertexScaleFactor ;
+	m_pointSprite->setSize(size) ;
+	m_pointSprite->predraw(Geom::Vec3f(0.0f, 0.0f, 1.0f)) ;
+	m_render->draw(m_pointSprite, Algo::Render::GL2::POINTS) ;
+	m_pointSprite->postdraw() ;
+}
+
+void Viewer::drawEdges()
+{
+	glLineWidth(1.0f) ;
+	m_render->draw(m_simpleColorShader, Algo::Render::GL2::LINES) ;
+}
+
+void Viewer::drawFaces()
+{
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL) ;
+	glEnable(GL_LIGHTING) ;
+	glEnable(GL_POLYGON_OFFSET_FILL) ;
+	glPolygonOffset(1.0f, 1.0f) ;
+	switch (m_renderStyle)
+	{
+		case FLAT :
+			m_flatShader->setExplode(faceShrinkage) ;
+			m_render->draw(m_flatShader, Algo::Render::GL2::TRIANGLES) ;
+			break;
+
+		case PHONG :
+			m_render->draw(m_phongShader, Algo::Render::GL2::TRIANGLES) ;
+			break;
+
+		case NORMALS :
+			m_render->draw(m_simpleNormalShader, Algo::Render::GL2::TRIANGLES) ;
+			break;
+
+		default :
+			break;
+	}
+	glDisable(GL_POLYGON_OFFSET_FILL) ;
+}
+
+void Viewer::drawTopo()
+{
+	m_topoRender->drawTopo() ;
+}
+
+void Viewer::drawNormals()
+{
+	float size = normalBaseSize * normalScaleFactor ;
+	m_vectorShader->setScale(size) ;
+	glLineWidth(1.0f) ;
+	m_render->draw(m_vectorShader, Algo::Render::GL2::POINTS) ;
 }
 
 void Viewer::cb_Open()

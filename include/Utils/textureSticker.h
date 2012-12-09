@@ -68,6 +68,18 @@ public :
 	 */
 	static void DrawFullscreenQuadWithShader(Utils::GLSLShader* shader);
 	
+	/**
+	 * Get the Vbo of the vertices positions of the fullscreen quad.
+	 * \returns  Fullscreen quad vertices positions Vbo
+	 */
+	static VBO* GetQuadPositionsVbo();
+	
+	/**
+	 * Get the Vbo of the vertices tex coords of the fullscreen quad.
+	 * \returns  Fullscreen quad vertices tex coords Vbo
+	 */
+	static VBO* GetQuadTexCoordsVbo();
+	
 private :
 
 	/**

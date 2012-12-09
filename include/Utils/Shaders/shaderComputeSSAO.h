@@ -45,15 +45,12 @@ public:
 	ShaderComputeSSAO();
 
 	void setNormalTextureUnit(GLenum textureUnit);
-	
 	void setDepthTextureUnit(GLenum textureUnit);
 	
 	void activeNormalTexture(CGoGNGLuint texId);
-	
 	void activeDepthTexture(CGoGNGLuint texId);
 
 	unsigned int setAttributePosition(VBO* vbo);
-
 	unsigned int setAttributeTexCoord(VBO* vbo);
 
 protected:
@@ -63,6 +60,7 @@ protected:
 
 	CGoGNGLuint m_unifNormalTexUnit;
 	CGoGNGLuint m_unifDepthTexUnit;
+	
 	int m_normalTexUnit;
 	int m_depthTexUnit;
 	

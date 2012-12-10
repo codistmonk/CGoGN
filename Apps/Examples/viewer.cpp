@@ -39,7 +39,7 @@ Viewer::Viewer() :
 	m_simpleNormalShader(NULL),
 	m_computeSSAOShader(NULL),
 	m_pointSprite(NULL),
-	m_facesNormalsAndDepthFbo(NULL),
+	m_colorNormalsAndDepthFbo(NULL),
 	m_SSAOFbo(NULL),
 	m_finalRenderFbo(NULL)
 {
@@ -135,10 +135,10 @@ void Viewer::cb_initGL()
 	registerShader(m_simpleNormalShader) ;
 	registerShader(m_pointSprite) ;
 	
-	m_facesNormalsAndDepthFbo = new Utils::FBO(1024, 1024);
-	m_facesNormalsAndDepthFbo->AttachRenderbuffer(GL_DEPTH_COMPONENT);
-	m_facesNormalsAndDepthFbo->AttachColorTexture(GL_RGBA);
-	m_facesNormalsAndDepthFbo->AttachDepthTexture();
+	m_colorNormalsAndDepthFbo = new Utils::FBO(1024, 1024);
+	m_colorNormalsAndDepthFbo->AttachRenderbuffer(GL_DEPTH_COMPONENT);
+	m_colorNormalsAndDepthFbo->AttachColorTexture(GL_RGBA);
+	m_colorNormalsAndDepthFbo->AttachDepthTexture();
 	
 	m_SSAOFbo = new Utils::FBO(1024, 1024);
 	m_SSAOFbo->AttachColorTexture(GL_RGBA);
@@ -147,6 +147,9 @@ void Viewer::cb_initGL()
 	m_finalRenderFbo->AttachRenderbuffer(GL_DEPTH_COMPONENT);
 	m_finalRenderFbo->AttachColorTexture(GL_RGBA);
 	m_finalRenderFbo->AttachDepthTexture();
+	
+	m_colorAndSSAOMergeFbo = new Utils::FBO(1024, 1024);
+	m_colorAndSSAOMergeFbo->AttachColorTexture(GL_RGBA);
 }
 
 void Viewer::cb_redraw()
@@ -155,36 +158,52 @@ void Viewer::cb_redraw()
 
 	if (useFbo)
 	{
-		// Render in normals and depth Fbo
-		m_facesNormalsAndDepthFbo->Bind();
+		// Render in color, normals and depth Fbo
+		m_colorNormalsAndDepthFbo->Bind();
+		m_colorNormalsAndDepthFbo->EnableColorAttachments();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		
-		// Render faces normals and depth
-		int oldRenderStyle = m_renderStyle;
-		m_renderStyle = NORMALS;
-		drawFaces();
-		m_renderStyle = oldRenderStyle;
-		
-		// Disable Fbo after rendering
-		m_facesNormalsAndDepthFbo->Unbind();
+		{
+			// Render faces color, normals and depth
+			int oldRenderStyle = m_renderStyle;
+			m_renderStyle = NORMALS;
+			drawFaces();
+			m_renderStyle = oldRenderStyle;
+		}
+		m_colorNormalsAndDepthFbo->Unbind();
 		
 		// Render in SSAO Fbo
 		m_SSAOFbo->Bind();
 		glClear(GL_COLOR_BUFFER_BIT);
-		
-		// Send textures to SSAO shader
-		m_computeSSAOShader->bind();
-		m_computeSSAOShader->setNormalTextureUnit(GL_TEXTURE0);
-		m_computeSSAOShader->activeNormalTexture(m_facesNormalsAndDepthFbo->GetColorTexId(0));
-		m_computeSSAOShader->setDepthTextureUnit(GL_TEXTURE1);
-		m_computeSSAOShader->activeDepthTexture(m_facesNormalsAndDepthFbo->GetDepthTexId());
-		m_computeSSAOShader->unbind();
-		
-		// Draw fullscreen quad with SSAO shader
-		Utils::TextureSticker::DrawFullscreenQuadWithShader(m_computeSSAOShader);
-		
-		// Disable Fbo after rendering
+		{
+			// Send textures to SSAO shader
+			m_computeSSAOShader->bind();
+			m_computeSSAOShader->setNormalTextureUnit(GL_TEXTURE0);
+			m_computeSSAOShader->activeNormalTexture(m_colorNormalsAndDepthFbo->GetColorTexId(0));
+			m_computeSSAOShader->setDepthTextureUnit(GL_TEXTURE1);
+			m_computeSSAOShader->activeDepthTexture(m_colorNormalsAndDepthFbo->GetDepthTexId());
+			m_computeSSAOShader->unbind();
+			
+			// Render SSAO texture
+			Utils::TextureSticker::DrawFullscreenQuadWithShader(m_computeSSAOShader);
+		}
 		m_SSAOFbo->Unbind();
+		
+		// Render color and depth
+		m_finalRenderFbo->Bind();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		{
+			// Simply render faces color and depth
+			drawFaces();
+		}
+		m_finalRenderFbo->Unbind();
+		
+		// Merge color and SSAO
+		m_colorAndSSAOMergeFbo->Bind();
+		glClear(GL_COLOR_BUFFER_BIT);
+		{
+			// TODO
+		}
+		m_colorAndSSAOMergeFbo->Unbind();
 		
 		// Get and draw color texture from Fbo
 		Utils::TextureSticker::StickTextureOnWholeScreen(m_SSAOFbo->GetColorTexId(0));

@@ -119,9 +119,10 @@ public:
 	
 	Utils::PointSprite* m_pointSprite ;
 	
-	Utils::FBO* m_facesNormalsAndDepthFbo;
+	Utils::FBO* m_colorNormalsAndDepthFbo;
 	Utils::FBO* m_SSAOFbo;
 	Utils::FBO* m_finalRenderFbo;
+	Utils::FBO* m_colorAndSSAOMergeFbo;
 
 	Viewer() ;
 

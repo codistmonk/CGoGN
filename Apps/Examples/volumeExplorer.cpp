@@ -295,7 +295,7 @@ void MyQT::resetFbo()
 	}
 
 	if (m_fbo1 == NULL) {
-		using namespace Debug;
+		using namespace CGoGN::VolumeExplorerTools::Debug;
 		DEBUG_OUT << viewport << std::endl;
 		m_fbo1 = new Utils::FBO(width, height); DEBUG_GL;
 		m_fbo1->AttachRenderbuffer(GL_DEPTH_COMPONENT); DEBUG_GL;
@@ -498,7 +498,7 @@ void MyQT::button_render_software()
 		DEBUG_OUT << "Sorting and blending fragments..." << std::endl;
 
 		QImage image(viewport.width(), viewport.height(), QImage::Format_ARGB32);
-		image.fill(QColor(0, 0, 0));
+		image.fill(0);
 
 		sortAndBlend(fragmentBuffer, image);
 
@@ -594,7 +594,7 @@ void MyQT::button_depth_peeling()
 	int const width = viewport.width();
 	int const height = viewport.height();
 	QImage image(width, height, QImage::Format_ARGB32);
-	image.fill(QColor(0, 0, 0));
+	image.fill(0);
 
 	std::vector<GLubyte> pixels(width * height * 4);
 	glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);

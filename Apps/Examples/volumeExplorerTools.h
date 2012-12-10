@@ -556,7 +556,7 @@ static void updateRasterizationSpansTopDown(RasterizationSpans & spans, int cons
 			nextY = y + 1;
 		}
 
-		if (0 <= y && y < viewportHeight && (0 <= sx && previousY < y || sx < 0 && (y < nextY || x == x2)))
+		if (0 <= y && y < viewportHeight && ((0 <= sx && previousY < y) || (sx < 0 && (y < nextY || x == x2))))
 		{
 			float const s = static_cast<float>(pixelCount - 1) / std::max(m, 1);
 
@@ -872,7 +872,7 @@ static void testRasterizeTriangle()
 	GLint const top = viewportHeight - 1;
 	int totalErrorCount = 0;
 	QImage image(viewportWidth, viewportHeight, QImage::Format_ARGB32);
-	image.fill(QColor(0, 0, 0));
+	image.fill(0);
 
 	DEBUG_OUT << "viewport: " << viewportX << ' ' << viewportY << ' ' << viewportWidth << ' ' << viewportHeight << std::endl;
 

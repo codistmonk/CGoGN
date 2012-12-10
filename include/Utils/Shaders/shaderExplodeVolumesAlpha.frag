@@ -5,10 +5,10 @@ uniform sampler2D previousDepthBuffer;
 void main()
 {
 	ivec2 pixelXY = ivec2(gl_FragCoord.xy);
-	float previousZ = texelFetch2D(previousDepthBuffer, pixelXY, 0).z;
-	float z = gl_FragCoord.z;
+	float previousDepth = texelFetch2D(previousDepthBuffer, pixelXY, 0).z;
+	float depth = gl_FragCoord.z;
 	
-	if (int(z * 10000.0) != int(previousZ * 10000.0))
+	if ((previousDepth == 1.0) || (int(depth * 10000.0) > int(previousDepth * 10000.0)))
 	{
 		gl_FragColor = ColorFS;
 	}

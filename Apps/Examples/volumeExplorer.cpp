@@ -514,6 +514,29 @@ void MyQT::button_render_software()
 	}
 }
 
+static void peelDepthLayerAndBlendToDefaultBuffer(CGoGN::Utils::FBO * const previousFBO, CGoGN::Utils::FBO * const currentFBO,
+		Algo::Render::GL2::ExplodeVolumeAlphaRender * const evr)
+{
+	currentFBO->Bind(); DEBUG_GL;
+	currentFBO->EnableColorAttachments(); DEBUG_GL;
+	glClearColor(0, 0, 0, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); DEBUG_GL;
+	glDisable(GL_BLEND); DEBUG_GL;
+	glEnable(GL_DEPTH_TEST); DEBUG_GL;
+	glActiveTexture(GL_TEXTURE0 + 0); DEBUG_GL;
+	glBindTexture(GL_TEXTURE_2D, *(previousFBO->GetDepthTexId())); DEBUG_GL;
+	evr->drawFaces(); DEBUG_GL;
+	glBindTexture(GL_TEXTURE_2D, 0); DEBUG_GL;
+	glFlush(); DEBUG_GL;
+	currentFBO->Unbind(); DEBUG_GL;
+
+	glDisable(GL_DEPTH_TEST); DEBUG_GL;
+	glEnable(GL_BLEND); DEBUG_GL;
+	glBlendEquation(GL_FUNC_ADD); DEBUG_GL;
+	glBlendFuncSeparate(GL_DST_ALPHA, GL_ONE, GL_ZERO, GL_ONE_MINUS_SRC_ALPHA); DEBUG_GL;
+	Utils::TextureSticker::StickTextureOnWholeScreen(currentFBO->GetColorTexId(0));
+}
+
 void MyQT::button_depth_peeling()
 {
 	DEBUG_OUT << "Depth peeling..." << std::endl;
@@ -569,25 +592,17 @@ void MyQT::button_depth_peeling()
 		glFlush(); DEBUG_GL;
 		m_fbo1->Unbind(); DEBUG_GL;
 
-		m_fbo2->Bind(); DEBUG_GL;
-		m_fbo2->EnableColorAttachments(); DEBUG_GL;
-		glClearColor(0, 0, 0, 0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); DEBUG_GL;
-		glDisable(GL_BLEND); DEBUG_GL;
-		glEnable(GL_DEPTH_TEST); DEBUG_GL;
-		glActiveTexture(GL_TEXTURE0 + 0); DEBUG_GL;
-		glBindTexture(GL_TEXTURE_2D, *(m_fbo1->GetDepthTexId())); DEBUG_GL;
-		m_explode_render->drawFaces(); DEBUG_GL;
-		glBindTexture(GL_TEXTURE_2D, 0); DEBUG_GL;
-		glFlush(); DEBUG_GL;
-		m_fbo2->Unbind(); DEBUG_GL;
-
-		glDisable(GL_DEPTH_TEST); DEBUG_GL;
 		Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo1->GetColorTexId(0));
-		glEnable(GL_BLEND); DEBUG_GL;
-		glBlendEquation(GL_FUNC_ADD); DEBUG_GL;
-		glBlendFuncSeparate(GL_DST_ALPHA, GL_ONE, GL_ZERO, GL_ONE_MINUS_SRC_ALPHA); DEBUG_GL;
-		Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo2->GetColorTexId(0));
+
+		CGoGN::Utils::FBO * previousFBO = m_fbo1;
+		CGoGN::Utils::FBO * currentFBO = m_fbo2;
+
+		// TODO count number of layers
+		for (int i = 0; i < 10; ++i)
+		{
+			peelDepthLayerAndBlendToDefaultBuffer(previousFBO, currentFBO, m_explode_render);
+			std::swap(previousFBO, currentFBO);
+		}
 	}
 
 	Viewport const viewport;

@@ -49,6 +49,7 @@ protected:
 	CGoGNGLuint m_unif_plane;
 	CGoGNGLuint m_unif_alpha;
 	CGoGNGLuint m_unif_unit;
+	CGoGNGLuint m_unif_depthPeeling;
 
 //	local storage for uniforms
 	float m_explodeV;
@@ -57,6 +58,7 @@ protected:
 	Geom::Vec4f m_backColor;
 	Geom::Vec3f m_light_pos;
 	Geom::Vec4f m_plane;
+	int m_depthPeeling;
 
 	// VBO
 	VBO* m_vboPos;
@@ -79,7 +81,7 @@ public:
 
 	void setClippingPlane(const Geom::Vec4f& plane);
 
-//	void setParams(const Geom::Vec4f& ambient, const Geom::Vec4f& diffuse, const Geom::Vec3f& lightPos, const Geom::Vec4f& plane);
+	void setDepthPeeling(bool depthPeeling);
 
 	void setAttributePosition(VBO* vbo);
 

@@ -92,7 +92,7 @@ public:
 	/**
 	 * return a ptr on used shader do not forgot to register
 	 */
-	Utils::GLSLShader* shaderFaces() ;
+	Utils::ShaderExplodeVolumesAlpha* shaderFaces() ;
 
 	/**
 	 * return a ptr on used shader do not forgot to register

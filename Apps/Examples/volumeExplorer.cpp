@@ -609,6 +609,7 @@ void MyQT::button_depth_peeling()
 
 	if (render_volumes)
 	{
+		m_explode_render->shaderFaces()->setDepthPeeling(true);
 		glDisable(GL_BLEND); DEBUG_GL;
 		glEnable(GL_DEPTH_TEST); DEBUG_GL;
 		glActiveTexture(GL_TEXTURE0 + 0); DEBUG_GL;
@@ -630,6 +631,8 @@ void MyQT::button_depth_peeling()
 			peelDepthLayerAndBlendToDefaultBuffer(previousFBO, currentFBO, m_explode_render);
 			std::swap(previousFBO, currentFBO);
 		}
+
+		m_explode_render->shaderFaces()->setDepthPeeling(false);
 	}
 	else
 	{

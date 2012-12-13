@@ -313,7 +313,7 @@ inline void ExplodeVolumeAlphaRender::setColorLine(const Geom::Vec4f& col)
 	m_shaderL->setColor(col);
 }
 
-inline Utils::GLSLShader* ExplodeVolumeAlphaRender::shaderFaces()
+inline Utils::ShaderExplodeVolumesAlpha* ExplodeVolumeAlphaRender::shaderFaces()
 {
 	return m_shader;
 }

@@ -65,21 +65,23 @@ m_wcpf(withColorPerFace)
 	m_backColor = Geom::Vec4f(1.0f, 0.1f, 0.1f, 0.0f);
 	m_light_pos = Geom::Vec3f(10.0f, 10.0f, 1000.0f);
 	m_plane   = Geom::Vec4f(0.0f, 0.0f, 1000.f, 1000000000000000000000000000.0f);
+	m_depthPeeling = 0;
 
-//	setParams(m_ambient, m_backColor, m_light_pos, m_plane);
 	setAmbient(m_ambient);
 	setBackColor(m_backColor);
 	setLightPosition(m_light_pos);
 	setClippingPlane(m_plane);
+	setDepthPeeling(m_depthPeeling);
 }
 
 void ShaderExplodeVolumesAlpha::getLocations()
 {
-	*m_unif_ambient  = glGetUniformLocation(program_handler(),"ambient");
-	*m_unif_backColor  = glGetUniformLocation(program_handler(),"backColor");
-	*m_unif_lightPos = glGetUniformLocation(program_handler(),"lightPosition");
-	*m_unif_plane   = glGetUniformLocation(program_handler(),"plane");
-	*m_unif_unit   = glGetUniformLocation(program_handler(),"textureUnit");
+	*m_unif_ambient      = glGetUniformLocation(program_handler(), "ambient");
+	*m_unif_backColor    = glGetUniformLocation(program_handler(), "backColor");
+	*m_unif_lightPos     = glGetUniformLocation(program_handler(), "lightPosition");
+	*m_unif_plane        = glGetUniformLocation(program_handler(), "plane");
+	*m_unif_unit         = glGetUniformLocation(program_handler(), "textureUnit");
+	*m_unif_depthPeeling = glGetUniformLocation(program_handler(), "depthPeeling");
 }
 
 void ShaderExplodeVolumesAlpha::setAttributePosition(VBO* vbo)
@@ -93,25 +95,6 @@ void ShaderExplodeVolumesAlpha::setAttributeColor(VBO* vbo)
 	m_vboColors = vbo;
 	bindVA_VBO("VertexColor", vbo);
 }
-
-/*
-void ShaderExplodeVolumesAlpha::setParams(const Geom::Vec4f& ambient, const Geom::Vec4f& backColor, const Geom::Vec3f& lightPos, const Geom::Vec4f& plane)
-{
-	bind();
-	m_ambient = ambient;
-	glUniform4fv(*m_unif_ambient, 1, ambient.data());
-	m_backColor = backColor;
-	glUniform4fv(*m_unif_backColor, 1, backColor.data());
-
-	m_light_pos = lightPos;
-	glUniform3fv(*m_unif_lightPos, 1, lightPos.data());
-
-	m_plane = plane;
-	glUniform4fv(*m_unif_plane,    1, m_plane.data());
-
-	unbind(); // ??
-}
-*/
 
 void ShaderExplodeVolumesAlpha::setAmbient(const Geom::Vec4f& ambient)
 {
@@ -131,7 +114,7 @@ void ShaderExplodeVolumesAlpha::setLightPosition(const Geom::Vec3f& lp)
 {
 	m_light_pos = lp;
 	bind();
-	glUniform3fv(*m_unif_lightPos,1,lp.data());
+	glUniform3fv(*m_unif_lightPos, 1,lp.data());
 }
 
 
@@ -139,7 +122,14 @@ void ShaderExplodeVolumesAlpha::setClippingPlane(const Geom::Vec4f& plane)
 {
 	m_plane = plane;
 	bind();
-	glUniform4fv(*m_unif_plane,1, plane.data());
+	glUniform4fv(*m_unif_plane, 1, plane.data());
+}
+
+void ShaderExplodeVolumesAlpha::setDepthPeeling(bool const depthPeeling)
+{
+	m_depthPeeling = depthPeeling;
+	bind();
+	glUniform1i(*m_unif_depthPeeling, m_depthPeeling);
 }
 
 void ShaderExplodeVolumesAlpha::restoreUniformsAttribs()

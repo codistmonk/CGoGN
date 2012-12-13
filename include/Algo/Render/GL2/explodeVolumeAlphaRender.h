@@ -69,8 +69,8 @@ protected:
 	Utils::VBO* m_vboPosLine;
 
 	/**
-	*number of triangles to draw
-	*/
+	 * number of triangles to draw
+	 */
 	GLuint m_nbTris;
 
 	GLuint m_nbLines;
@@ -81,19 +81,18 @@ public:
 	/**
 	* Constructor
 	* @param withColorPerFace affect a color per face
-	* @param withExplodeFace shrinj each face
 	*/
-	ExplodeVolumeAlphaRender(bool withColorPerFace = false, bool withExplodeFace = false) ;
+	ExplodeVolumeAlphaRender(bool withColorPerFace = false) ;
 
 	/**
-	* Destructor
-	*/
+	 * Destructor
+	 */
 	~ExplodeVolumeAlphaRender() ;
 
 	/**
 	 * return a ptr on used shader do not forgot to register
 	 */
-	Utils::GLSLShader* shaderFaces() ;
+	Utils::ShaderExplodeVolumesAlpha* shaderFaces() ;
 
 	/**
 	 * return a ptr on used shader do not forgot to register
@@ -158,7 +157,7 @@ public:
 	/**
 	 * set ambiant color parameter
 	 */
-	void setAmbiant(const Geom::Vec4f& ambiant) ;
+	void setAmbient(const Geom::Vec4f& ambient) ;
 
 	/**
 	 * set back color parameter
@@ -175,10 +174,6 @@ public:
 	 */
 	void setColorLine(const Geom::Vec4f& col) ;
 
-	/**
-	 * set alpha parameter for transparency (alpha blending)
-	 */
-	void setAlpha(float alpha) ;
 };
 
 }//end namespace GL2

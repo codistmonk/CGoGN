@@ -41,8 +41,8 @@ namespace Render
 namespace GL2
 {
 
-inline ExplodeVolumeAlphaRender::ExplodeVolumeAlphaRender(bool withColorPerFace, bool withExplodeFace):
-		m_cpf(withColorPerFace),m_ef(withExplodeFace),m_globalColor(0.7f,0.7f,0.7f)
+inline ExplodeVolumeAlphaRender::ExplodeVolumeAlphaRender(bool withColorPerFace):
+		m_cpf(withColorPerFace), m_globalColor(0.7f,0.7f,0.7f)
 {
 	m_vboPos = new Utils::VBO();
 	m_vboPos->setDataSize(3);
@@ -54,7 +54,7 @@ inline ExplodeVolumeAlphaRender::ExplodeVolumeAlphaRender(bool withColorPerFace,
 	m_vboPosLine = new Utils::VBO();
 	m_vboPosLine->setDataSize(3);
 
-	m_shader = new Utils::ShaderExplodeVolumesAlpha(withColorPerFace,withExplodeFace);
+	m_shader = new Utils::ShaderExplodeVolumesAlpha(withColorPerFace);
 	m_shaderL = new Utils::ShaderExplodeVolumesLines();
 
 	m_shaderL->setColor(Geom::Vec4f(1.0f,1.0f,1.0f,0.0f));
@@ -258,10 +258,7 @@ void ExplodeVolumeAlphaRender::updateData(typename PFP::MAP & map, VertexAttribu
 inline void ExplodeVolumeAlphaRender::drawFaces()
 {
 	m_shader->enableVertexAttribs();
-//	if (m_cpf)
-//		glDrawArrays(GL_TRIANGLES_ADJACENCY_EXT , 0 , m_nbTris*6 );
-//	else
-		glDrawArrays(GL_LINES_ADJACENCY_EXT , 0 , m_nbTris*4 );
+	glDrawArrays(GL_LINES_ADJACENCY_EXT , 0 , m_nbTris*4 );
 	m_shader->disableVertexAttribs();
 }
 
@@ -273,15 +270,14 @@ inline void ExplodeVolumeAlphaRender::drawEdges()
 	m_shaderL->disableVertexAttribs();
 }
 
-inline void ExplodeVolumeAlphaRender::setExplodeVolumes(float explode)
+inline void ExplodeVolumeAlphaRender::setExplodeVolumes(float const explode)
 {
-	m_shader->setExplodeVolumes(explode);
 	m_shaderL->setExplodeVolumes(explode);
 }
 
-inline void ExplodeVolumeAlphaRender::setExplodeFaces(float explode)
+inline void ExplodeVolumeAlphaRender::setExplodeFaces(float const UNUSED(explode))
 {
-	m_shader->setExplodeFaces(explode);
+	// NOP
 }
 
 inline void ExplodeVolumeAlphaRender::setClippingPlane(const Geom::Vec4f& p)
@@ -297,9 +293,9 @@ inline void ExplodeVolumeAlphaRender::setNoClippingPlane()
 	m_shaderL->setClippingPlane(p);
 }
 
-inline void ExplodeVolumeAlphaRender::setAmbiant(const Geom::Vec4f& ambiant)
+inline void ExplodeVolumeAlphaRender::setAmbient(const Geom::Vec4f& ambient)
 {
-	m_shader->setAmbiant(ambiant);
+	m_shader->setAmbient(ambient);
 }
 
 inline void ExplodeVolumeAlphaRender::setBackColor(const Geom::Vec4f& color)
@@ -317,12 +313,7 @@ inline void ExplodeVolumeAlphaRender::setColorLine(const Geom::Vec4f& col)
 	m_shaderL->setColor(col);
 }
 
-inline void ExplodeVolumeAlphaRender::setAlpha(float const alpha)
-{
-	m_shader->setAlpha(alpha);
-}
-
-inline Utils::GLSLShader* ExplodeVolumeAlphaRender::shaderFaces()
+inline Utils::ShaderExplodeVolumesAlpha* ExplodeVolumeAlphaRender::shaderFaces()
 {
 	return m_shader;
 }

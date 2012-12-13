@@ -36,6 +36,7 @@
 
 #include "Utils/chrono.h"
 #include "Utils/debug.h"
+#include "Utils/textureSticker.h"
 
 using namespace CGoGN::VolumeExplorerTools;
 
@@ -103,6 +104,7 @@ void MyQT::slider_explode(int x)
 {
 	m_explode_factor = 0.01f*(x+1)-0.0001f;
 	m_explode_render->setExplodeVolumes(m_explode_factor);
+	explodeModel<PFP>(::myMap, ::position, allDarts, m_explode_factor, m_explode_factorf, m_explode_render);
 	updateGL();
 }
 
@@ -110,6 +112,7 @@ void MyQT::slider_explodeF(int x)
 {
 	m_explode_factorf = 0.01f*(x+1);
 	m_explode_render->setExplodeFaces(m_explode_factorf);
+	explodeModel<PFP>(::myMap, ::position, allDarts, m_explode_factor, m_explode_factorf, m_explode_render);
 	updateGL();
 }
 
@@ -137,9 +140,8 @@ void MyQT::slider_released()
 void MyQT::slider_opacity(int const x)
 {
 	m_opacity = 0.01f * x;
-	m_explode_render->setAlpha(m_opacity); DEBUG_GL;
 	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts, m_depths, m_lastDepth);
-	m_explode_render->updateData<PFP>(::myMap, ::position, color);
+	updateColorVBO<PFP>(::myMap, ::color, allDarts, m_explode_render);
 	updateGL(); DEBUG_GL;
 }
 
@@ -147,7 +149,7 @@ void MyQT::slider_opacity_gradient(int const x)
 {
 	m_opacity_gradient = 0.01f * x;
 	computeColorsUsingDepths<PFP>(::myMap, ::color, m_opacity, m_opacity_gradient, allDarts, m_depths, m_lastDepth);
-	m_explode_render->updateData<PFP>(::myMap, ::position, color);
+	updateColorVBO<PFP>(::myMap, ::color, allDarts, m_explode_render);
 	updateGL(); DEBUG_GL;
 }
 
@@ -233,12 +235,13 @@ void MyQT::cb_Open()
 
 void MyQT::cb_initGL()
 {
-	// choose to use GL version 2
-	Utils::GLSLShader::setCurrentOGLVersion(2);
+	DEBUG_GL;
+	 // choose to use GL version 2
+	Utils::GLSLShader::setCurrentOGLVersion(2); DEBUG_GL;
 
 	// create the renders
-    m_topo_render = new Algo::Render::GL2::Topo3Render();
-    m_explode_render = new Algo::Render::GL2::ExplodeVolumeAlphaRender(true,true);
+    m_topo_render = new Algo::Render::GL2::Topo3Render(); DEBUG_GL;
+    m_explode_render = new Algo::Render::GL2::ExplodeVolumeAlphaRender(true); DEBUG_GL;
 
 	SelectorDartNoBoundary<PFP::MAP> nb(::myMap);
 	m_topo_render->updateData<PFP>(::myMap, ::position,  0.8f, 0.8f, 0.8f, nb);
@@ -247,33 +250,89 @@ void MyQT::cb_initGL()
 	m_explode_render->updateData<PFP>(::myMap, ::position, color);
 	m_explode_render->setExplodeVolumes(0.8f);
 	m_explode_render->setExplodeFaces(0.9f);
-	m_explode_render->setAmbiant(Geom::Vec4f(0.2f,0.2f,0.2f,1.0f));
+	m_explode_render->setAmbient(Geom::Vec4f(0.2f,0.2f,0.2f,1.0f));
 	m_explode_render->setBackColor(Geom::Vec4f(0.9f,0.9f,0.9f,1.0f));
 	m_explode_render->setColorLine(Geom::Vec4f(0.8f,0.2f,0.2f,1.0f));
-	m_explode_render->setAlpha(m_opacity);
+	DEBUG_GL;
 
 	registerShader(m_explode_render->shaderFaces());
 	registerShader(m_explode_render->shaderLines());
+	DEBUG_GL;
 
     m_PlanePick = new Utils::Pickable(Utils::Pickable::GRID,1);
 	m_frame = new Utils::FrameManipulator();
 	m_frame->setSize(m_WidthObj/2.0f);
-
+	DEBUG_GL;
 
 	m_topo_render->shader1()->insertClippingCode();
 	m_topo_render->shader2()->insertClippingCode();
+	DEBUG_GL;
 
-	clip_id1 = m_topo_render->shader1()->addClipPlane();
-	clip_id2 = m_topo_render->shader2()->addClipPlane();
+	clip_id1 = m_topo_render->shader1()->addClipPlane(); DEBUG_GL;
+	clip_id2 = m_topo_render->shader2()->addClipPlane(); DEBUG_GL;
 
 	m_topo_render->shader1()->setClipPlaneParamsAll(clip_id1, Geom::Vec3f(0,0,1), m_PosObj);
 	m_topo_render->shader2()->setClipPlaneParamsAll(clip_id2, Geom::Vec3f(0,0,1), m_PosObj);
 	m_explode_render->setClippingPlane(Geom::Vec4f(0,0,1,m_PosObj*Geom::Vec3f(0,0,-1)));
+	DEBUG_GL;
 
+	resetFbo();
+
+	DEBUG_OUT << std::endl;
+}
+
+static CGoGN::Utils::FBO * newFrontDepthPeelingFBO(unsigned int const width, unsigned int const height)
+{
+	CGoGN::Utils::FBO * const result = new Utils::FBO(width, height); DEBUG_GL;
+
+	result->AttachRenderbuffer(GL_DEPTH_COMPONENT); DEBUG_GL;
+	result->AttachColorTexture(GL_RGBA); DEBUG_GL;
+	result->AttachDepthTexture(); DEBUG_GL;
+
+	return result;
+}
+
+static void bindClearUnbind(CGoGN::Utils::FBO * const fbo)
+{
+	fbo->CheckFBO(); DEBUG_GL;
+	fbo->Bind(); DEBUG_GL;
+	fbo->EnableColorAttachments(); DEBUG_GL;
+	glClearColor(0, 0, 0, 0); DEBUG_GL;
+	glClearDepth(1.0f); DEBUG_GL;
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); DEBUG_GL;
+	glFlush(); DEBUG_GL;
+	fbo->Unbind(); DEBUG_GL;
+	glDrawBuffer(GL_BACK); DEBUG_GL;
+}
+
+void MyQT::resetFbo()
+{
+	Viewport const viewport;
+	unsigned int const width = std::max(1U, static_cast<unsigned int>(viewport.width()));
+	unsigned int const height = std::max(1U, static_cast<unsigned int>(viewport.height()));
+
+	if (m_fbo1 && (m_fbo1->GetWidth() != width || m_fbo1->GetHeight() != height)) {
+		delete m_fbo1;
+		delete m_fbo2;
+		m_fbo1 = NULL;
+		m_fbo2 = NULL;
+	}
+
+	if (m_fbo1 == NULL) {
+		using namespace CGoGN::VolumeExplorerTools::Debug;
+		DEBUG_OUT << viewport << std::endl;
+		m_fbo1 = newFrontDepthPeelingFBO(width, height);
+		m_fbo2 = newFrontDepthPeelingFBO(width, height);
+	}
+
+	bindClearUnbind(m_fbo1);
+	bindClearUnbind(m_fbo2);
 }
 
 void MyQT::cb_redraw()
 {
+	glDisable(GL_BLEND); DEBUG_GL;
+	glEnable(GL_DEPTH_TEST); DEBUG_GL;
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); DEBUG_GL;
 
 	glEnable(GL_POLYGON_OFFSET_FILL); DEBUG_GL;
@@ -292,6 +351,9 @@ void MyQT::cb_redraw()
 
 	if (render_volumes)
 	{
+		resetFbo();
+		glBindTexture(GL_TEXTURE_2D, *(m_fbo1->GetDepthTexId())); DEBUG_GL;
+
 		if (m_opacity < 1)
 		{
 			unsigned int const n = m_explode_render->nbTris();
@@ -311,6 +373,8 @@ void MyQT::cb_redraw()
 		{
 			m_explode_render->drawFaces();
 		}
+
+		glBindTexture(GL_TEXTURE_2D, 0); DEBUG_GL;
 	}
 
 	if (clip_volume && !hide_clipping)
@@ -319,7 +383,6 @@ void MyQT::cb_redraw()
 		m_PlanePick->draw(); DEBUG_GL;
 	}
 }
-
 
 void  MyQT::cb_mousePress(int UNUSED(button), int x, int y)
 {
@@ -442,7 +505,7 @@ void MyQT::button_render_software()
 
 	timer.start();
 
-	Viewport viewport;
+	Viewport const viewport;
 
 	{
 		using namespace CGoGN::VolumeExplorerTools::Debug;
@@ -453,14 +516,14 @@ void MyQT::button_render_software()
 
 	DEBUG_OUT << "Rasterizing triangles and accumulating fragments..." << std::endl;
 
-	rasterizeTrianglesAndAccumulateFragments(m_explode_render, m_explode_factorf, m_explode_factor,
-			viewport, projectionMatrix() * modelViewMatrix() * transfoMatrix(), fragmentBuffer);
+	rasterizeTrianglesAndAccumulateFragments(m_explode_render, viewport,
+			projectionMatrix() * modelViewMatrix() * transfoMatrix(), fragmentBuffer);
 
 	if (!fragmentBuffer.empty()) {
 		DEBUG_OUT << "Sorting and blending fragments..." << std::endl;
 
 		QImage image(viewport.width(), viewport.height(), QImage::Format_ARGB32);
-		image.fill(QColor(0, 0, 0));
+		image.fill(0);
 
 		sortAndBlend(fragmentBuffer, image);
 
@@ -474,6 +537,137 @@ void MyQT::button_render_software()
 	{
 		DEBUG_OUT << "Software rendering aborted" << std::endl;
 	}
+}
+
+static void peelDepthLayerAndBlendToDefaultBuffer(CGoGN::Utils::FBO * const previousFBO, CGoGN::Utils::FBO * const currentFBO,
+		Algo::Render::GL2::ExplodeVolumeAlphaRender * const evr)
+{
+	currentFBO->Bind(); DEBUG_GL;
+	currentFBO->EnableColorAttachments(); DEBUG_GL;
+	glClearColor(0, 0, 0, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); DEBUG_GL;
+	glDisable(GL_BLEND); DEBUG_GL;
+	glEnable(GL_DEPTH_TEST); DEBUG_GL;
+	glActiveTexture(GL_TEXTURE0 + 0); DEBUG_GL;
+	glBindTexture(GL_TEXTURE_2D, *(previousFBO->GetDepthTexId())); DEBUG_GL;
+	evr->drawFaces(); DEBUG_GL;
+	glBindTexture(GL_TEXTURE_2D, 0); DEBUG_GL;
+	glFlush(); DEBUG_GL;
+	currentFBO->Unbind(); DEBUG_GL;
+	glDrawBuffer(GL_BACK);
+
+	glDisable(GL_DEPTH_TEST); DEBUG_GL;
+	glEnable(GL_BLEND); DEBUG_GL;
+	glBlendEquation(GL_FUNC_ADD); DEBUG_GL;
+	glBlendFuncSeparate(GL_DST_ALPHA, GL_ONE, GL_ZERO, GL_ONE_MINUS_SRC_ALPHA); DEBUG_GL;
+	Utils::TextureSticker::StickTextureOnWholeScreen(currentFBO->GetColorTexId(0));
+}
+
+void MyQT::button_depth_peeling()
+{
+	DEBUG_OUT << "Depth peeling..." << std::endl;
+
+	Utils::Chrono timer;
+
+	timer.start();
+
+	glClearColor(0, 0, 0, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); DEBUG_GL;
+
+	resetFbo();
+
+	m_fbo2->Bind(); DEBUG_GL;
+	m_fbo2->EnableColorAttachments(); DEBUG_GL;
+	glClearColor(0, 0, 0, 0); DEBUG_GL;
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); DEBUG_GL;
+	glFlush(); DEBUG_GL;
+	m_fbo2->Unbind(); DEBUG_GL;
+
+	// Enable Fbo before rendering
+	m_fbo1->Bind(); DEBUG_GL;
+	m_fbo1->EnableColorAttachments(); DEBUG_GL;
+
+	// Clear old Fbo buffers content
+	glClearColor(0, 0, 0, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); DEBUG_GL;
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); DEBUG_GL;
+
+	glEnable(GL_POLYGON_OFFSET_FILL); DEBUG_GL;
+	glPolygonOffset(1.0f, 1.0f); DEBUG_GL;
+
+	if (render_topo)
+		m_topo_render->drawTopo(); DEBUG_GL;
+
+	if (render_edges)
+	{
+		glLineWidth(2.0f);
+		m_explode_render->drawEdges(); DEBUG_GL;
+	}
+
+	glDisable(GL_POLYGON_OFFSET_FILL);
+
+	if (render_volumes)
+	{
+		m_explode_render->shaderFaces()->setDepthPeeling(true);
+		glDisable(GL_BLEND); DEBUG_GL;
+		glEnable(GL_DEPTH_TEST); DEBUG_GL;
+		glActiveTexture(GL_TEXTURE0 + 0); DEBUG_GL;
+		glBindTexture(GL_TEXTURE_2D, *(m_fbo2->GetDepthTexId())); DEBUG_GL;
+		m_explode_render->drawFaces(); DEBUG_GL;
+		glBindTexture(GL_TEXTURE_2D, 0); DEBUG_GL;
+		glFlush(); DEBUG_GL;
+		m_fbo1->Unbind(); DEBUG_GL;
+		glDrawBuffer(GL_BACK); DEBUG_GL;
+
+		Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo1->GetColorTexId(0));
+
+		CGoGN::Utils::FBO * previousFBO = m_fbo1;
+		CGoGN::Utils::FBO * currentFBO = m_fbo2;
+
+		// TODO count number of layers
+		for (int i = 0; i < 10; ++i)
+		{
+			peelDepthLayerAndBlendToDefaultBuffer(previousFBO, currentFBO, m_explode_render);
+			std::swap(previousFBO, currentFBO);
+		}
+
+		m_explode_render->shaderFaces()->setDepthPeeling(false);
+	}
+	else
+	{
+		glFlush(); DEBUG_GL;
+		m_fbo1->Unbind(); DEBUG_GL;
+		glDrawBuffer(GL_BACK); DEBUG_GL;
+		Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo1->GetColorTexId(0));
+	}
+
+	glReadBuffer(GL_BACK);
+
+	Viewport const viewport;
+	int const width = viewport.width();
+	int const height = viewport.height();
+	QImage image(width, height, QImage::Format_ARGB32);
+	image.fill(0);
+
+	std::vector<GLubyte> pixels(width * height * 4);
+	glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
+
+	for (int y = 0; y < height; ++y) {
+		for (int x = 0; x < width; ++x) {
+			QColor const color(
+					pixels[(y * width + x) * 4 + 0],
+					pixels[(y * width + x) * 4 + 1],
+					pixels[(y * width + x) * 4 + 2]);
+			image.setPixel(x, height - 1 - y, color.rgba());
+		}
+	}
+
+	m_imageComponent.setPixmap(QPixmap::fromImage(image));
+	m_imageViewer.setWidget(&m_imageComponent);
+	m_imageViewer.show();
+
+	DEBUG_OUT << "Depth peeling done in " << timer.elapsed() << " ms" << std::endl;
 }
 
 int main(int argc, char **argv)
@@ -506,7 +700,9 @@ int main(int argc, char **argv)
 				return 1;
 			}
 			else
+			{
 				::position = ::myMap.getAttribute<PFP::VEC3,VERTEX>(attrNames[0]) ;
+			}
 		}
 
 
@@ -533,7 +729,9 @@ int main(int argc, char **argv)
 			float v = Algo::Geometry::tetrahedronVolume<PFP>(::myMap, d, ::position);
 			::color[d] = PFP::VEC4(v,0,0,1);
 			if (v>maxV)
+			{
 				maxV=v;
+			}
 		}
 		for (unsigned int i = ::color.begin(); i != ::color.end(); ::color.next(i))
 		{
@@ -545,7 +743,7 @@ int main(int argc, char **argv)
 	{
 		::position = ::myMap.addAttribute<PFP::VEC3, VERTEX>("position");
 		Algo::Modelisation::Primitive3D<PFP> prim(::myMap, ::position);
-		int nb = 8;
+		int nb = 3;
 		prim.hexaGrid_topo(nb,nb,nb);
 		prim.embedHexaGrid(1.0f,1.0f,1.0f);
 
@@ -599,6 +797,8 @@ int main(int argc, char **argv)
 	sqt.setCallBack( dock.slider_opacity_gradient, SIGNAL(sliderReleased()), SLOT(slider_released()) );
 
 	sqt.setCallBack( dock.button_render_software, SIGNAL(released()), SLOT(button_render_software()) );
+
+	sqt.setCallBack( dock.button_depth_peeling, SIGNAL(released()), SLOT(button_depth_peeling()) );
 
 
 	sqt.show();

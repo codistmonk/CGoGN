@@ -44,6 +44,7 @@
 #include "Utils/cgognStream.h"
 #include "Utils/Qt/qtSimple.h"
 #include "Utils/frameManipulator.h"
+#include "Utils/fbo.h"
 
 #include "ui_volumeExplorer.h"
 #include "Utils/Qt/qtui.h"
@@ -85,6 +86,8 @@ class MyQT: public Utils::QT::SimpleQT
 
 	Algo::Render::GL2::Topo3Render* m_topo_render;
 	Algo::Render::GL2::ExplodeVolumeAlphaRender* m_explode_render;
+	Utils::FBO* m_fbo1;
+	Utils::FBO* m_fbo2;
 
 	float m_explode_factor;
 	float m_explode_factorf;
@@ -121,11 +124,14 @@ public:
 		hide_clipping(false),
 		m_topo_render(NULL),
 		m_explode_render(NULL),
+		m_fbo1(NULL),
+		m_fbo2(NULL),
 		m_explode_factor(0.8f),
 		m_opacity(0.5f),
 		m_opacity_gradient(0.5f)
 	{}
 
+	void resetFbo();
 	void updateDepths();
 	glm::vec4 viewpoint() const;
 
@@ -152,6 +158,7 @@ public slots:
 	void slider_opacity(int x);
 	void slider_opacity_gradient(int x);
 	void button_render_software();
+	void button_depth_peeling();
 };
 
 #endif

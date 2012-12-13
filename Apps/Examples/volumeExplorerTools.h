@@ -9,6 +9,135 @@ namespace CGoGN
 namespace VolumeExplorerTools
 {
 
+/**
+ * RAII wrapper for VBO data pointer.
+ */
+class VBODataPointer
+{
+
+	Utils::VBO * const m_vbo;
+
+	float * const m_data;
+
+public:
+
+	VBODataPointer(Utils::VBO * const vbo): m_vbo(vbo), m_data(static_cast<float *>(vbo->lockPtr()))
+	{
+		// NOP
+	}
+
+	~VBODataPointer()
+	{
+		if (m_data)
+		{
+			m_vbo->releasePtr();
+		}
+	}
+
+	unsigned int elementCount() const
+	{
+		return m_vbo->nbElts();
+	}
+
+	operator float *()
+	{
+		return m_data;
+	}
+
+	operator float const *() const
+	{
+		return m_data;
+	}
+
+};
+
+template<typename PFP>
+static inline typename PFP::VEC3 & linerp(typename PFP::VEC3 & target, typename PFP::VEC3 const & source, float const k)
+{
+	target[0] = target[0] * k + source[0] * (1.0f - k);
+	target[1] = target[1] * k + source[1] * (1.0f - k);
+	target[2] = target[2] * k + source[2] * (1.0f - k);
+
+	return target;
+}
+
+template<typename PFP>
+static void updateColorVBO(typename PFP::MAP& map, VolumeAttribute<typename PFP::VEC4> & colorPerXXX, const FunctorSelect& good,
+		Algo::Render::GL2::ExplodeVolumeAlphaRender * const evr)
+{
+	VBODataPointer colors(evr->colors());
+
+	if (colors)
+	{
+		typedef typename PFP::VEC4 VEC4;
+
+		TraversorCell<typename PFP::MAP, PFP::MAP::FACE_OF_PARENT> modelFaces(map, good);
+
+		int faceIndex = 0;
+
+		for (Dart d = modelFaces.begin(); d != modelFaces.end(); d = modelFaces.next())
+		{
+			Dart a = d;
+			Dart b = map.phi1(a);
+			Dart c = map.phi1(b);
+			do
+			{
+				memcpy(&colors[faceIndex * 4 * 4 + 1 * 4], &colorPerXXX[d], sizeof(VEC4));
+				memcpy(&colors[faceIndex * 4 * 4 + 2 * 4], &colorPerXXX[b], sizeof(VEC4));
+				memcpy(&colors[faceIndex * 4 * 4 + 3 * 4], &colorPerXXX[c], sizeof(VEC4));
+
+				++faceIndex;
+				b = c;
+				c = map.phi1(b);
+			} while (c != d);
+		}
+	}
+}
+
+template<typename PFP>
+static void explodeModel(typename PFP::MAP& map, VertexAttribute<typename PFP::VEC3> & vertexLocations, const FunctorSelect& good,
+		float const volumeScale, float const faceScale,
+		Algo::Render::GL2::ExplodeVolumeAlphaRender * const evr)
+{
+	VBODataPointer const colors(evr->colors());
+	VBODataPointer vertices(evr->vertices());
+
+	if (colors && vertices)
+	{
+		assert(colors.elementCount() == vertices.elementCount());
+
+		typedef typename PFP::VEC3 VEC3;
+
+		TraversorCell<typename PFP::MAP, PFP::MAP::FACE_OF_PARENT> modelFaces(map, good);
+		int faceIndex = 0;
+
+		for (Dart d = modelFaces.begin(); d != modelFaces.end(); d = modelFaces.next())
+		{
+			VEC3 const volumeCenter = VEC3(vertices[faceIndex * 4 * 3 + 0], vertices[faceIndex * 4 * 3 + 1], vertices[faceIndex * 4 * 3 + 2]);
+			VEC3 const faceCenter = VEC3(colors[faceIndex * 4 * 4 + 0], colors[faceIndex * 4 * 4 + 1], colors[faceIndex * 4 * 4 + 2]);
+			Dart a = d;
+			Dart b = map.phi1(a);
+			Dart c = map.phi1(b);
+			do
+			{
+				VEC3 va = vertexLocations[a];
+				VEC3 vb = vertexLocations[b];
+				VEC3 vc = vertexLocations[c];
+				linerp<PFP>(linerp<PFP>(va, faceCenter, faceScale), volumeCenter, volumeScale);
+				linerp<PFP>(linerp<PFP>(vb, faceCenter, faceScale), volumeCenter, volumeScale);
+				linerp<PFP>(linerp<PFP>(vc, faceCenter, faceScale), volumeCenter, volumeScale);
+				memcpy(&vertices[faceIndex * 4 * 3 + 1 * 3], &va, sizeof(VEC3));
+				memcpy(&vertices[faceIndex * 4 * 3 + 2 * 3], &vb, sizeof(VEC3));
+				memcpy(&vertices[faceIndex * 4 * 3 + 3 * 3], &vc, sizeof(VEC3));
+
+				++faceIndex;
+				b = c;
+				c = map.phi1(b);
+			} while (c != d);
+		}
+	}
+}
+
 template<typename PFP>
 static int computeDepths(typename PFP::MAP& map, const FunctorSelect& good, std::vector<int> & depths)
 {
@@ -205,48 +334,6 @@ public:
 	}
 };
 
-/**
- * RAII wrapper for VBO data pointer.
- */
-class VBODataPointer
-{
-
-	Utils::VBO * const m_vbo;
-
-	float * const m_data;
-
-public:
-
-	VBODataPointer(Utils::VBO * const vbo): m_vbo(vbo), m_data(static_cast<float *>(vbo->lockPtr()))
-	{
-		// NOP
-	}
-
-	~VBODataPointer()
-	{
-		if (m_data)
-		{
-			m_vbo->releasePtr();
-		}
-	}
-	
-	unsigned int elementCount() const
-	{
-		return m_vbo->nbElts();
-	}
-
-	operator float *()
-	{
-		return m_data;
-	}
-
-	operator float const *() const
-	{
-		return m_data;
-	}
-
-};
-
 static void sortData(Algo::Render::GL2::ExplodeVolumeAlphaRender const * const evr, std::vector<unsigned int> & permutation,
 		std::vector<GLuint> & triangles, glm::vec4 const & viewpoint)
 {
@@ -321,16 +408,10 @@ static inline std::ostream & operator<<(std::ostream & out, std::vector< int > c
 
 } // namespace Debug
 
-static glm::vec4 explode(glm::vec4 const & v, glm::vec4 const & faceCenter, float const faceScale, glm::vec4 const & volumeCenter, float const volumeScale)
-{
-	glm::vec4 const tmp = faceScale * v + (1.0 - faceScale) * faceCenter;
-
-	return volumeScale * tmp + (1.0 - volumeScale) * volumeCenter;
-}
-
-static glm::vec4 project(glm::vec4 const & v, glm::mat4 const & mvp, glm::vec4 const & viewportCenter, glm::vec4 const & viewportScale)
+static inline glm::vec4 project(glm::vec4 const & v, glm::mat4 const & mvp, glm::vec4 const & viewportCenter, glm::vec4 const & viewportScale)
 {
 	glm::vec4 const tmp(mvp * v);
+
 	return viewportScale * tmp / tmp[3]  + viewportCenter;
 }
 
@@ -475,7 +556,7 @@ static void updateRasterizationSpansTopDown(RasterizationSpans & spans, int cons
 			nextY = y + 1;
 		}
 
-		if (0 <= y && y < viewportHeight && (0 <= sx && previousY < y || sx < 0 && (y < nextY || x == x2)))
+		if (0 <= y && y < viewportHeight && ((0 <= sx && previousY < y) || (sx < 0 && (y < nextY || x == x2))))
 		{
 			float const s = static_cast<float>(pixelCount - 1) / std::max(m, 1);
 
@@ -559,7 +640,7 @@ public:
 
 	bool operator<(PixelFragment const & that) const
 	{
-		return this->z() < that.z();
+		return this->z() > that.z();
 	}
 
 };
@@ -669,7 +750,6 @@ static void sortAndBlend(FragmentBuffer & fragmentBuffer, QImage & image)
 }
 
 static void rasterizeTrianglesAndAccumulateFragments(Algo::Render::GL2::ExplodeVolumeAlphaRender const * const evr,
-		float const faceScale, float const volumeScale,
 		GLint const viewport[4], glm::mat4 const & mvp, FragmentBuffer & fragmentBuffer)
 {
 	static bool const debugShowRasterizationProgress = false;
@@ -700,12 +780,9 @@ static void rasterizeTrianglesAndAccumulateFragments(Algo::Render::GL2::ExplodeV
 			glm::vec4 v2(vertices[i * 3 + 6 + 0], vertices[i * 3 + 6 + 1], vertices[i * 3 + 6 + 2], 1.0);
 			glm::vec4 v3(vertices[i * 3 + 9 + 0], vertices[i * 3 + 9 + 1], vertices[i * 3 + 9 + 2], 1.0);
 
-			v1 = project(explode(v1, faceCenter, faceScale, volumeCenter, volumeScale),
-					mvp, viewportCenter, viewportScale);
-			v2 = project(explode(v2, faceCenter, faceScale, volumeCenter, volumeScale),
-					mvp, viewportCenter, viewportScale);
-			v3 = project(explode(v3, faceCenter, faceScale, volumeCenter, volumeScale),
-					mvp, viewportCenter, viewportScale);
+			v1 = project(v1, mvp, viewportCenter, viewportScale);
+			v2 = project(v2, mvp, viewportCenter, viewportScale);
+			v3 = project(v3, mvp, viewportCenter, viewportScale);
 
 			v1.y = viewportHeight - 1 - v1.y;
 			v2.y = viewportHeight - 1 - v2.y;
@@ -795,7 +872,7 @@ static void testRasterizeTriangle()
 	GLint const top = viewportHeight - 1;
 	int totalErrorCount = 0;
 	QImage image(viewportWidth, viewportHeight, QImage::Format_ARGB32);
-	image.fill(QColor(0, 0, 0));
+	image.fill(0);
 
 	DEBUG_OUT << "viewport: " << viewportX << ' ' << viewportY << ' ' << viewportWidth << ' ' << viewportHeight << std::endl;
 

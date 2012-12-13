@@ -43,44 +43,37 @@ protected:
     static std::string geometryShaderText;
 
     // uniform locations
-	CGoGNGLuint m_unif_ambiant;
+	CGoGNGLuint m_unif_ambient;
 	CGoGNGLuint m_unif_backColor;
 	CGoGNGLuint m_unif_lightPos;
-	CGoGNGLuint m_unif_explodeV;
-	CGoGNGLuint m_unif_explodeF;
 	CGoGNGLuint m_unif_plane;
 	CGoGNGLuint m_unif_alpha;
+	CGoGNGLuint m_unif_unit;
+	CGoGNGLuint m_unif_depthPeeling;
 
 //	local storage for uniforms
 	float m_explodeV;
 	float m_explodeF;
-	Geom::Vec4f m_ambiant;
+	Geom::Vec4f m_ambient;
 	Geom::Vec4f m_backColor;
 	Geom::Vec3f m_light_pos;
 	Geom::Vec4f m_plane;
-	float m_alpha;
+	int m_depthPeeling;
 
 	// VBO
 	VBO* m_vboPos;
 	VBO* m_vboColors;
 
 	bool m_wcpf;
-	bool m_wef;
 
 	void getLocations();
 
 	void restoreUniformsAttribs();
 
 public:
-	ShaderExplodeVolumesAlpha(bool withColorPerFace=false, bool withExplodeFace=false);
+	ShaderExplodeVolumesAlpha(bool withColorPerFace=false);
 
-	void setAlpha(float alpha);
-
-	void setExplodeVolumes(float explode);
-
-	void setExplodeFaces(float explode);
-
-	void setAmbiant(const Geom::Vec4f& ambiant);
+	void setAmbient(const Geom::Vec4f& ambient);
 
 	void setBackColor(const Geom::Vec4f& backColor);
 
@@ -88,7 +81,7 @@ public:
 
 	void setClippingPlane(const Geom::Vec4f& plane);
 
-	void setParams(float explodeV, float explodeF, const Geom::Vec4f& ambiant, const Geom::Vec4f& diffuse, const Geom::Vec3f& lightPos, const Geom::Vec4f& plane);
+	void setDepthPeeling(bool depthPeeling);
 
 	void setAttributePosition(VBO* vbo);
 

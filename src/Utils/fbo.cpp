@@ -328,6 +328,35 @@ void FBO::CheckFBO()
 
 	if (status != GL_FRAMEBUFFER_COMPLETE)
 		std::cout << "Fbo status error : " << status << std::endl;
+
+    switch (status) {
+    case GL_FRAMEBUFFER_COMPLETE:
+    	break;
+    case GL_FRAMEBUFFER_UNDEFINED:
+    	std::cout << "GL_FRAMEBUFFER_UNDEFINED" << std::endl;
+    	break;
+    case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+    	std::cout << "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT" << std::endl;
+    	break;
+    case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+    	std::cout << "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT" << std::endl;
+    	break;
+    case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
+    	std::cout << "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER" << std::endl;
+    	break;
+    case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
+    	std::cout << "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER" << std::endl;
+    	break;
+    case GL_FRAMEBUFFER_UNSUPPORTED:
+    	std::cout << "GL_FRAMEBUFFER_UNSUPPORTED" << std::endl;
+    	break;
+    case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+    	std::cout << "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE" << std::endl;
+    	break;
+    case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
+    	std::cout << "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS" << std::endl;
+    	break;
+    }
 }
 
 unsigned int FBO::GetWidth() const

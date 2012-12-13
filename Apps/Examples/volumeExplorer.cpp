@@ -281,11 +281,33 @@ void MyQT::cb_initGL()
 	DEBUG_OUT << std::endl;
 }
 
+static CGoGN::Utils::FBO * newFrontDepthPeelingFBO(unsigned int const width, unsigned int const height)
+{
+	CGoGN::Utils::FBO * const result = new Utils::FBO(width, height); DEBUG_GL;
+
+	result->AttachRenderbuffer(GL_DEPTH_COMPONENT); DEBUG_GL;
+	result->AttachColorTexture(GL_RGBA); DEBUG_GL;
+	result->AttachDepthTexture(); DEBUG_GL;
+
+	return result;
+}
+
+static void bindClearUnbind(CGoGN::Utils::FBO * const fbo)
+{
+	fbo->CheckFBO(); DEBUG_GL;
+	fbo->Bind(); DEBUG_GL;
+	fbo->EnableColorAttachments(); DEBUG_GL;
+	glClearColor(0, 0, 0, 0); DEBUG_GL;
+	glClearDepth(1.0f); DEBUG_GL;
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); DEBUG_GL;
+	fbo->Unbind(); DEBUG_GL;
+}
+
 void MyQT::resetFbo()
 {
 	Viewport const viewport;
-	unsigned int const width = static_cast<unsigned int>(viewport.width());
-	unsigned int const height = static_cast<unsigned int>(viewport.height());
+	unsigned int const width = std::max(1U, static_cast<unsigned int>(viewport.width()));
+	unsigned int const height = std::max(1U, static_cast<unsigned int>(viewport.height()));
 
 	if (m_fbo1 && (m_fbo1->GetWidth() != width || m_fbo1->GetHeight() != height)) {
 		delete m_fbo1;
@@ -297,16 +319,12 @@ void MyQT::resetFbo()
 	if (m_fbo1 == NULL) {
 		using namespace CGoGN::VolumeExplorerTools::Debug;
 		DEBUG_OUT << viewport << std::endl;
-		m_fbo1 = new Utils::FBO(width, height); DEBUG_GL;
-		m_fbo1->AttachRenderbuffer(GL_DEPTH_COMPONENT); DEBUG_GL;
-		m_fbo1->AttachColorTexture(GL_RGBA); DEBUG_GL;
-		m_fbo1->AttachDepthTexture(); DEBUG_GL;
-
-		m_fbo2 = new Utils::FBO(width, height); DEBUG_GL;
-		m_fbo2->AttachRenderbuffer(GL_DEPTH_COMPONENT); DEBUG_GL;
-		m_fbo2->AttachColorTexture(GL_RGBA); DEBUG_GL;
-		m_fbo2->AttachDepthTexture(); DEBUG_GL;
+		m_fbo1 = newFrontDepthPeelingFBO(width, height);
+		m_fbo2 = newFrontDepthPeelingFBO(width, height);
 	}
+
+	bindClearUnbind(m_fbo1);
+	bindClearUnbind(m_fbo2);
 }
 
 void MyQT::cb_redraw()
@@ -331,6 +349,9 @@ void MyQT::cb_redraw()
 
 	if (render_volumes)
 	{
+		resetFbo();
+		glBindTexture(GL_TEXTURE_2D, *(m_fbo1->GetDepthTexId())); DEBUG_GL;
+
 		if (m_opacity < 1)
 		{
 			unsigned int const n = m_explode_render->nbTris();
@@ -350,6 +371,8 @@ void MyQT::cb_redraw()
 		{
 			m_explode_render->drawFaces();
 		}
+
+		glBindTexture(GL_TEXTURE_2D, 0); DEBUG_GL;
 	}
 
 	if (clip_volume && !hide_clipping)
@@ -529,6 +552,7 @@ static void peelDepthLayerAndBlendToDefaultBuffer(CGoGN::Utils::FBO * const prev
 	glBindTexture(GL_TEXTURE_2D, 0); DEBUG_GL;
 	glFlush(); DEBUG_GL;
 	currentFBO->Unbind(); DEBUG_GL;
+	glDrawBuffer(GL_BACK);
 
 	glDisable(GL_DEPTH_TEST); DEBUG_GL;
 	glEnable(GL_BLEND); DEBUG_GL;
@@ -604,6 +628,8 @@ void MyQT::button_depth_peeling()
 			std::swap(previousFBO, currentFBO);
 		}
 	}
+
+	glReadBuffer(GL_BACK);
 
 	Viewport const viewport;
 	int const width = viewport.width();

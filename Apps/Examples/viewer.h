@@ -46,6 +46,7 @@
 #include "Utils/Shaders/shaderVectorPerVertex.h"
 #include "Utils/Shaders/shaderSimpleNormal.h"
 #include "Utils/Shaders/shaderComputeSSAO.h"
+#include "Utils/Shaders/shaderMultTextures.h"
 #include "Utils/pointSprite.h"
 #include "Utils/text3d.h"
 #include "Utils/vboRender.h"
@@ -100,6 +101,8 @@ public:
 	bool m_drawFaces ;
 	bool m_drawNormals ;
 	bool m_drawTopo ;
+	bool m_useSSAO ;
+	bool m_displayOnlySSAO ;
 
 	VertexAttribute<VEC3> position ;
 	VertexAttribute<VEC3> normal ;
@@ -116,6 +119,7 @@ public:
 	Utils::ShaderSimpleColor* m_simpleColorShader ;
 	Utils::ShaderSimpleNormal* m_simpleNormalShader ;
 	Utils::ShaderComputeSSAO* m_computeSSAOShader ;
+	Utils::ShaderMultTextures* m_multTexturesShader ;
 	
 	Utils::PointSprite* m_pointSprite ;
 	
@@ -147,6 +151,8 @@ public slots:
 	void slot_drawTopo(bool b) ;
 	void slot_drawNormals(bool b) ;
 	void slot_normalsSize(int i) ;
+	void slot_useSSAO(bool b) ;
+	void slot_displayOnlySSAO(bool b) ;
 	
 private :
 	void drawVertices();

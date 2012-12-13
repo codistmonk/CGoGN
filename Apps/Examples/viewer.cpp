@@ -31,6 +31,8 @@ Viewer::Viewer() :
 	m_drawFaces(true),
 	m_drawNormals(false),
 	m_drawTopo(false),
+	m_useSSAO(true),
+	m_displayOnlySSAO(true),
 	m_render(NULL),
 	m_phongShader(NULL),
 	m_flatShader(NULL),
@@ -56,18 +58,22 @@ Viewer::Viewer() :
 
 void Viewer::initGUI()
 {
-    setDock(&dock) ;
+	setDock(&dock) ;
 
-    dock.check_drawVertices->setChecked(false) ;
-    dock.check_drawEdges->setChecked(false) ;
-    dock.check_drawFaces->setChecked(true) ;
-    dock.check_drawNormals->setChecked(false) ;
+	dock.check_drawVertices->setChecked(m_drawVertices) ;
+	dock.check_drawEdges->setChecked(m_drawEdges) ;
+	dock.check_drawFaces->setChecked(m_drawFaces) ;
+	dock.check_drawNormals->setChecked(m_drawNormals) ;
+	dock.check_useSSAO->setChecked(m_useSSAO) ;
+	dock.check_displayOnlySSAO->setChecked(m_displayOnlySSAO) ;
 
-    dock.slider_verticesSize->setVisible(false) ;
-    dock.slider_normalsSize->setVisible(false) ;
+	dock.combo_faceLighting->setVisible(dock.check_drawFaces->isChecked()) ;
+	dock.slider_verticesSize->setVisible(dock.check_drawVertices->isChecked()) ;
+	dock.slider_normalsSize->setVisible(dock.check_drawNormals->isChecked()) ;
+	dock.check_displayOnlySSAO->setVisible(dock.check_useSSAO->isChecked()) ;
 
-    dock.slider_verticesSize->setSliderPosition(50) ;
-    dock.slider_normalsSize->setSliderPosition(50) ;
+	dock.slider_verticesSize->setSliderPosition(50) ;
+	dock.slider_normalsSize->setSliderPosition(50) ;
 
 	setCallBack( dock.check_drawVertices, SIGNAL(toggled(bool)), SLOT(slot_drawVertices(bool)) ) ;
 	setCallBack( dock.slider_verticesSize, SIGNAL(valueChanged(int)), SLOT(slot_verticesSize(int)) ) ;
@@ -77,6 +83,8 @@ void Viewer::initGUI()
 	setCallBack( dock.check_drawTopo, SIGNAL(toggled(bool)), SLOT(slot_drawTopo(bool)) ) ;
 	setCallBack( dock.check_drawNormals, SIGNAL(toggled(bool)), SLOT(slot_drawNormals(bool)) ) ;
 	setCallBack( dock.slider_normalsSize, SIGNAL(valueChanged(int)), SLOT(slot_normalsSize(int)) ) ;
+	setCallBack( dock.check_useSSAO, SIGNAL(toggled(bool)), SLOT(slot_useSSAO(bool)) ) ;
+	setCallBack( dock.check_displayOnlySSAO, SIGNAL(toggled(bool)), SLOT(slot_displayOnlySSAO(bool)) ) ;
 }
 
 void Viewer::cb_initGL()
@@ -124,6 +132,10 @@ void Viewer::cb_initGL()
 	m_computeSSAOShader = new Utils::ShaderComputeSSAO();
 	m_computeSSAOShader->setAttributePosition(Utils::TextureSticker::GetQuadPositionsVbo());
 	m_computeSSAOShader->setAttributeTexCoord(Utils::TextureSticker::GetQuadTexCoordsVbo());
+	
+	m_multTexturesShader = new Utils::ShaderMultTextures();
+	m_multTexturesShader->setAttributePosition(Utils::TextureSticker::GetQuadPositionsVbo());
+	m_multTexturesShader->setAttributeTexCoord(Utils::TextureSticker::GetQuadTexCoordsVbo());
 
 	m_pointSprite = new Utils::PointSprite() ;
 	m_pointSprite->setAttributePosition(m_positionVBO) ;
@@ -154,11 +166,10 @@ void Viewer::cb_initGL()
 
 void Viewer::cb_redraw()
 {
-	bool useFbo = true;
-
-	if (useFbo)
+	// Draw the faces with SSAO
+	if (m_useSSAO)
 	{
-		// Render in color, normals and depth Fbo
+		// Render in normals and depth Fbo
 		m_colorNormalsAndDepthFbo->Bind();
 		m_colorNormalsAndDepthFbo->EnableColorAttachments();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -188,47 +199,54 @@ void Viewer::cb_redraw()
 		}
 		m_SSAOFbo->Unbind();
 		
-		// Render color and depth
-		m_finalRenderFbo->Bind();
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		if (!m_displayOnlySSAO)
 		{
-			// Simply render faces color and depth
-			drawFaces();
-		}
-		m_finalRenderFbo->Unbind();
+			// Render color and depth
+			m_finalRenderFbo->Bind();
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			{
+				// Simply render faces color and depth
+				drawFaces();
+			}
+			m_finalRenderFbo->Unbind();
 		
-		// Merge color and SSAO
-		m_colorAndSSAOMergeFbo->Bind();
-		glClear(GL_COLOR_BUFFER_BIT);
-		{
-			// TODO
+			// Merge color and SSAO
+			m_colorAndSSAOMergeFbo->Bind();
+			glClear(GL_COLOR_BUFFER_BIT);
+			{
+				// Send textures to multiply shader
+				m_multTexturesShader->bind();
+				m_multTexturesShader->setTexture1Unit(GL_TEXTURE0);
+				m_multTexturesShader->activeTexture1(m_finalRenderFbo->GetColorTexId(0));
+				m_multTexturesShader->setTexture2Unit(GL_TEXTURE1);
+				m_multTexturesShader->activeTexture2(m_SSAOFbo->GetColorTexId(0));
+				m_multTexturesShader->unbind();
+			
+				// Multiply textures together
+				Utils::TextureSticker::DrawFullscreenQuadWithShader(m_multTexturesShader);
+			}
+			m_colorAndSSAOMergeFbo->Unbind();
 		}
-		m_colorAndSSAOMergeFbo->Unbind();
 		
-		// Get and draw color texture from Fbo
-		Utils::TextureSticker::StickTextureOnWholeScreen(m_SSAOFbo->GetColorTexId(0));
+		// Get and draw color texture from final Fbo
+		if (!m_displayOnlySSAO)
+			Utils::TextureSticker::StickTextureOnWholeScreen(m_colorAndSSAOMergeFbo->GetColorTexId(0));
+		else
+			Utils::TextureSticker::StickTextureOnWholeScreen(m_SSAOFbo->GetColorTexId(0));
 	}
+	// Draw the faces without SSAO
+	else
+		drawFaces();
 
 	// Draw everything else
 	/*if(m_drawVertices)
 		drawVertices();
 	if(m_drawEdges)
 		drawEdges();
-	if(m_drawFaces)
-		drawFaces();
 	if(m_drawTopo)
 		drawTopo();
 	if(m_drawNormals)
 		drawNormals();*/
-	
-	/*if (useFbo)
-	{
-		// Disable Fbo after rendering
-		m_fbo->Unbind();
-	
-		// Get and draw color texture from Fbo
-		Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo->GetColorTexId(0));
-	}*/
 	
 	GLenum glError = glGetError();
 	if (glError != GL_NO_ERROR)
@@ -438,6 +456,18 @@ void Viewer::slot_normalsSize(int i)
 {
 	normalScaleFactor = i / 50.0f ;
 	m_topoRender->updateData<PFP>(myMap, position, i / 100.0f, i / 100.0f) ;
+	updateGL() ;
+}
+
+void Viewer::slot_useSSAO(bool b)
+{
+	m_useSSAO = b ;
+	updateGL() ;
+}
+
+void Viewer::slot_displayOnlySSAO(bool b)
+{
+	m_displayOnlySSAO = b ;
 	updateGL() ;
 }
 

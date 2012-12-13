@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>174</width>
-    <height>393</height>
+    <width>190</width>
+    <height>394</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>174</width>
-    <height>393</height>
+    <width>190</width>
+    <height>394</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -100,6 +100,20 @@
          </widget>
         </item>
         <item>
+         <widget class="QCheckBox" name="check_useSSAO">
+          <property name="text">
+           <string>use SSAO</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="check_displayOnlySSAO">
+          <property name="text">
+           <string>display only SSAO</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <spacer name="verticalSpacer">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -166,6 +180,22 @@
     <hint type="destinationlabel">
      <x>75</x>
      <y>75</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>check_useSSAO</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>check_displayOnlySSAO</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>94</x>
+     <y>327</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>94</x>
+     <y>355</y>
     </hint>
    </hints>
   </connection>

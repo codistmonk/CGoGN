@@ -300,7 +300,9 @@ static void bindClearUnbind(CGoGN::Utils::FBO * const fbo)
 	glClearColor(0, 0, 0, 0); DEBUG_GL;
 	glClearDepth(1.0f); DEBUG_GL;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); DEBUG_GL;
+	glFlush(); DEBUG_GL;
 	fbo->Unbind(); DEBUG_GL;
+	glDrawBuffer(GL_BACK); DEBUG_GL;
 }
 
 void MyQT::resetFbo()
@@ -615,6 +617,7 @@ void MyQT::button_depth_peeling()
 		glBindTexture(GL_TEXTURE_2D, 0); DEBUG_GL;
 		glFlush(); DEBUG_GL;
 		m_fbo1->Unbind(); DEBUG_GL;
+		glDrawBuffer(GL_BACK); DEBUG_GL;
 
 		Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo1->GetColorTexId(0));
 
@@ -627,6 +630,13 @@ void MyQT::button_depth_peeling()
 			peelDepthLayerAndBlendToDefaultBuffer(previousFBO, currentFBO, m_explode_render);
 			std::swap(previousFBO, currentFBO);
 		}
+	}
+	else
+	{
+		glFlush(); DEBUG_GL;
+		m_fbo1->Unbind(); DEBUG_GL;
+		glDrawBuffer(GL_BACK); DEBUG_GL;
+		Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo1->GetColorTexId(0));
 	}
 
 	glReadBuffer(GL_BACK);

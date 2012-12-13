@@ -8,9 +8,13 @@ void main()
 	float previousDepth = texelFetch2D(previousDepthBuffer, pixelXY, 0).z;
 	float depth = gl_FragCoord.z;
 	
-	if ((previousDepth == 1.0) || (int(depth * 10000.0) > int(previousDepth * 10000.0)))
+	if (previousDepth == 1.0)
 	{
-		gl_FragColor = ColorFS;
+		gl_FragColor = vec4(ColorFS.rgb * ColorFS.a, ColorFS.a);
+	}
+	else if (int(depth * 10000.0) > int(previousDepth * 10000.0))
+	{
+		gl_FragColor = vec4(ColorFS.rgb * ColorFS.a, 1.0 - ColorFS.a);
 	}
 	else
 	{

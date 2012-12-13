@@ -2,9 +2,11 @@
 #include <fstream>
 #include <sstream>
 
+#define MAX_BUFFER_SIZE 1024
+
 int main(int argc, char **argv)
 {
-	char buffer[512];
+	char buffer[MAX_BUFFER_SIZE];
 	for (int i=1; i< argc; ++i)
 	{
 		std::string filename(argv[i]);
@@ -38,7 +40,7 @@ int main(int argc, char **argv)
 		{
 			while (!fsi.eof())
 			{
-				fsi.getline(buffer,512);
+				fsi.getline(buffer,MAX_BUFFER_SIZE);
 				if (!fsi.eof())
 					ssi << buffer << std::endl ;
 			}
@@ -47,7 +49,7 @@ int main(int argc, char **argv)
 		
 		
 		// fist line
-		fs.getline(buffer,512);				
+		fs.getline(buffer,MAX_BUFFER_SIZE);				
 		char *sub=buffer;
 		while ((*sub=='/') || (*sub==' '))
 			++sub;
@@ -57,7 +59,7 @@ int main(int argc, char **argv)
 		unsigned int nbbl=0;
 		while (!fs.eof())
 		{
-			fs.getline(buffer,512);
+			fs.getline(buffer,MAX_BUFFER_SIZE);
 			//std::cout << buffer << std::endl;
 			if (*buffer!=0)
 			{

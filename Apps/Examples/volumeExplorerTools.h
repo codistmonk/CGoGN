@@ -640,7 +640,7 @@ public:
 
 	bool operator<(PixelFragment const & that) const
 	{
-		return this->z() < that.z();
+		return this->z() > that.z();
 	}
 
 };

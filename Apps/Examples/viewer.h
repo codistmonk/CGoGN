@@ -44,7 +44,8 @@
 #include "Utils/Shaders/shaderFlat.h"
 #include "Utils/Shaders/shaderSimpleColor.h"
 #include "Utils/Shaders/shaderVectorPerVertex.h"
-#include "Utils/Shaders/shaderSimpleNormal.h"
+#include "Utils/Shaders/shaderOutputNormal.h"
+#include "Utils/Shaders/shaderOutputPositionAndNormal.h"
 #include "Utils/Shaders/shaderComputeSSAO.h"
 #include "Utils/Shaders/shaderMultTextures.h"
 #include "Utils/pointSprite.h"
@@ -79,7 +80,7 @@ public:
 
     Utils::QT::uiDockInterface dock ;
 
-	enum renderMode { FLAT, PHONG, NORMALS } ;
+	enum renderMode { FLAT, PHONG, NORMALS, POSITIONS_AND_NORMALS } ;
 
 	Geom::Vec4f colDif ;
 	Geom::Vec4f colSpec ;
@@ -117,13 +118,14 @@ public:
 	Utils::ShaderFlat* m_flatShader ;
 	Utils::ShaderVectorPerVertex* m_vectorShader ;
 	Utils::ShaderSimpleColor* m_simpleColorShader ;
-	Utils::ShaderSimpleNormal* m_simpleNormalShader ;
+	Utils::ShaderOutputNormal* m_normalShader ;
+	Utils::ShaderOutputPositionAndNormal* m_positionAndNormalShader ;
 	Utils::ShaderComputeSSAO* m_computeSSAOShader ;
 	Utils::ShaderMultTextures* m_multTexturesShader ;
 	
 	Utils::PointSprite* m_pointSprite ;
 	
-	Utils::FBO* m_colorNormalsAndDepthFbo;
+	Utils::FBO* m_positionsAndNormalsFbo;
 	Utils::FBO* m_SSAOFbo;
 	Utils::FBO* m_finalRenderFbo;
 	Utils::FBO* m_colorAndSSAOMergeFbo;

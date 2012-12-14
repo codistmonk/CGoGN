@@ -23,7 +23,7 @@
 *******************************************************************************/
 
 #include <GL/glew.h>
-#include "Utils/Shaders/shaderSimpleNormal.h"
+#include "Utils/Shaders/shaderOutputNormal.h"
 
 namespace CGoGN
 {
@@ -31,14 +31,14 @@ namespace CGoGN
 namespace Utils
 {
 
-#include "shaderSimpleNormal.vert"
-#include "shaderSimpleNormal.frag"
+#include "shaderOutputNormal.vert"
+#include "shaderOutputNormal.frag"
 
-ShaderSimpleNormal::ShaderSimpleNormal()
+ShaderOutputNormal::ShaderOutputNormal()
 {
-	m_nameVS = "ShaderSimpleNormal_vs";
-	m_nameFS = "ShaderSimpleNormal_fs";
-	m_nameGS = "ShaderSimpleNormal_gs";
+	m_nameVS = "ShaderOutputNormal_vs";
+	m_nameFS = "ShaderOutputNormal_fs";
+	m_nameGS = "ShaderOutputNormal_gs";
 
 	// chose GL defines (2 or 3)
 	// and compile shaders
@@ -51,19 +51,19 @@ ShaderSimpleNormal::ShaderSimpleNormal()
 	loadShadersFromMemory(glxvert.c_str(), glxfrag.c_str());
 }
 
-unsigned int ShaderSimpleNormal::setAttributePosition(VBO* vbo)
+unsigned int ShaderOutputNormal::setAttributePosition(VBO* vbo)
 {
 	m_vboPos = vbo;
 	return bindVA_VBO("VertexPosition", vbo);
 }
 
-unsigned int ShaderSimpleNormal::setAttributeNormal(VBO* vbo)
+unsigned int ShaderOutputNormal::setAttributeNormal(VBO* vbo)
 {
 	m_vboNormal = vbo;
 	return bindVA_VBO("VertexNormal", vbo);
 }
 
-void ShaderSimpleNormal::restoreUniformsAttribs()
+void ShaderOutputNormal::restoreUniformsAttribs()
 {
 	bind();
 	bindVA_VBO("VertexPosition", m_vboPos);

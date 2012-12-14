@@ -38,10 +38,11 @@ Viewer::Viewer() :
 	m_flatShader(NULL),
 	m_vectorShader(NULL),
 	m_simpleColorShader(NULL),
-	m_simpleNormalShader(NULL),
+	m_normalShader(NULL),
+	m_positionAndNormalShader(NULL),
 	m_computeSSAOShader(NULL),
 	m_pointSprite(NULL),
-	m_colorNormalsAndDepthFbo(NULL),
+	m_positionsAndNormalsFbo(NULL),
 	m_SSAOFbo(NULL),
 	m_finalRenderFbo(NULL)
 {
@@ -125,9 +126,13 @@ void Viewer::cb_initGL()
 	Geom::Vec4f c(0.1f, 0.1f, 0.1f, 1.0f) ;
 	m_simpleColorShader->setColor(c) ;
 	
-	m_simpleNormalShader = new Utils::ShaderSimpleNormal() ;
-	m_simpleNormalShader->setAttributePosition(m_positionVBO);
-	m_simpleNormalShader->setAttributeNormal(m_normalVBO);
+	m_normalShader = new Utils::ShaderOutputNormal();
+	m_normalShader->setAttributePosition(m_positionVBO);
+	m_normalShader->setAttributeNormal(m_normalVBO);	
+	
+	m_positionAndNormalShader = new Utils::ShaderOutputPositionAndNormal();
+	m_positionAndNormalShader->setAttributePosition(m_positionVBO);
+	m_positionAndNormalShader->setAttributeNormal(m_normalVBO);
 	
 	m_computeSSAOShader = new Utils::ShaderComputeSSAO();
 	m_computeSSAOShader->setAttributePosition(Utils::TextureSticker::GetQuadPositionsVbo());
@@ -144,13 +149,14 @@ void Viewer::cb_initGL()
 	registerShader(m_flatShader) ;
 	registerShader(m_vectorShader) ;
 	registerShader(m_simpleColorShader) ;
-	registerShader(m_simpleNormalShader) ;
+	registerShader(m_normalShader) ;
+	registerShader(m_positionAndNormalShader) ;
 	registerShader(m_pointSprite) ;
 	
-	m_colorNormalsAndDepthFbo = new Utils::FBO(1024, 1024);
-	m_colorNormalsAndDepthFbo->AttachRenderbuffer(GL_DEPTH_COMPONENT);
-	m_colorNormalsAndDepthFbo->AttachColorTexture(GL_RGBA);
-	m_colorNormalsAndDepthFbo->AttachDepthTexture();
+	m_positionsAndNormalsFbo = new Utils::FBO(1024, 1024);
+	m_positionsAndNormalsFbo->AttachRenderbuffer(GL_DEPTH_COMPONENT);
+	m_positionsAndNormalsFbo->AttachColorTexture(GL_RGBA32F);
+	m_positionsAndNormalsFbo->AttachColorTexture(GL_RGBA);
 	
 	m_SSAOFbo = new Utils::FBO(1024, 1024);
 	m_SSAOFbo->AttachColorTexture(GL_RGBA);
@@ -169,18 +175,18 @@ void Viewer::cb_redraw()
 	// Draw the faces with SSAO
 	if (m_useSSAO)
 	{
-		// Render in normals and depth Fbo
-		m_colorNormalsAndDepthFbo->Bind();
-		m_colorNormalsAndDepthFbo->EnableColorAttachments();
+		// Render in positions and normals Fbo
+		m_positionsAndNormalsFbo->Bind();
+		m_positionsAndNormalsFbo->EnableColorAttachments();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		{
 			// Render faces color, normals and depth
 			int oldRenderStyle = m_renderStyle;
-			m_renderStyle = NORMALS;
+			m_renderStyle = POSITIONS_AND_NORMALS;
 			drawFaces();
 			m_renderStyle = oldRenderStyle;
 		}
-		m_colorNormalsAndDepthFbo->Unbind();
+		m_positionsAndNormalsFbo->Unbind();
 		
 		// Render in SSAO Fbo
 		m_SSAOFbo->Bind();
@@ -189,9 +195,9 @@ void Viewer::cb_redraw()
 			// Send textures to SSAO shader
 			m_computeSSAOShader->bind();
 			m_computeSSAOShader->setNormalTextureUnit(GL_TEXTURE0);
-			m_computeSSAOShader->activeNormalTexture(m_colorNormalsAndDepthFbo->GetColorTexId(0));
+			m_computeSSAOShader->activeNormalTexture(m_positionsAndNormalsFbo->GetColorTexId(1));
 			m_computeSSAOShader->setDepthTextureUnit(GL_TEXTURE1);
-			m_computeSSAOShader->activeDepthTexture(m_colorNormalsAndDepthFbo->GetDepthTexId());
+			m_computeSSAOShader->activeDepthTexture(m_positionsAndNormalsFbo->GetColorTexId(0));
 			m_computeSSAOShader->unbind();
 			
 			// Render SSAO texture
@@ -286,7 +292,11 @@ void Viewer::drawFaces()
 			break;
 
 		case NORMALS :
-			m_render->draw(m_simpleNormalShader, Algo::Render::GL2::TRIANGLES) ;
+			m_render->draw(m_normalShader, Algo::Render::GL2::TRIANGLES) ;
+			break;
+			
+		case POSITIONS_AND_NORMALS :
+			m_render->draw(m_positionAndNormalShader, Algo::Render::GL2::TRIANGLES) ;
 			break;
 
 		default :

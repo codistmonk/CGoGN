@@ -22,8 +22,8 @@
 *                                                                              *
 *******************************************************************************/
 
-#ifndef __CGOGN_SHADER_SIMPLENORMAL__
-#define __CGOGN_SHADER_SIMPLENORMAL__
+#ifndef __CGOGN_SHADER_OUTPUTPOSITIONANDNORMAL__
+#define __CGOGN_SHADER_OUTPUTPOSITIONANDNORMAL__
 
 
 #include "Geometry/vector_gen.h"
@@ -36,12 +36,12 @@ namespace CGoGN
 namespace Utils
 {
 
-class ShaderSimpleNormal : public ClippingShader
+class ShaderOutputPositionAndNormal : public ClippingShader
 {
 
 public:
 
-	ShaderSimpleNormal();
+	ShaderOutputPositionAndNormal();
 
 	unsigned int setAttributePosition(VBO* vbo);
 
@@ -63,4 +63,4 @@ protected:
 } // namespace CGoGN
 
 
-#endif /* __CGOGN_SHADER_SIMPLENORMAL__ */
+#endif /* __CGOGN_SHADER_OUTPUTPOSITIONANDNORMAL__ */

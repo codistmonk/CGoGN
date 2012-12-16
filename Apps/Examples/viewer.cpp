@@ -157,6 +157,7 @@ void Viewer::cb_initGL()
 	m_positionsAndNormalsFbo->AttachRenderbuffer(GL_DEPTH_COMPONENT);
 	m_positionsAndNormalsFbo->AttachColorTexture(GL_RGBA32F);
 	m_positionsAndNormalsFbo->AttachColorTexture(GL_RGBA);
+	m_positionsAndNormalsFbo->AttachDepthTexture();
 	
 	m_SSAOFbo = new Utils::FBO(1024, 1024);
 	m_SSAOFbo->AttachColorTexture(GL_RGBA);
@@ -194,10 +195,12 @@ void Viewer::cb_redraw()
 		{
 			// Send textures to SSAO shader
 			m_computeSSAOShader->bind();
-			m_computeSSAOShader->setNormalTextureUnit(GL_TEXTURE0);
+			m_computeSSAOShader->setPositionTextureUnit(GL_TEXTURE0);
+			m_computeSSAOShader->activePositionTexture(m_positionsAndNormalsFbo->GetColorTexId(0));
+			m_computeSSAOShader->setNormalTextureUnit(GL_TEXTURE1);
 			m_computeSSAOShader->activeNormalTexture(m_positionsAndNormalsFbo->GetColorTexId(1));
-			m_computeSSAOShader->setDepthTextureUnit(GL_TEXTURE1);
-			m_computeSSAOShader->activeDepthTexture(m_positionsAndNormalsFbo->GetColorTexId(0));
+			m_computeSSAOShader->setDepthTextureUnit(GL_TEXTURE2);
+			m_computeSSAOShader->activeDepthTexture(m_positionsAndNormalsFbo->GetDepthTexId());
 			m_computeSSAOShader->unbind();
 			
 			// Render SSAO texture

@@ -129,12 +129,12 @@ public:
 	void CheckFBO();
 
 	/**
-	 * \returns Width of the Fbo in pixels
+	 * \returns  Width of the Fbo in pixels.
 	 */
 	unsigned int GetWidth() const;
 
 	/**
-	 * \returns Height of the Fbo in pixels
+	 * \returns  Height of the Fbo in pixels.
 	 */
 	unsigned int GetHeight() const;
 

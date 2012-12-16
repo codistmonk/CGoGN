@@ -44,9 +44,11 @@ class ShaderComputeSSAO : public ClippingShader
 public:
 	ShaderComputeSSAO();
 
+	void setPositionTextureUnit(GLenum textureUnit);
 	void setNormalTextureUnit(GLenum textureUnit);
 	void setDepthTextureUnit(GLenum textureUnit);
 	
+	void activePositionTexture(CGoGNGLuint texId);
 	void activeNormalTexture(CGoGNGLuint texId);
 	void activeDepthTexture(CGoGNGLuint texId);
 
@@ -58,9 +60,11 @@ protected:
 	static std::string vertexShaderText;
 	static std::string fragmentShaderText;
 
+	CGoGNGLuint m_unifPositionTexUnit;
 	CGoGNGLuint m_unifNormalTexUnit;
 	CGoGNGLuint m_unifDepthTexUnit;
 	
+	int m_positionTexUnit;
 	int m_normalTexUnit;
 	int m_depthTexUnit;
 	

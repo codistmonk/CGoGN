@@ -47,8 +47,17 @@ ShaderComputeSSAO::ShaderComputeSSAO()
 
 	loadShadersFromMemory(glxvert.c_str(), glxfrag.c_str());
 
+	m_unifPositionTexUnit = glGetUniformLocation(this->program_handler(), "positionTextureUnit");
 	m_unifNormalTexUnit = glGetUniformLocation(this->program_handler(), "normalTextureUnit");
 	m_unifDepthTexUnit = glGetUniformLocation(this->program_handler(), "depthTextureUnit");
+}
+
+void ShaderComputeSSAO::setPositionTextureUnit(GLenum textureUnit)
+{
+	this->bind();
+	int unit = textureUnit - GL_TEXTURE0;
+	glUniform1iARB(*m_unifPositionTexUnit, unit);
+	m_positionTexUnit = unit;
 }
 
 void ShaderComputeSSAO::setNormalTextureUnit(GLenum textureUnit)
@@ -65,6 +74,12 @@ void ShaderComputeSSAO::setDepthTextureUnit(GLenum textureUnit)
 	int unit = textureUnit - GL_TEXTURE0;
 	glUniform1iARB(*m_unifDepthTexUnit, unit);
 	m_depthTexUnit = unit;
+}
+
+void ShaderComputeSSAO::activePositionTexture(CGoGNGLuint texId)
+{
+	glActiveTexture(GL_TEXTURE0 + m_positionTexUnit);
+	glBindTexture(GL_TEXTURE_2D, *texId);
 }
 
 void ShaderComputeSSAO::activeNormalTexture(CGoGNGLuint texId)
@@ -95,6 +110,7 @@ void ShaderComputeSSAO::restoreUniformsAttribs()
 {
 	bindVA_VBO("VertexPosition", m_vboPos);
 	bindVA_VBO("VertexTexCoord", m_vboTexCoord);
+	glUniform1iARB(*m_unifPositionTexUnit, m_positionTexUnit);
 	glUniform1iARB(*m_unifNormalTexUnit, m_normalTexUnit);
 	glUniform1iARB(*m_unifDepthTexUnit, m_depthTexUnit);
 }

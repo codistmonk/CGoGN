@@ -57,7 +57,7 @@ void main()
 				
 					occlusion += sampleOcclusion;
 				
-					if (dot(normal, vecToSampleN) > 0.2)
+					if (dot(normal, vecToSampleN) > 0.3)
 						occludingSamples ++;
 				}
 			}

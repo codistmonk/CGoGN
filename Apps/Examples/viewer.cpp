@@ -41,9 +41,14 @@ Viewer::Viewer() :
 	m_normalShader(NULL),
 	m_positionAndNormalShader(NULL),
 	m_computeSSAOShader(NULL),
+	m_multTexturesShader(NULL),
+	m_textureBlurHShader(NULL),
+	m_textureBlurVShader(NULL),
 	m_pointSprite(NULL),
 	m_positionsAndNormalsFbo(NULL),
 	m_SSAOFbo(NULL),
+	m_SSAOFirstBlurPassFbo(NULL),
+	m_SSAOSecondBlurPassFbo(NULL),
 	m_finalRenderFbo(NULL)
 {
 	normalScaleFactor = 1.0f ;
@@ -141,6 +146,14 @@ void Viewer::cb_initGL()
 	m_multTexturesShader = new Utils::ShaderMultTextures();
 	m_multTexturesShader->setAttributePosition(Utils::TextureSticker::GetQuadPositionsVbo());
 	m_multTexturesShader->setAttributeTexCoord(Utils::TextureSticker::GetQuadTexCoordsVbo());
+	
+	m_textureBlurHShader = new Utils::ShaderTextureBlurH();
+	m_textureBlurHShader->setAttributePosition(Utils::TextureSticker::GetQuadPositionsVbo());
+	m_textureBlurHShader->setAttributeTexCoord(Utils::TextureSticker::GetQuadTexCoordsVbo());
+	
+	m_textureBlurVShader = new Utils::ShaderTextureBlurV();
+	m_textureBlurVShader->setAttributePosition(Utils::TextureSticker::GetQuadPositionsVbo());
+	m_textureBlurVShader->setAttributeTexCoord(Utils::TextureSticker::GetQuadTexCoordsVbo());
 
 	m_pointSprite = new Utils::PointSprite() ;
 	m_pointSprite->setAttributePosition(m_positionVBO) ;
@@ -161,6 +174,12 @@ void Viewer::cb_initGL()
 	
 	m_SSAOFbo = new Utils::FBO(1024, 1024);
 	m_SSAOFbo->AttachColorTexture(GL_RGBA);
+	
+	m_SSAOFirstBlurPassFbo = new Utils::FBO(1024, 1024);
+	m_SSAOFirstBlurPassFbo->AttachColorTexture(GL_RGBA);
+	
+	m_SSAOSecondBlurPassFbo = new Utils::FBO(1024, 1024);
+	m_SSAOSecondBlurPassFbo->AttachColorTexture(GL_RGBA);
 	
 	m_finalRenderFbo = new Utils::FBO(1024, 1024);
 	m_finalRenderFbo->AttachRenderbuffer(GL_DEPTH_COMPONENT);
@@ -208,6 +227,38 @@ void Viewer::cb_redraw()
 		}
 		m_SSAOFbo->Unbind();
 		
+		// Blur SSAO texture horizontaly
+		m_SSAOFirstBlurPassFbo->Bind();
+		glClear(GL_COLOR_BUFFER_BIT);
+		{
+			// Send textures and blur size to blur shader
+			m_textureBlurHShader->bind();
+			m_textureBlurHShader->setTextureUnit(GL_TEXTURE0);
+			m_textureBlurHShader->activeTexture(m_SSAOFbo->GetColorTexId(0));
+			m_textureBlurHShader->setBlurSize(1.0/1024.0);
+			m_textureBlurHShader->unbind();
+			
+			// Render blurred SSAO texture
+			Utils::TextureSticker::DrawFullscreenQuadWithShader(m_textureBlurHShader);
+		}
+		m_SSAOFirstBlurPassFbo->Unbind();
+		
+		// Blur SSAO texture verticaly
+		m_SSAOSecondBlurPassFbo->Bind();
+		glClear(GL_COLOR_BUFFER_BIT);
+		{
+			// Send textures and blur size to blur shader
+			m_textureBlurVShader->bind();
+			m_textureBlurVShader->setTextureUnit(GL_TEXTURE0);
+			m_textureBlurVShader->activeTexture(m_SSAOFirstBlurPassFbo->GetColorTexId(0));
+			m_textureBlurVShader->setBlurSize(1.0/1024.0);
+			m_textureBlurVShader->unbind();
+			
+			// Render blurred SSAO texture
+			Utils::TextureSticker::DrawFullscreenQuadWithShader(m_textureBlurVShader);
+		}
+		m_SSAOSecondBlurPassFbo->Unbind();
+		
 		if (!m_displayOnlySSAO)
 		{
 			// Render color and depth
@@ -228,7 +279,7 @@ void Viewer::cb_redraw()
 				m_multTexturesShader->setTexture1Unit(GL_TEXTURE0);
 				m_multTexturesShader->activeTexture1(m_finalRenderFbo->GetColorTexId(0));
 				m_multTexturesShader->setTexture2Unit(GL_TEXTURE1);
-				m_multTexturesShader->activeTexture2(m_SSAOFbo->GetColorTexId(0));
+				m_multTexturesShader->activeTexture2(m_SSAOSecondBlurPassFbo->GetColorTexId(0));
 				m_multTexturesShader->unbind();
 			
 				// Multiply textures together
@@ -241,7 +292,7 @@ void Viewer::cb_redraw()
 		if (!m_displayOnlySSAO)
 			Utils::TextureSticker::StickTextureOnWholeScreen(m_colorAndSSAOMergeFbo->GetColorTexId(0));
 		else
-			Utils::TextureSticker::StickTextureOnWholeScreen(m_SSAOFbo->GetColorTexId(0));
+			Utils::TextureSticker::StickTextureOnWholeScreen(m_SSAOSecondBlurPassFbo->GetColorTexId(0));
 	}
 	// Draw the faces without SSAO
 	else

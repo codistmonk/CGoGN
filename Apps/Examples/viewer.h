@@ -48,6 +48,8 @@
 #include "Utils/Shaders/shaderOutputPositionAndNormal.h"
 #include "Utils/Shaders/shaderComputeSSAO.h"
 #include "Utils/Shaders/shaderMultTextures.h"
+#include "Utils/Shaders/shaderTextureBlurH.h"
+#include "Utils/Shaders/shaderTextureBlurV.h"
 #include "Utils/pointSprite.h"
 #include "Utils/text3d.h"
 #include "Utils/vboRender.h"
@@ -122,11 +124,15 @@ public:
 	Utils::ShaderOutputPositionAndNormal* m_positionAndNormalShader ;
 	Utils::ShaderComputeSSAO* m_computeSSAOShader ;
 	Utils::ShaderMultTextures* m_multTexturesShader ;
+	Utils::ShaderTextureBlurH* m_textureBlurHShader ;
+	Utils::ShaderTextureBlurV* m_textureBlurVShader ;
 	
 	Utils::PointSprite* m_pointSprite ;
 	
 	Utils::FBO* m_positionsAndNormalsFbo;
 	Utils::FBO* m_SSAOFbo;
+	Utils::FBO* m_SSAOFirstBlurPassFbo;
+	Utils::FBO* m_SSAOSecondBlurPassFbo;
 	Utils::FBO* m_finalRenderFbo;
 	Utils::FBO* m_colorAndSSAOMergeFbo;
 

@@ -86,10 +86,16 @@ unsigned int ShaderTextureBlurH::setAttributeTexCoord(VBO* vbo)
 
 void ShaderTextureBlurH::restoreUniformsAttribs()
 {
+	m_unifTexUnit = glGetUniformLocation(this->program_handler(), "textureUnit");
+	m_unifBlurSize = glGetUniformLocation(this->program_handler(), "blurSize");
+	
 	bindVA_VBO("VertexPosition", m_vboPos);
 	bindVA_VBO("VertexTexCoord", m_vboTexCoord);
+	
+	this->bind();
 	glUniform1iARB(*m_unifTexUnit, m_texUnit);
 	glUniform1f(*m_unifBlurSize, m_blurSize);
+	this->unbind();
 }
 
 } // namespace Utils

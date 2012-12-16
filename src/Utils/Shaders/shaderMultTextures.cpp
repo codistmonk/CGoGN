@@ -93,10 +93,16 @@ unsigned int ShaderMultTextures::setAttributeTexCoord(VBO* vbo)
 
 void ShaderMultTextures::restoreUniformsAttribs()
 {
+	m_unifTex1Unit = glGetUniformLocation(this->program_handler(), "texture1Unit");
+	m_unifTex2Unit = glGetUniformLocation(this->program_handler(), "texture2Unit");
+	
 	bindVA_VBO("VertexPosition", m_vboPos);
 	bindVA_VBO("VertexTexCoord", m_vboTexCoord);
+	
+	this->bind();
 	glUniform1iARB(*m_unifTex1Unit, m_tex1Unit);
 	glUniform1iARB(*m_unifTex2Unit, m_tex2Unit);
+	this->unbind();
 }
 
 } // namespace Utils

@@ -65,10 +65,8 @@ unsigned int ShaderOutputPositionAndNormal::setAttributeNormal(VBO* vbo)
 
 void ShaderOutputPositionAndNormal::restoreUniformsAttribs()
 {
-	bind();
 	bindVA_VBO("VertexPosition", m_vboPos);
 	bindVA_VBO("VertexNormal", m_vboNormal);
-	unbind();
 }
 
 } // namespace Utils

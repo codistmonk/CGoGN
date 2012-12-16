@@ -108,11 +108,18 @@ unsigned int ShaderComputeSSAO::setAttributeTexCoord(VBO* vbo)
 
 void ShaderComputeSSAO::restoreUniformsAttribs()
 {
+	m_unifPositionTexUnit = glGetUniformLocation(this->program_handler(), "positionTextureUnit");
+	m_unifNormalTexUnit = glGetUniformLocation(this->program_handler(), "normalTextureUnit");
+	m_unifDepthTexUnit = glGetUniformLocation(this->program_handler(), "depthTextureUnit");
+	
 	bindVA_VBO("VertexPosition", m_vboPos);
 	bindVA_VBO("VertexTexCoord", m_vboTexCoord);
+	
+	this->bind();
 	glUniform1iARB(*m_unifPositionTexUnit, m_positionTexUnit);
 	glUniform1iARB(*m_unifNormalTexUnit, m_normalTexUnit);
 	glUniform1iARB(*m_unifDepthTexUnit, m_depthTexUnit);
+	this->unbind();
 }
 
 } // namespace Utils

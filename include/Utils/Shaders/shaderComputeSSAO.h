@@ -51,6 +51,8 @@ public:
 	void activePositionTexture(CGoGNGLuint texId);
 	void activeNormalTexture(CGoGNGLuint texId);
 	void activeDepthTexture(CGoGNGLuint texId);
+	
+	void setSSAOStrength(float strength);
 
 	unsigned int setAttributePosition(VBO* vbo);
 	unsigned int setAttributeTexCoord(VBO* vbo);
@@ -63,10 +65,12 @@ protected:
 	CGoGNGLuint m_unifPositionTexUnit;
 	CGoGNGLuint m_unifNormalTexUnit;
 	CGoGNGLuint m_unifDepthTexUnit;
+	CGoGNGLuint m_unifSSAOStrength;
 	
 	int m_positionTexUnit;
 	int m_normalTexUnit;
 	int m_depthTexUnit;
+	float m_SSAOStrength;
 	
 	VBO* m_vboPos;
 	VBO* m_vboTexCoord;

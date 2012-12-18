@@ -5,6 +5,7 @@ VARYING_FRAG vec2 texCoord;
 uniform sampler2D positionTextureUnit;
 uniform sampler2D normalTextureUnit;
 uniform sampler2D depthTextureUnit;
+uniform float SSAOStrength;
 FRAG_OUT_DEF;
 
 #define M_PI 3.1415926535897932384626433832795
@@ -70,7 +71,7 @@ float computeAmbientOcclusion()
 		ambientOcclusion = float(occludingSamples) / float(totalSamples);
 	}
 	
-	return ambientOcclusion;
+	return ambientOcclusion * SSAOStrength;
 }
 
 void main()

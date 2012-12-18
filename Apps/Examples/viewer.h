@@ -97,6 +97,7 @@ public:
 	float vertexBaseSize ;
 	float vertexScaleFactor ;
 	float faceShrinkage ;
+	float m_SSAOStrength ;
 
 	int m_renderStyle ;
 	bool m_drawVertices ;
@@ -161,6 +162,7 @@ public slots:
 	void slot_normalsSize(int i) ;
 	void slot_useSSAO(bool b) ;
 	void slot_displayOnlySSAO(bool b) ;
+	void slot_SSAOStrength(int i) ;
 	
 private :
 	void drawVertices();

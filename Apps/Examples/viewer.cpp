@@ -31,8 +31,8 @@ Viewer::Viewer() :
 	m_drawFaces(true),
 	m_drawNormals(false),
 	m_drawTopo(false),
-	m_useSSAO(true),
-	m_displayOnlySSAO(true),
+	m_useSSAO(false),
+	m_displayOnlySSAO(false),
 	m_render(NULL),
 	m_phongShader(NULL),
 	m_flatShader(NULL),
@@ -54,6 +54,7 @@ Viewer::Viewer() :
 	normalScaleFactor = 1.0f ;
 	vertexScaleFactor = 0.1f ;
 	faceShrinkage = 1.0f ;
+	m_SSAOStrength = 1.0f ;
 
 	colClear = Geom::Vec4f(0.2f, 0.2f, 0.2f, 0.1f) ;
 	colDif = Geom::Vec4f(0.8f, 0.9f, 0.7f, 1.0f) ;
@@ -77,9 +78,11 @@ void Viewer::initGUI()
 	dock.slider_verticesSize->setVisible(dock.check_drawVertices->isChecked()) ;
 	dock.slider_normalsSize->setVisible(dock.check_drawNormals->isChecked()) ;
 	dock.check_displayOnlySSAO->setVisible(dock.check_useSSAO->isChecked()) ;
+	dock.slider_SSAOStrength->setVisible(dock.check_useSSAO->isChecked()) ;
 
 	dock.slider_verticesSize->setSliderPosition(50) ;
 	dock.slider_normalsSize->setSliderPosition(50) ;
+	dock.slider_SSAOStrength->setSliderPosition(100) ;
 
 	setCallBack( dock.check_drawVertices, SIGNAL(toggled(bool)), SLOT(slot_drawVertices(bool)) ) ;
 	setCallBack( dock.slider_verticesSize, SIGNAL(valueChanged(int)), SLOT(slot_verticesSize(int)) ) ;
@@ -91,6 +94,7 @@ void Viewer::initGUI()
 	setCallBack( dock.slider_normalsSize, SIGNAL(valueChanged(int)), SLOT(slot_normalsSize(int)) ) ;
 	setCallBack( dock.check_useSSAO, SIGNAL(toggled(bool)), SLOT(slot_useSSAO(bool)) ) ;
 	setCallBack( dock.check_displayOnlySSAO, SIGNAL(toggled(bool)), SLOT(slot_displayOnlySSAO(bool)) ) ;
+	setCallBack( dock.slider_SSAOStrength, SIGNAL(valueChanged(int)), SLOT(slot_SSAOStrength(int)) ) ;
 }
 
 void Viewer::cb_initGL()
@@ -555,6 +559,13 @@ void Viewer::slot_displayOnlySSAO(bool b)
 {
 	m_displayOnlySSAO = b ;
 	updateGL() ;
+}
+
+void Viewer::slot_SSAOStrength(int i)
+{
+	m_SSAOStrength = i/100.0;
+	m_computeSSAOShader->setSSAOStrength(m_SSAOStrength);
+	updateGL();
 }
 
 /**********************************************************************************************

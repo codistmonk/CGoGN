@@ -54,6 +54,9 @@ ShaderComputeSSAO::ShaderComputeSSAO()
 	m_unifPositionTexUnit = glGetUniformLocation(this->program_handler(), "positionTextureUnit");
 	m_unifNormalTexUnit = glGetUniformLocation(this->program_handler(), "normalTextureUnit");
 	m_unifDepthTexUnit = glGetUniformLocation(this->program_handler(), "depthTextureUnit");
+	m_unifSSAOStrength = glGetUniformLocation(this->program_handler(), "SSAOStrength");
+	
+	setSSAOStrength(1.0f);
 }
 
 void ShaderComputeSSAO::setPositionTextureUnit(GLenum textureUnit)
@@ -98,6 +101,13 @@ void ShaderComputeSSAO::activeDepthTexture(CGoGNGLuint texId)
 	glBindTexture(GL_TEXTURE_2D, *texId);
 }
 
+void ShaderComputeSSAO::setSSAOStrength(float strength)
+{
+	this->bind();
+	m_SSAOStrength = strength;
+	glUniform1f(*m_unifSSAOStrength, m_SSAOStrength);
+}
+
 unsigned int ShaderComputeSSAO::setAttributePosition(VBO* vbo)
 {
 	m_vboPos = vbo;
@@ -115,6 +125,7 @@ void ShaderComputeSSAO::restoreUniformsAttribs()
 	m_unifPositionTexUnit = glGetUniformLocation(this->program_handler(), "positionTextureUnit");
 	m_unifNormalTexUnit = glGetUniformLocation(this->program_handler(), "normalTextureUnit");
 	m_unifDepthTexUnit = glGetUniformLocation(this->program_handler(), "depthTextureUnit");
+	m_unifSSAOStrength = glGetUniformLocation(this->program_handler(), "SSAOStrength");
 	
 	bindVA_VBO("VertexPosition", m_vboPos);
 	bindVA_VBO("VertexTexCoord", m_vboTexCoord);
@@ -123,6 +134,7 @@ void ShaderComputeSSAO::restoreUniformsAttribs()
 	glUniform1iARB(*m_unifPositionTexUnit, m_positionTexUnit);
 	glUniform1iARB(*m_unifNormalTexUnit, m_normalTexUnit);
 	glUniform1iARB(*m_unifDepthTexUnit, m_depthTexUnit);
+	glUniform1f(*m_unifSSAOStrength, m_SSAOStrength);
 	this->unbind();
 }
 

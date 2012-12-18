@@ -194,77 +194,87 @@ void Viewer::cb_initGL()
 	m_colorAndSSAOMergeFbo->AttachColorTexture(GL_RGBA);
 }
 
+CGoGNGLuint Viewer::computeSSAO()
+{
+	// Render in positions and normals Fbo
+	m_positionsAndNormalsFbo->Bind();
+	m_positionsAndNormalsFbo->EnableColorAttachments();
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	{
+		// Render faces color, normals and depth
+		int oldRenderStyle = m_renderStyle;
+		m_renderStyle = POSITIONS_AND_NORMALS;
+		drawFaces();
+		m_renderStyle = oldRenderStyle;
+	}
+	m_positionsAndNormalsFbo->Unbind();
+		
+	// Render in SSAO Fbo
+	m_SSAOFbo->Bind();
+	glClear(GL_COLOR_BUFFER_BIT);
+	{
+		// Send textures to SSAO shader
+		m_computeSSAOShader->bind();
+		m_computeSSAOShader->setPositionTextureUnit(GL_TEXTURE0);
+		m_computeSSAOShader->activePositionTexture(m_positionsAndNormalsFbo->GetColorTexId(0));
+		m_computeSSAOShader->setNormalTextureUnit(GL_TEXTURE1);
+		m_computeSSAOShader->activeNormalTexture(m_positionsAndNormalsFbo->GetColorTexId(1));
+		m_computeSSAOShader->setDepthTextureUnit(GL_TEXTURE2);
+		m_computeSSAOShader->activeDepthTexture(m_positionsAndNormalsFbo->GetDepthTexId());
+		m_computeSSAOShader->unbind();
+			
+		// Render SSAO texture
+		Utils::TextureSticker::DrawFullscreenQuadWithShader(m_computeSSAOShader);
+	}
+	m_SSAOFbo->Unbind();
+	
+	// Blur SSAO texture horizontaly
+	m_SSAOFirstBlurPassFbo->Bind();
+	glClear(GL_COLOR_BUFFER_BIT);
+	{
+		// Send textures and blur size to blur shader
+		m_textureBlurHShader->bind();
+		m_textureBlurHShader->setTextureUnit(GL_TEXTURE0);
+		m_textureBlurHShader->activeTexture(m_SSAOFbo->GetColorTexId(0));
+		m_textureBlurHShader->setBlurSize(1.0/1024.0);
+		m_textureBlurHShader->unbind();
+		
+		// Render blurred SSAO texture
+		Utils::TextureSticker::DrawFullscreenQuadWithShader(m_textureBlurHShader);
+	}
+	m_SSAOFirstBlurPassFbo->Unbind();
+	
+	// Blur SSAO texture verticaly
+	m_SSAOSecondBlurPassFbo->Bind();
+	glClear(GL_COLOR_BUFFER_BIT);
+	{
+		// Send textures and blur size to blur shader
+		m_textureBlurVShader->bind();
+		m_textureBlurVShader->setTextureUnit(GL_TEXTURE0);
+		m_textureBlurVShader->activeTexture(m_SSAOFirstBlurPassFbo->GetColorTexId(0));
+		m_textureBlurVShader->setBlurSize(1.0/1024.0);
+		m_textureBlurVShader->unbind();
+		
+		// Render blurred SSAO texture
+		Utils::TextureSticker::DrawFullscreenQuadWithShader(m_textureBlurVShader);
+	}
+	m_SSAOSecondBlurPassFbo->Unbind();
+	
+	return m_SSAOSecondBlurPassFbo->GetColorTexId(0);
+}
+
 void Viewer::cb_redraw()
 {
 	// Draw the faces with SSAO and everything else
 	if (m_useSSAO && m_drawFaces)
 	{
-		// Render in positions and normals Fbo
-		m_positionsAndNormalsFbo->Bind();
-		m_positionsAndNormalsFbo->EnableColorAttachments();
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		{
-			// Render faces color, normals and depth
-			int oldRenderStyle = m_renderStyle;
-			m_renderStyle = POSITIONS_AND_NORMALS;
-			drawFaces();
-			m_renderStyle = oldRenderStyle;
-		}
-		m_positionsAndNormalsFbo->Unbind();
+		CGoGNGLuint SSAOTexture = computeSSAO();
 		
-		// Render in SSAO Fbo
-		m_SSAOFbo->Bind();
-		glClear(GL_COLOR_BUFFER_BIT);
-		{
-			// Send textures to SSAO shader
-			m_computeSSAOShader->bind();
-			m_computeSSAOShader->setPositionTextureUnit(GL_TEXTURE0);
-			m_computeSSAOShader->activePositionTexture(m_positionsAndNormalsFbo->GetColorTexId(0));
-			m_computeSSAOShader->setNormalTextureUnit(GL_TEXTURE1);
-			m_computeSSAOShader->activeNormalTexture(m_positionsAndNormalsFbo->GetColorTexId(1));
-			m_computeSSAOShader->setDepthTextureUnit(GL_TEXTURE2);
-			m_computeSSAOShader->activeDepthTexture(m_positionsAndNormalsFbo->GetDepthTexId());
-			m_computeSSAOShader->unbind();
-			
-			// Render SSAO texture
-			Utils::TextureSticker::DrawFullscreenQuadWithShader(m_computeSSAOShader);
-		}
-		m_SSAOFbo->Unbind();
-		
-		// Blur SSAO texture horizontaly
-		m_SSAOFirstBlurPassFbo->Bind();
-		glClear(GL_COLOR_BUFFER_BIT);
-		{
-			// Send textures and blur size to blur shader
-			m_textureBlurHShader->bind();
-			m_textureBlurHShader->setTextureUnit(GL_TEXTURE0);
-			m_textureBlurHShader->activeTexture(m_SSAOFbo->GetColorTexId(0));
-			m_textureBlurHShader->setBlurSize(1.0/1024.0);
-			m_textureBlurHShader->unbind();
-			
-			// Render blurred SSAO texture
-			Utils::TextureSticker::DrawFullscreenQuadWithShader(m_textureBlurHShader);
-		}
-		m_SSAOFirstBlurPassFbo->Unbind();
-		
-		// Blur SSAO texture verticaly
-		m_SSAOSecondBlurPassFbo->Bind();
-		glClear(GL_COLOR_BUFFER_BIT);
-		{
-			// Send textures and blur size to blur shader
-			m_textureBlurVShader->bind();
-			m_textureBlurVShader->setTextureUnit(GL_TEXTURE0);
-			m_textureBlurVShader->activeTexture(m_SSAOFirstBlurPassFbo->GetColorTexId(0));
-			m_textureBlurVShader->setBlurSize(1.0/1024.0);
-			m_textureBlurVShader->unbind();
-			
-			// Render blurred SSAO texture
-			Utils::TextureSticker::DrawFullscreenQuadWithShader(m_textureBlurVShader);
-		}
-		m_SSAOSecondBlurPassFbo->Unbind();
-		
-		// If we want to display only the SSAO result, this part is useless
-		if (!m_displayOnlySSAO)
+		// Get and draw only SSAO results
+		if (m_displayOnlySSAO)
+			Utils::TextureSticker::StickTextureOnWholeScreen(SSAOTexture);
+		// Use SSAO results with regular rendering
+		else
 		{
 			// Render color and depth
 			m_finalRenderFbo->Bind();
@@ -284,7 +294,7 @@ void Viewer::cb_redraw()
 				m_multTexturesShader->setTexture1Unit(GL_TEXTURE0);
 				m_multTexturesShader->activeTexture1(m_finalRenderFbo->GetColorTexId(0));
 				m_multTexturesShader->setTexture2Unit(GL_TEXTURE1);
-				m_multTexturesShader->activeTexture2(m_SSAOSecondBlurPassFbo->GetColorTexId(0));
+				m_multTexturesShader->activeTexture2(SSAOTexture);
 				m_multTexturesShader->unbind();
 			
 				// Multiply textures together
@@ -314,9 +324,6 @@ void Viewer::cb_redraw()
 			// Stick final render in main framebuffer
 			Utils::TextureSticker::StickTextureOnWholeScreen(m_finalRenderFbo->GetColorTexId(0));
 		}
-		// Get and draw only SSAO results
-		else
-			Utils::TextureSticker::StickTextureOnWholeScreen(m_SSAOSecondBlurPassFbo->GetColorTexId(0));
 	}
 	// Draw everything without SSAO
 	else

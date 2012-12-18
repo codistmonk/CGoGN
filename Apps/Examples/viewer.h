@@ -170,4 +170,5 @@ private :
 	void drawFaces();
 	void drawTopo();
 	void drawNormals();
+	CGoGNGLuint computeSSAO();
 };

@@ -42,7 +42,6 @@ float computeAmbientOcclusion()
 			for (j = 0; j < samplingDirections; j++)
 			{
 				// Find the angle of the sample that will be used : it depends on the direction but also on a random factor (avoid strips effects)
-				//float theta = 2.0 * M_PI * (1.0/(1.0 + float(i)) + float(j) / float(samplingDirections));
 				float theta = 2.0 * M_PI * (random(texCoord) + float(j) / float(samplingDirections));
 				
 				// Get the (u, v) of the sample corresponding to this radius and angle

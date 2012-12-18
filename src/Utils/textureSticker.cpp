@@ -56,6 +56,13 @@ void TextureSticker::StickTextureOnWholeScreen(CGoGNGLuint texId)
 		InitializeElements();
 		sm_isInitialized = true;
 	}
+	
+	// Check if depth test is enabled
+	GLboolean wasDepthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
+	
+	// Disable depth test if it was enabled
+	if (wasDepthTestEnabled == GL_TRUE)
+		glDisable(GL_DEPTH_TEST);
 
 	// Bind texture mapping shader
 	sm_textureMappingShader->bind();
@@ -76,6 +83,10 @@ void TextureSticker::StickTextureOnWholeScreen(CGoGNGLuint texId)
 
 	// Unbind texture mapping shader
 	sm_textureMappingShader->unbind();
+
+	// Re-enable depth test if it was enabled before
+	if (wasDepthTestEnabled == GL_TRUE)
+		glEnable(GL_DEPTH_TEST);
 }
 
 void TextureSticker::DrawFullscreenQuadWithShader(Utils::GLSLShader* shader)
@@ -86,6 +97,13 @@ void TextureSticker::DrawFullscreenQuadWithShader(Utils::GLSLShader* shader)
 		InitializeElements();
 		sm_isInitialized = true;
 	}
+	
+	// Check if depth test is enabled
+	GLboolean wasDepthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
+	
+	// Disable depth test if it was enabled
+	if (wasDepthTestEnabled == GL_TRUE)
+		glDisable(GL_DEPTH_TEST);
 	
 	// Bind shader
 	shader->bind();
@@ -102,6 +120,10 @@ void TextureSticker::DrawFullscreenQuadWithShader(Utils::GLSLShader* shader)
 	
 	// Unbind shader
 	shader->unbind();
+
+	// Re-enable depth test if it was enabled before
+	if (wasDepthTestEnabled == GL_TRUE)
+		glEnable(GL_DEPTH_TEST);
 }
 
 VBO* TextureSticker::GetQuadPositionsVbo()

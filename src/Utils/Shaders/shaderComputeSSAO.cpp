@@ -39,6 +39,10 @@ namespace Utils
 
 ShaderComputeSSAO::ShaderComputeSSAO()
 {
+	m_nameVS = "ShaderComputeSSAO_vs";
+	m_nameFS = "ShaderComputeSSAO_fs";
+	m_nameGS = "ShaderComputeSSAO_gs";
+
 	std::string glxvert(*GLSLShader::DEFINES_GL);
 	glxvert.append(vertexShaderText);
 

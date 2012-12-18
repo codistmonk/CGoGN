@@ -192,8 +192,8 @@ void Viewer::cb_initGL()
 
 void Viewer::cb_redraw()
 {
-	// Draw the faces with SSAO
-	if (m_useSSAO)
+	// Draw the faces with SSAO and everything else
+	if (m_useSSAO && m_drawFaces)
 	{
 		// Render in positions and normals Fbo
 		m_positionsAndNormalsFbo->Bind();
@@ -259,6 +259,7 @@ void Viewer::cb_redraw()
 		}
 		m_SSAOSecondBlurPassFbo->Unbind();
 		
+		// If we want to display only the SSAO result, this part is useless
 		if (!m_displayOnlySSAO)
 		{
 			// Render color and depth
@@ -286,28 +287,49 @@ void Viewer::cb_redraw()
 				Utils::TextureSticker::DrawFullscreenQuadWithShader(m_multTexturesShader);
 			}
 			m_colorAndSSAOMergeFbo->Unbind();
+			
+			// Get and draw color texture from merged SSAO and color Fbo into final render Fbo (we need to use the depth information to display everything else)
+			m_finalRenderFbo->Bind();
+			glClear(GL_COLOR_BUFFER_BIT);
+			{
+				// Simply stick result texture on screen
+				Utils::TextureSticker::StickTextureOnWholeScreen(m_colorAndSSAOMergeFbo->GetColorTexId(0));
+				
+				// Now that we have depth *and* SSAO information, display everything else
+				if(m_drawVertices)
+					drawVertices();
+				if(m_drawEdges)
+					drawEdges();
+				if(m_drawTopo)
+					drawTopo();
+				if(m_drawNormals)
+					drawNormals();
+			}
+			m_finalRenderFbo->Unbind();
+			
+			// Stick final render in main framebuffer
+			Utils::TextureSticker::StickTextureOnWholeScreen(m_finalRenderFbo->GetColorTexId(0));
 		}
-		
-		// Get and draw color texture from final Fbo
-		if (!m_displayOnlySSAO)
-			Utils::TextureSticker::StickTextureOnWholeScreen(m_colorAndSSAOMergeFbo->GetColorTexId(0));
+		// Get and draw only SSAO results
 		else
 			Utils::TextureSticker::StickTextureOnWholeScreen(m_SSAOSecondBlurPassFbo->GetColorTexId(0));
 	}
-	// Draw the faces without SSAO
+	// Draw everything without SSAO
 	else
-		drawFaces();
-
-	// Draw everything else
-	/*if(m_drawVertices)
-		drawVertices();
-	if(m_drawEdges)
-		drawEdges();
-	if(m_drawTopo)
-		drawTopo();
-	if(m_drawNormals)
-		drawNormals();*/
+	{
+		if (m_drawFaces)
+			drawFaces();
+		if(m_drawVertices)
+			drawVertices();
+		if(m_drawEdges)
+			drawEdges();
+		if(m_drawTopo)
+			drawTopo();
+		if(m_drawNormals)
+			drawNormals();
+	}
 	
+	// Check for OpenGL errors
 	GLenum glError = glGetError();
 	if (glError != GL_NO_ERROR)
 		std::cout << "GL error : " << gluErrorString(glError) << std::endl;

@@ -10,6 +10,6 @@ void main ()
 {
 	gl_Position = ModelViewProjectionMatrix * vec4 (VertexPosition, 1.0);
 	
-	normal = NormalMatrix * vec4 (VertexNormal, 0.0);
+	normal = (NormalMatrix * vec4 (VertexNormal, 0.0)).xyz;
 }
 

@@ -9,6 +9,9 @@ namespace CGoGN
 namespace VolumeExplorerTools
 {
 
+/**
+ * Computes the screen coordinates of v using the model-view-projection matrix mvp.
+ */
 static inline glm::vec4 project(glm::vec4 const & v, glm::mat4 const & mvp, glm::vec4 const & viewportCenter, glm::vec4 const & viewportScale)
 {
 	glm::vec4 const tmp(mvp * v);
@@ -16,6 +19,9 @@ static inline glm::vec4 project(glm::vec4 const & v, glm::mat4 const & mvp, glm:
 	return viewportScale * tmp / tmp[3]  + viewportCenter;
 }
 
+/**
+ * Represents the pixels of a horizontal slice of a 2D triangle going from firstX to lastX (screen coordinates).
+ */
 class RasterizationSpan
 {
 
@@ -27,6 +33,11 @@ class RasterizationSpan
 
 public:
 
+	/**
+	 * expands this if x is outside the current range [firstX() .. lastX()].
+	 * a, b and c must be the barycentric coordinates of the triangle point corresponding to the fragment (x, y) (y is this ordinate).
+	 * \param x Abscissa in screen coordinates
+	 */
 	void updateRange(int const x, float const a, float const b, float const c)
 	{
 		if (x < m_firstX)
@@ -96,14 +107,8 @@ public:
 
 typedef std::vector< RasterizationSpan > RasterizationSpans;
 
-static inline float linerp(float const s, float const a, float const b)
-{
-	return s * a + (1.0f - s) * b;
-}
-
 /**
- * Scans a side of a triangle setting firstX and lastX in ContourX
- * using the Bresenham's line drawing algorithm.
+ * Scans a side of a triangle setting firstX and lastX in spans using the Bresenham's line drawing algorithm.
  * y1 must be strictly less than y2.
  */
 static void updateRasterizationSpansTopDown(RasterizationSpans & spans, int const viewportHeight,
@@ -179,6 +184,10 @@ static void updateRasterizationSpansTopDown(RasterizationSpans & spans, int cons
 	}
 }
 
+/**
+ * Calls updateRasterizationSpansTopDown with the correct orientation.
+ * Handles horizontal lines.
+ */
 static void updateRasterizationSpans(RasterizationSpans & spans, int const viewportHeight,
 		int x1, int y1, float const a1, float const b1, float const c1,
 		int x2, int y2, float const a2, float const b2, float const c2)
@@ -211,6 +220,9 @@ static void updateRasterizationSpans(RasterizationSpans & spans, int const viewp
 	}
 }
 
+/**
+ * Fragment sorting datum.
+ */
 class PixelFragment
 {
 
@@ -250,6 +262,10 @@ public:
 typedef std::vector< PixelFragment > PixelFragments;
 typedef std::vector< PixelFragments > FragmentBuffer;
 
+/**
+ * Rasterizes triangle p0-p1-p2 by accumulating its fragments in fragmentBuffer.
+ * spans and fragmentBuffer must be correctly sized.
+ */
 static void rasterizeTriangle(RasterizationSpans & spans, int const viewportWidth, int const viewportHeight,
 		glm::vec4 const & p0, glm::vec4 const & p1, glm::vec4 const & p2,
 		unsigned int rgba, FragmentBuffer & fragmentBuffer)
@@ -320,37 +336,11 @@ static void rasterizeTriangle(RasterizationSpans & spans, int const viewportWidt
 	}
 }
 
-static void sortAndBlend(FragmentBuffer & fragmentBuffer, QImage & image)
-{
-	int const viewportWidth = image.width();
-	int const viewportHeight = image.height();
-
-	for (int y = 0; y < viewportHeight; ++y)
-	{
-		for (int x = 0; x < viewportWidth; ++x)
-		{
-			PixelFragments & fragments = fragmentBuffer[y * viewportWidth + x];
-
-			std::stable_sort(fragments.begin(), fragments.end());
-
-			float red = 0.0f;
-			float green = 0.0f;
-			float blue = 0.0f;
-
-			for (PixelFragments::const_iterator i = fragments.begin(); i != fragments.end(); ++i)
-			{
-				QColor const rgba(QColor::fromRgba(i->rgba()));
-				float const a = rgba.alphaF();
-				red = (1.0f - a) * red + a * rgba.redF();
-				green = (1.0f - a) * green + a * rgba.greenF();
-				blue = (1.0f - a) * blue + a * rgba.blueF();
-			}
-
-			image.setPixel(x, y, QColor(red * 255.0f, green * 255.0f, blue * 255.0f).rgba());
-		}
-	}
-}
-
+/**
+ * Projects and rasterizes each of evr's triangle using VBO data.
+ * fragmentBuffer must already be sized according to viewport information.
+ * No shading yet (TODO).
+ */
 static void rasterizeTrianglesAndAccumulateFragments(Algo::Render::GL2::ExplodeVolumeAlphaRender const * const evr,
 		GLint const viewport[4], glm::mat4 const & mvp, FragmentBuffer & fragmentBuffer)
 {
@@ -402,6 +392,41 @@ static void rasterizeTrianglesAndAccumulateFragments(Algo::Render::GL2::ExplodeV
 	}
 }
 
+/**
+ * Sorts each pixel's fragment and alpha-blends them; the result is stored in the appropriate pixel of image.
+ * fragmentBuffer and image must have the same dimensions.
+ */
+static void sortAndBlend(FragmentBuffer & fragmentBuffer, QImage & image)
+{
+	int const viewportWidth = image.width();
+	int const viewportHeight = image.height();
+
+	for (int y = 0; y < viewportHeight; ++y)
+	{
+		for (int x = 0; x < viewportWidth; ++x)
+		{
+			PixelFragments & fragments = fragmentBuffer[y * viewportWidth + x];
+
+			std::stable_sort(fragments.begin(), fragments.end());
+
+			float red = 0.0f;
+			float green = 0.0f;
+			float blue = 0.0f;
+
+			for (PixelFragments::const_iterator i = fragments.begin(); i != fragments.end(); ++i)
+			{
+				QColor const rgba(QColor::fromRgba(i->rgba()));
+				float const a = rgba.alphaF();
+				red = (1.0f - a) * red + a * rgba.redF();
+				green = (1.0f - a) * green + a * rgba.greenF();
+				blue = (1.0f - a) * blue + a * rgba.blueF();
+			}
+
+			image.setPixel(x, y, QColor(red * 255.0f, green * 255.0f, blue * 255.0f).rgba());
+		}
+	}
+}
+
 static inline void clearPixelFragments(FragmentBuffer & fragmentBuffer)
 {
 	for (FragmentBuffer::iterator i = fragmentBuffer.begin(); i != fragmentBuffer.end(); ++i)
@@ -410,6 +435,13 @@ static inline void clearPixelFragments(FragmentBuffer & fragmentBuffer)
 	}
 }
 
+/**
+ * Tests that the seam between 2 triangles is rendered properly (no hole, no overlapping):
+ *  * a square made of 2 adjacent triangles is rendered and scale-rotated so that its corners always touch a border of the viewport;
+ *  * for each angle, each rendered fragment buffer line is scanned looking for holes or multiple fragments by pixels
+ *    (a correct line has the spanning pattern 0?(1|12|21|2)0? where 1 (resp 2) stands for triangle 1 (resp triangle 2),
+ *     and 0 is the background).
+ */
 static void testRasterizeTriangle()
 {
 #ifndef NDEBUG
@@ -433,30 +465,30 @@ static void testRasterizeTriangle()
 	int const rgba1 = 0xFFFF0000;
 	int const rgba2 = 0x7F00FF00;
 
-	std::vector< int > expectedRowSummary0;
-	expectedRowSummary0.push_back(0);
+	std::vector< int > expectedRowPattern0;
+	expectedRowPattern0.push_back(0);
 
-	std::vector< int > expectedRowSummary1;
-	expectedRowSummary1.push_back(0);
-	expectedRowSummary1.push_back(rgba1);
-	expectedRowSummary1.push_back(0);
+	std::vector< int > expectedRowPattern1;
+	expectedRowPattern1.push_back(0);
+	expectedRowPattern1.push_back(rgba1);
+	expectedRowPattern1.push_back(0);
 
-	std::vector< int > expectedRowSummary2;
-	expectedRowSummary2.push_back(0);
-	expectedRowSummary2.push_back(rgba2);
-	expectedRowSummary2.push_back(0);
+	std::vector< int > expectedRowPattern2;
+	expectedRowPattern2.push_back(0);
+	expectedRowPattern2.push_back(rgba2);
+	expectedRowPattern2.push_back(0);
 
-	std::vector< int > expectedRowSummary3;
-	expectedRowSummary3.push_back(0);
-	expectedRowSummary3.push_back(rgba1);
-	expectedRowSummary3.push_back(rgba2);
-	expectedRowSummary3.push_back(0);
+	std::vector< int > expectedRowPattern3;
+	expectedRowPattern3.push_back(0);
+	expectedRowPattern3.push_back(rgba1);
+	expectedRowPattern3.push_back(rgba2);
+	expectedRowPattern3.push_back(0);
 
-	std::vector< int > expectedRowSummary4;
-	expectedRowSummary4.push_back(0);
-	expectedRowSummary4.push_back(rgba2);
-	expectedRowSummary4.push_back(rgba1);
-	expectedRowSummary4.push_back(0);
+	std::vector< int > expectedRowPattern4;
+	expectedRowPattern4.push_back(0);
+	expectedRowPattern4.push_back(rgba2);
+	expectedRowPattern4.push_back(rgba1);
+	expectedRowPattern4.push_back(0);
 
 	for (int i = 0; i < 2 * viewportWidth; ++i)
 	{
@@ -483,7 +515,7 @@ static void testRasterizeTriangle()
 
 		for (int y = 0; y < viewportHeight; ++y)
 		{
-			std::vector< int > actualRowSummary(1, 0);
+			std::vector< int > actualRowPattern(1, 0);
 
 			for (int x = 0; x < viewportWidth; ++x)
 			{
@@ -500,34 +532,34 @@ static void testRasterizeTriangle()
 
 					int const rgba = fragments[0].rgba();
 
-					if (actualRowSummary.back() != rgba)
+					if (actualRowPattern.back() != rgba)
 					{
-						actualRowSummary.push_back(rgba);
+						actualRowPattern.push_back(rgba);
 					}
 				}
 				else
 				{
-					if (actualRowSummary.back() != 0)
+					if (actualRowPattern.back() != 0)
 					{
-						actualRowSummary.push_back(0);
+						actualRowPattern.push_back(0);
 					}
 				}
 			}
 
-			if (actualRowSummary.back() != 0)
+			if (actualRowPattern.back() != 0)
 			{
-				actualRowSummary.push_back(0);
+				actualRowPattern.push_back(0);
 			}
 
-			if (!(expectedRowSummary0 == actualRowSummary || expectedRowSummary1 == actualRowSummary ||
-					expectedRowSummary2 == actualRowSummary || expectedRowSummary3 == actualRowSummary ||
-					expectedRowSummary4 == actualRowSummary))
+			if (!(expectedRowPattern0 == actualRowPattern || expectedRowPattern1 == actualRowPattern ||
+					expectedRowPattern2 == actualRowPattern || expectedRowPattern3 == actualRowPattern ||
+					expectedRowPattern4 == actualRowPattern))
 			{
 				++currentErrorCount;
 
 				using namespace Debug;
 
-				DEBUG_OUT << "i: " << i << " y: " << y << " badRowSummary: " << actualRowSummary << std::endl;
+				DEBUG_OUT << "i: " << i << " y: " << y << " badRowPattern: " << actualRowPattern << std::endl;
 			}
 		}
 

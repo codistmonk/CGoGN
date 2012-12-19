@@ -52,6 +52,7 @@ public:
 
 /**
  * Linear interpolation: target = target * k + source * (1 - k).
+ * \returns target
  */
 template<typename PFP>
 static inline typename PFP::VEC3 & linerp(typename PFP::VEC3 & target, typename PFP::VEC3 const & source, float const k)
@@ -61,6 +62,15 @@ static inline typename PFP::VEC3 & linerp(typename PFP::VEC3 & target, typename 
 	target[2] = target[2] * k + source[2] * (1.0f - k);
 
 	return target;
+}
+
+/**
+ * Linear interpolation.
+ * \returns a * s + b * (1 - s)
+ */
+static inline float linerp(float const s, float const a, float const b)
+{
+	return a * s + b * (1.0f - s);
 }
 
 /**

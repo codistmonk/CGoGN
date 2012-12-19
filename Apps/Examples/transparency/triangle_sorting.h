@@ -7,6 +7,11 @@ namespace CGoGN
 namespace VolumeExplorerTools
 {
 
+/**
+ * Comparator used to sort triangle by decreasing distance from viewpoint.
+ * To compute the distance of a triangle, a reference point is taken halfway from its center to the volume center;
+ * this avoids visual artifacts due to overlapping triangles in adjacent volumes.
+ */
 class Comparator
 {
 	static std::vector<float> & distances()
@@ -36,9 +41,16 @@ public:
 	}
 };
 
-static void sortData(Algo::Render::GL2::ExplodeVolumeAlphaRender const * const evr, std::vector<unsigned int> & permutation,
+/**
+ * Sorts the triangles using data from evr's VBOs.
+ * Upon successful completion, triangles is properly resized and contains the triangles in painter's algorithm order.
+ * Each triangle is represented by 4 indices pointing to the volume center and the 3 vertices,
+ * to be used in a geometry shader in accordance with the layout of evr->vertices().
+ */
+static void sortData(Algo::Render::GL2::ExplodeVolumeAlphaRender const * const evr,
 		std::vector<GLuint> & triangles, glm::vec4 const & viewpoint)
 {
+	static std::vector<unsigned int> permutation;
 	unsigned int const n = evr->nbTris();
 
 	permutation.resize(n);

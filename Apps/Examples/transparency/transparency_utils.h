@@ -9,6 +9,7 @@ namespace VolumeExplorerTools
 
 /**
  * RAII wrapper for VBO data pointer.
+ * VBO::lockPtr() is called in the constructor, and VBO::releasePtr() is called in the destructor.
  */
 class VBODataPointer
 {
@@ -49,6 +50,9 @@ public:
 
 };
 
+/**
+ * Linear interpolation: target = target * k + source * (1 - k).
+ */
 template<typename PFP>
 static inline typename PFP::VEC3 & linerp(typename PFP::VEC3 & target, typename PFP::VEC3 const & source, float const k)
 {
@@ -59,6 +63,14 @@ static inline typename PFP::VEC3 & linerp(typename PFP::VEC3 & target, typename 
 	return target;
 }
 
+/**
+ * Matlab's Jet color gradient: dark blue, blue, cyan, yellow, red, dark red.
+ * Alpha component is 1.
+ * Default color when x < 0 is (1, 1, 1, 1).
+ * Clamps to dark red when 1 <= x.
+ * \param x Interpolation parameter
+ * \returns the interpolated jet color
+ */
 template<typename VEC4>
 static VEC4 const jetColor4(float const x)
 {
@@ -91,16 +103,29 @@ static VEC4 const jetColor4(float const x)
 	return colors[i] * (1.0 - r) + colors[i + 1] * r;
 }
 
+/**
+ * \returns x * x.
+ */
 static inline float square(float const x)
 {
 	return x * x;
 }
 
+/**
+ * \returns x * x + y * y + z * z.
+ */
 static inline float squaredNorm(float const x, float const y, float const z)
 {
 	return square(x) + square(y) + square(z);
 }
 
+/**
+ * Performs the following operations:
+ *  1. check fbo
+ *  2. bind
+ *  3. clear with color (0, 0, 0, 0) and depth 1
+ *  4. unbind
+ */
 static void bindClearUnbind(CGoGN::Utils::FBO * const fbo)
 {
 	fbo->CheckFBO(); DEBUG_GL;
@@ -114,6 +139,9 @@ static void bindClearUnbind(CGoGN::Utils::FBO * const fbo)
 	glDrawBuffer(GL_BACK); DEBUG_GL;
 }
 
+/**
+ * Simple class to retrieve OpenGL viewport information when the constructor is called.
+ */
 class Viewport
 {
 

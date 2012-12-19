@@ -344,10 +344,9 @@ void MyQT::cb_redraw()
 		if (m_opacity < 1)
 		{
 			unsigned int const n = m_explode_render->nbTris();
-			static std::vector<unsigned int> indices(n);
 			static std::vector<GLuint> triangles(n * 4);
 
-			sortData(m_explode_render, indices, triangles, viewpoint());
+			sortData(m_explode_render, triangles, viewpoint());
 			glEnable(GL_BLEND); DEBUG_GL;
 			glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD); DEBUG_GL;
 			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO); DEBUG_GL;

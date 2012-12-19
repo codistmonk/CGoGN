@@ -131,9 +131,9 @@ static void updateRasterizationSpansTopDown(RasterizationSpans & spans, int cons
 
 	int x = x1;
 	int y = y1;
-	// XXX previousX and previousY are part of a 'dirty fix' to
-	//     a seam problem; the goal here is to use only the leftmost
-	//     pixel of each segment when sx >= 0
+	// previousX and previousY are part of a fix to
+	// a seam problem; the goal here is to use only the leftmost
+	// pixel of each segment when sx >= 0
 	int previousX = x;
 	int previousY = y - 1;
 	int pixelCount = m + 2;
@@ -141,6 +141,7 @@ static void updateRasterizationSpansTopDown(RasterizationSpans & spans, int cons
 
 	while (--pixelCount)
 	{
+		// other variables used to fix the seam problem
 		int nextX, nextY;
 
 		k += n;
@@ -246,8 +247,8 @@ public:
 
 };
 
-typedef std::vector< PixelFragment > FragmentStack;
-typedef std::vector< FragmentStack > FragmentBuffer;
+typedef std::vector< PixelFragment > PixelFragments;
+typedef std::vector< PixelFragments > FragmentBuffer;
 
 static void rasterizeTriangle(RasterizationSpans & spans, int const viewportWidth, int const viewportHeight,
 		glm::vec4 const & p0, glm::vec4 const & p1, glm::vec4 const & p2,
@@ -328,7 +329,7 @@ static void sortAndBlend(FragmentBuffer & fragmentBuffer, QImage & image)
 	{
 		for (int x = 0; x < viewportWidth; ++x)
 		{
-			FragmentStack & fragments = fragmentBuffer[y * viewportWidth + x];
+			PixelFragments & fragments = fragmentBuffer[y * viewportWidth + x];
 
 			std::stable_sort(fragments.begin(), fragments.end());
 
@@ -336,7 +337,7 @@ static void sortAndBlend(FragmentBuffer & fragmentBuffer, QImage & image)
 			float green = 0.0f;
 			float blue = 0.0f;
 
-			for (FragmentStack::const_iterator i = fragments.begin(); i != fragments.end(); ++i)
+			for (PixelFragments::const_iterator i = fragments.begin(); i != fragments.end(); ++i)
 			{
 				QColor const rgba(QColor::fromRgba(i->rgba()));
 				float const a = rgba.alphaF();
@@ -401,7 +402,7 @@ static void rasterizeTrianglesAndAccumulateFragments(Algo::Render::GL2::ExplodeV
 	}
 }
 
-static inline void clearStacks(FragmentBuffer & fragmentBuffer)
+static inline void clearPixelFragments(FragmentBuffer & fragmentBuffer)
 {
 	for (FragmentBuffer::iterator i = fragmentBuffer.begin(); i != fragmentBuffer.end(); ++i)
 	{
@@ -475,7 +476,7 @@ static void testRasterizeTriangle()
 
 		int currentErrorCount = 0;
 
-		clearStacks(fragmentBuffer);
+		clearPixelFragments(fragmentBuffer);
 
 		rasterizeTriangle(spans, viewportWidth, viewportHeight, v1, v2, v3, rgba1, fragmentBuffer);
 		rasterizeTriangle(spans, viewportWidth, viewportHeight, v1, v4, v2, rgba2, fragmentBuffer);
@@ -486,7 +487,7 @@ static void testRasterizeTriangle()
 
 			for (int x = 0; x < viewportWidth; ++x)
 			{
-				FragmentStack const & fragments = fragmentBuffer[y * viewportWidth + x];
+				PixelFragments const & fragments = fragmentBuffer[y * viewportWidth + x];
 
 				if (!fragments.empty())
 				{

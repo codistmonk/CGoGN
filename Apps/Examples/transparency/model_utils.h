@@ -7,6 +7,10 @@ namespace CGoGN
 namespace VolumeExplorerTools
 {
 
+/**
+ * Sends the color data from colorPerXXX to the corresponding VBO (evr->colors()).
+ * The VBO must already be allocated with the correct size.
+ */
 template<typename PFP>
 static void updateColorVBO(typename PFP::MAP& map, VolumeAttribute<typename PFP::VEC4> & colorPerXXX, const FunctorSelect& good,
 		Algo::Render::GL2::ExplodeVolumeAlphaRender * const evr)
@@ -40,6 +44,15 @@ static void updateColorVBO(typename PFP::MAP& map, VolumeAttribute<typename PFP:
 	}
 }
 
+/**
+ * Performs an 'explode' operation, ie for each triangle vertex, vertex_location = linerp(vertex_location, faceScale), volumeCenter, volumeScale).
+ * Values are computed from vertexLocations (which is left untouched) and sent to the VBOs evr->colors() and evr->vertices().
+ * Face and volume centers must already be computed and stored in the VBOs.
+ * Each face is represented by:
+ *  * in the color VBO : face_center_xyzw, vertex1_rgba, vertex2_rgba, vertex3_rgba
+ *  * in the vertex VBO : volume_center_xyz, vertex1_xyz, vertex2_xyz, vertex3_xyz.
+ * The vertexX_xyz are updated.
+ */
 template<typename PFP>
 static void explodeModel(typename PFP::MAP& map, VertexAttribute<typename PFP::VEC3> & vertexLocations, const FunctorSelect& good,
 		float const volumeScale, float const faceScale,
@@ -84,6 +97,13 @@ static void explodeModel(typename PFP::MAP& map, VertexAttribute<typename PFP::V
 	}
 }
 
+/**
+ * Computes the topological depth of each dart.
+ * Surface volumes have depth 0.
+ * Inside volumes adjacent to surface volumes have depth 1, and so on.
+ * the int vector depths must already be sized so that the depth of each dart can be stored in depths[dart.label()].
+ * \returns the largest depth found (minimum 0).
+ */
 template<typename PFP>
 static int computeDepths(typename PFP::MAP& map, const FunctorSelect& good, std::vector<int> & depths)
 {
@@ -145,6 +165,15 @@ static int computeDepths(typename PFP::MAP& map, const FunctorSelect& good, std:
 	return depth - 1;
 }
 
+/**
+ * Applies a Jet gradient to the color VBO; each volume gets a uniform color according to its depth (deepest: dark red, shallowest: dark blue).
+ * Alpha values are computed from depth values with a nonlinear mapping; opacityGradient controls the shape of the mapping curve:
+ *  * opacityGradient < 0.5 : deep volumes are more opaque.
+ *  * 0.5 <= opacityGradient : shallow volumes are more opaque.
+ *  
+ *  \param opacity The maximum opacity (alpha value) between 0 and 1
+ *  \param opacityGradient The opacity curve control between 0 and 1
+ */
 template<typename PFP>
 static void computeColorsUsingDepths(typename PFP::MAP & map, VolumeAttribute<typename PFP::VEC4> & colorPerXXX,
 		float const opacity, float const opacityGradient, FunctorSelect const & good,
@@ -179,6 +208,9 @@ static void computeColorsUsingDepths(typename PFP::MAP & map, VolumeAttribute<ty
 	}
 }
 
+/**
+ * Updated position so that the resulting centroid is (0, 0, 0).
+ */
 template<typename PFP>
 static void centerModel(typename PFP::MAP & myMap, VertexAttribute<typename PFP::VEC3> & position)
 {

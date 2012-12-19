@@ -1,10 +1,12 @@
 #ifndef MODEL_UTILS_H
 #define MODEL_UTILS_H
 
+#include "VBODataPointer.h"
+
 namespace CGoGN
 {
 
-namespace VolumeExplorerTools
+namespace Transparency
 {
 
 /**
@@ -15,7 +17,7 @@ template<typename PFP>
 static void updateColorVBO(typename PFP::MAP& map, VolumeAttribute<typename PFP::VEC4> & colorPerXXX, const FunctorSelect& good,
 		Algo::Render::GL2::ExplodeVolumeAlphaRender * const evr)
 {
-	VBODataPointer colors(evr->colors());
+	GL2::VBODataPointer colors(evr->colors());
 
 	if (colors)
 	{
@@ -58,8 +60,8 @@ static void explodeModel(typename PFP::MAP& map, VertexAttribute<typename PFP::V
 		float const volumeScale, float const faceScale,
 		Algo::Render::GL2::ExplodeVolumeAlphaRender * const evr)
 {
-	VBODataPointer const colors(evr->colors());
-	VBODataPointer vertices(evr->vertices());
+	GL2::VBODataPointer const colors(evr->colors());
+	GL2::VBODataPointer vertices(evr->vertices());
 
 	if (colors && vertices)
 	{
@@ -101,7 +103,8 @@ static void explodeModel(typename PFP::MAP& map, VertexAttribute<typename PFP::V
  * Computes the topological depth of each dart.
  * Surface volumes have depth 0.
  * Inside volumes adjacent to surface volumes have depth 1, and so on.
- * the int vector depths must already be sized so that the depth of each dart can be stored in depths[dart.label()].
+ * The int vector depths must already be sized so that the depth of each dart can be stored in depths[dart.label()].
+ * The int vector depths must already be initialized with -1 for each dart.
  * \returns the largest depth found (minimum 0).
  */
 template<typename PFP>
@@ -112,6 +115,7 @@ static int computeDepths(typename PFP::MAP& map, const FunctorSelect& good, std:
 	int depth = 0;
 	bool notDone = false;
 
+	/* initialize_depths_of_surface_darts: */
 	for (Dart d = modelFaces.begin(); d != modelFaces.end(); d = modelFaces.next())
 	{
 		if (map.isBoundaryFace(d))
@@ -133,6 +137,7 @@ static int computeDepths(typename PFP::MAP& map, const FunctorSelect& good, std:
 
 	++depth;
 
+	/* propagate_depths_from_surface: */
 	while (notDone)
 	{
 		notDone = false;
@@ -241,7 +246,7 @@ static void centerModel(typename PFP::MAP & myMap, VertexAttribute<typename PFP:
 	}
 }
 
-} /* namespace VolumeExplorerTools */
+} /* namespace Transparency */
 
 } /* namespace CGoGN */
 

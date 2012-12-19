@@ -38,7 +38,7 @@
 #include "Utils/debug.h"
 #include "Utils/textureSticker.h"
 
-using namespace CGoGN::VolumeExplorerTools;
+using namespace CGoGN::Transparency;
 
 PFP::MAP myMap;
 VertexAttribute<PFP::VEC3> position ;
@@ -294,7 +294,7 @@ static CGoGN::Utils::FBO * newFrontDepthPeelingFBO(unsigned int const width, uns
 
 void MyQT::resetFbo()
 {
-	Viewport const viewport;
+	GL1::Viewport const viewport;
 	unsigned int const width = std::max(1U, static_cast<unsigned int>(viewport.width()));
 	unsigned int const height = std::max(1U, static_cast<unsigned int>(viewport.height()));
 
@@ -306,7 +306,7 @@ void MyQT::resetFbo()
 	}
 
 	if (m_fbo1 == NULL) {
-		using namespace CGoGN::VolumeExplorerTools::Debug;
+		using namespace CGoGN::Transparency::Debug;
 		DEBUG_OUT << viewport << std::endl;
 		m_fbo1 = newFrontDepthPeelingFBO(width, height);
 		m_fbo2 = newFrontDepthPeelingFBO(width, height);
@@ -346,7 +346,7 @@ void MyQT::cb_redraw()
 			unsigned int const n = m_explode_render->nbTris();
 			static std::vector<GLuint> triangles(n * 4);
 
-			sortData(m_explode_render, triangles, viewpoint());
+			sortTriangles(m_explode_render, triangles, viewpoint());
 			glEnable(GL_BLEND); DEBUG_GL;
 			glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD); DEBUG_GL;
 			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO); DEBUG_GL;
@@ -491,10 +491,10 @@ void MyQT::button_render_software()
 
 	timer.start();
 
-	Viewport const viewport;
+	GL1::Viewport const viewport;
 
 	{
-		using namespace CGoGN::VolumeExplorerTools::Debug;
+		using namespace CGoGN::Transparency::Debug;
 		DEBUG_OUT << "viewport: " << viewport << std::endl;
 	}
 
@@ -606,7 +606,7 @@ void MyQT::button_depth_peeling()
 
 	glReadBuffer(GL_BACK);
 
-	Viewport const viewport;
+	GL1::Viewport const viewport;
 	int const width = viewport.width();
 	int const height = viewport.height();
 	QImage image(width, height, QImage::Format_ARGB32);

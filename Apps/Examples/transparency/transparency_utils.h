@@ -1,54 +1,14 @@
 #ifndef TRANSPARENCY_UTILS_H
 #define TRANSPARENCY_UTILS_H
 
+#include "VBODataPointer.h"
+#include "Viewport.h"
+
 namespace CGoGN
 {
 
-namespace VolumeExplorerTools
+namespace Transparency
 {
-
-/**
- * RAII wrapper for VBO data pointer.
- * VBO::lockPtr() is called in the constructor, and VBO::releasePtr() is called in the destructor.
- */
-class VBODataPointer
-{
-
-	Utils::VBO * const m_vbo;
-
-	float * const m_data;
-
-public:
-
-	VBODataPointer(Utils::VBO * const vbo): m_vbo(vbo), m_data(static_cast<float *>(vbo->lockPtr()))
-	{
-		// NOP
-	}
-
-	~VBODataPointer()
-	{
-		if (m_data)
-		{
-			m_vbo->releasePtr();
-		}
-	}
-
-	unsigned int elementCount() const
-	{
-		return m_vbo->nbElts();
-	}
-
-	operator float *()
-	{
-		return m_data;
-	}
-
-	operator float const *() const
-	{
-		return m_data;
-	}
-
-};
 
 /**
  * Linear interpolation: target = target * k + source * (1 - k).
@@ -149,47 +109,6 @@ static void bindClearUnbind(CGoGN::Utils::FBO * const fbo)
 	glDrawBuffer(GL_BACK); DEBUG_GL;
 }
 
-/**
- * Simple class to retrieve OpenGL viewport information when the constructor is called.
- */
-class Viewport
-{
-
-	GLint m_viewport[4];
-
-public:
-
-	Viewport()
-	{
-		glGetIntegerv(GL_VIEWPORT, m_viewport); DEBUG_GL;
-	}
-
-	GLint x() const
-	{
-		return m_viewport[0];
-	}
-
-	GLint y() const
-	{
-		return m_viewport[1];
-	}
-
-	GLint width() const
-	{
-		return m_viewport[2];
-	}
-
-	GLint height() const
-	{
-		return m_viewport[3];
-	}
-
-	operator GLint const *() const
-	{
-		return m_viewport;
-	}
-
-};
 
 namespace Debug
 {
@@ -230,7 +149,7 @@ static inline std::ostream & operator<<(std::ostream & out, std::vector< int > c
 	return out;
 }
 
-static inline std::ostream & operator<<(std::ostream & out, Viewport const & v)
+static inline std::ostream & operator<<(std::ostream & out, GL1::Viewport const & v)
 {
 	out << '[' << v.x() << ' ' << v.y() << ' ' << v.width() << ' ' << v.height() << ']';
 
@@ -239,7 +158,7 @@ static inline std::ostream & operator<<(std::ostream & out, Viewport const & v)
 
 } /* namespace Debug */
 
-} /* namespace VolumeExplorerTools */
+} /* namespace Transparency */
 
 } /* namespace CGoGN */
 

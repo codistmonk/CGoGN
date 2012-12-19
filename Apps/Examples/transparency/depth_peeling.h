@@ -6,7 +6,7 @@
 namespace CGoGN
 {
 
-namespace VolumeExplorerTools
+namespace Transparency
 {
 
 static void peelDepthLayerAndBlendToDefaultBuffer(CGoGN::Utils::FBO * const previousFBO, CGoGN::Utils::FBO * const currentFBO,
@@ -33,7 +33,7 @@ static void peelDepthLayerAndBlendToDefaultBuffer(CGoGN::Utils::FBO * const prev
 	Utils::TextureSticker::StickTextureOnWholeScreen(currentFBO->GetColorTexId(0));
 }
 
-} /* namespace VolumeExplorerTools */
+} /* namespace Transparency */
 
 } /* namespace CGoGN */
 

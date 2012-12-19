@@ -13,7 +13,7 @@ void main()
 	{
 		gl_FragColor = ColorFS;
 	}
-	else if (previousDepth == 1.0)
+	else if (depthPeeling == 1)
 	{
 		gl_FragColor = vec4(ColorFS.rgb * ColorFS.a, 1.0 - ColorFS.a);
 	}

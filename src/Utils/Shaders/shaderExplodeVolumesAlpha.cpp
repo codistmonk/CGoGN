@@ -125,7 +125,7 @@ void ShaderExplodeVolumesAlpha::setClippingPlane(const Geom::Vec4f& plane)
 	glUniform4fv(*m_unif_plane, 1, plane.data());
 }
 
-void ShaderExplodeVolumesAlpha::setDepthPeeling(bool const depthPeeling)
+void ShaderExplodeVolumesAlpha::setDepthPeeling(int const depthPeeling)
 {
 	m_depthPeeling = depthPeeling;
 	bind();

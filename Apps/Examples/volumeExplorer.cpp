@@ -558,7 +558,7 @@ void MyQT::button_depth_peeling()
 
 	if (render_volumes)
 	{
-		m_explode_render->shaderFaces()->setDepthPeeling(true);
+		m_explode_render->shaderFaces()->setDepthPeeling(1);
 		glDisable(GL_BLEND); DEBUG_GL;
 		glEnable(GL_DEPTH_TEST); DEBUG_GL;
 		glActiveTexture(GL_TEXTURE0 + 0); DEBUG_GL;
@@ -571,15 +571,32 @@ void MyQT::button_depth_peeling()
 
 		CGoGN::Utils::FBO * previousFBO = m_fbo1;
 		CGoGN::Utils::FBO * currentFBO = m_fbo2;
+		GLuint queryId, sampleCount;
+		glGenQueries(1, &queryId); DEBUG_GL;
 
+		m_explode_render->shaderFaces()->setDepthPeeling(2);
 		// TODO count number of layers
-		for (int i = 0; i < 10; ++i)
+		for (int i = 0; i < 20; ++i)
 		{
+			glBeginQuery(GL_SAMPLES_PASSED_ARB, queryId); DEBUG_GL;
+
 			peelDepthLayerAndBlendToDefaultBuffer(previousFBO, currentFBO, m_explode_render);
+
+			glEndQuery(GL_SAMPLES_PASSED_ARB); DEBUG_GL;
+			glGetQueryObjectuiv(queryId, GL_QUERY_RESULT_ARB, &sampleCount); DEBUG_GL;
+
+//			DEBUG_OUT << sampleCount << std::endl;
+
+			if (sampleCount == 0) {
+				break;
+			}
+
 			std::swap(previousFBO, currentFBO);
 		}
 
-		m_explode_render->shaderFaces()->setDepthPeeling(false);
+		glDeleteQueries(1, &queryId); DEBUG_GL;
+
+		m_explode_render->shaderFaces()->setDepthPeeling(0);
 	}
 	else
 	{

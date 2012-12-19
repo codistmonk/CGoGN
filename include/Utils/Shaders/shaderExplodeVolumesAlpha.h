@@ -38,11 +38,11 @@ class ShaderExplodeVolumesAlpha : public GLSLShader
 {
 protected:
 	// shader sources
-    static std::string vertexShaderText;
-    static std::string fragmentShaderText;
-    static std::string geometryShaderText;
+	static std::string vertexShaderText;
+	static std::string fragmentShaderText;
+	static std::string geometryShaderText;
 
-    // uniform locations
+	// uniform locations
 	CGoGNGLuint m_unif_ambient;
 	CGoGNGLuint m_unif_backColor;
 	CGoGNGLuint m_unif_lightPos;
@@ -51,7 +51,7 @@ protected:
 	CGoGNGLuint m_unif_unit;
 	CGoGNGLuint m_unif_depthPeeling;
 
-//	local storage for uniforms
+	// local storage for uniforms
 	float m_explodeV;
 	float m_explodeF;
 	Geom::Vec4f m_ambient;
@@ -81,7 +81,7 @@ public:
 
 	void setClippingPlane(const Geom::Vec4f& plane);
 
-	void setDepthPeeling(bool depthPeeling);
+	void setDepthPeeling(int depthPeeling);
 
 	void setAttributePosition(VBO* vbo);
 

@@ -131,6 +131,7 @@ public:
 		m_opacity_gradient(0.5f)
 	{}
 
+	void renderOpaqueStructures();
 	void resetFbo();
 	void updateDepths();
 	glm::vec4 viewpoint() const;

@@ -311,6 +311,13 @@ void FBO::Unbind()
 	}
 }
 
+void FBO::SafeUnbind()
+{
+	glFlush();
+	Unbind();
+	glDrawBuffer(GL_BACK);
+}
+
 void FBO::CheckFBO()
 {
 	if (sm_anyFboBound)

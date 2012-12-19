@@ -123,6 +123,11 @@ public:
 	void Unbind();
 
 	/**
+	 * Call glFlush(), unbind this Fbo, call glDrawBuffer(GL_BACK).\n
+	 */
+	void SafeUnbind();
+
+	/**
 	 * Check the completeness of this Fbo.\n
 	 * When calling this function, no Fbo should be bound.\n
 	 */

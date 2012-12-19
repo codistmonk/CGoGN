@@ -15,11 +15,11 @@ void main()
 	}
 	else if (previousDepth == 1.0)
 	{
-		gl_FragColor = vec4(ColorFS.rgb * ColorFS.a, ColorFS.a);
+		gl_FragColor = vec4(ColorFS.rgb * ColorFS.a, 1.0 - ColorFS.a);
 	}
 	else if (depth > previousDepth)
 	{
-		gl_FragColor = vec4(ColorFS.rgb * ColorFS.a, 1.0 - ColorFS.a);
+		gl_FragColor = vec4(ColorFS.rgb * ColorFS.a, ColorFS.a);
 	}
 	else
 	{

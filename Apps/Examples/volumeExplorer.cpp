@@ -316,17 +316,14 @@ void MyQT::resetFbo()
 	bindClearUnbind(m_fbo2);
 }
 
-void MyQT::cb_redraw()
-{
-	glDisable(GL_BLEND); DEBUG_GL;
-	glEnable(GL_DEPTH_TEST); DEBUG_GL;
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); DEBUG_GL;
-
+void MyQT::renderOpaqueStructures() {
 	glEnable(GL_POLYGON_OFFSET_FILL); DEBUG_GL;
 	glPolygonOffset(1.0f, 1.0f); DEBUG_GL;
 
 	if (render_topo)
+	{
 		m_topo_render->drawTopo(); DEBUG_GL;
+	}
 
 	if (render_edges)
 	{
@@ -335,6 +332,15 @@ void MyQT::cb_redraw()
 	}
 
 	glDisable(GL_POLYGON_OFFSET_FILL);
+}
+
+void MyQT::cb_redraw()
+{
+	glDisable(GL_BLEND); DEBUG_GL;
+	glEnable(GL_DEPTH_TEST); DEBUG_GL;
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); DEBUG_GL;
+
+	renderOpaqueStructures();
 
 	if (render_volumes)
 	{
@@ -538,13 +544,6 @@ void MyQT::button_depth_peeling()
 
 	resetFbo();
 
-	m_fbo2->Bind(); DEBUG_GL;
-	m_fbo2->EnableColorAttachments(); DEBUG_GL;
-	glClearColor(0, 0, 0, 0); DEBUG_GL;
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); DEBUG_GL;
-	glFlush(); DEBUG_GL;
-	m_fbo2->Unbind(); DEBUG_GL;
-
 	// Enable Fbo before rendering
 	m_fbo1->Bind(); DEBUG_GL;
 	m_fbo1->EnableColorAttachments(); DEBUG_GL;
@@ -555,19 +554,7 @@ void MyQT::button_depth_peeling()
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); DEBUG_GL;
 
-	glEnable(GL_POLYGON_OFFSET_FILL); DEBUG_GL;
-	glPolygonOffset(1.0f, 1.0f); DEBUG_GL;
-
-	if (render_topo)
-		m_topo_render->drawTopo(); DEBUG_GL;
-
-	if (render_edges)
-	{
-		glLineWidth(2.0f);
-		m_explode_render->drawEdges(); DEBUG_GL;
-	}
-
-	glDisable(GL_POLYGON_OFFSET_FILL);
+	renderOpaqueStructures();
 
 	if (render_volumes)
 	{
@@ -578,9 +565,7 @@ void MyQT::button_depth_peeling()
 		glBindTexture(GL_TEXTURE_2D, *(m_fbo2->GetDepthTexId())); DEBUG_GL;
 		m_explode_render->drawFaces(); DEBUG_GL;
 		glBindTexture(GL_TEXTURE_2D, 0); DEBUG_GL;
-		glFlush(); DEBUG_GL;
-		m_fbo1->Unbind(); DEBUG_GL;
-		glDrawBuffer(GL_BACK); DEBUG_GL;
+		m_fbo1->SafeUnbind(); DEBUG_GL;
 
 		Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo1->GetColorTexId(0));
 
@@ -598,9 +583,7 @@ void MyQT::button_depth_peeling()
 	}
 	else
 	{
-		glFlush(); DEBUG_GL;
-		m_fbo1->Unbind(); DEBUG_GL;
-		glDrawBuffer(GL_BACK); DEBUG_GL;
+		m_fbo1->SafeUnbind(); DEBUG_GL;
 		Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo1->GetColorTexId(0));
 	}
 

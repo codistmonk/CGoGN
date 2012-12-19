@@ -22,9 +22,7 @@ static void peelDepthLayerAndBlendToDefaultBuffer(CGoGN::Utils::FBO * const prev
 	glBindTexture(GL_TEXTURE_2D, *(previousFBO->GetDepthTexId())); DEBUG_GL;
 	evr->drawFaces(); DEBUG_GL;
 	glBindTexture(GL_TEXTURE_2D, 0); DEBUG_GL;
-	glFlush(); DEBUG_GL;
-	currentFBO->Unbind(); DEBUG_GL;
-	glDrawBuffer(GL_BACK);
+	currentFBO->SafeUnbind(); DEBUG_GL;
 
 	glDisable(GL_DEPTH_TEST); DEBUG_GL;
 	glEnable(GL_BLEND); DEBUG_GL;

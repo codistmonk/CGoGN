@@ -104,9 +104,7 @@ static void bindClearUnbind(CGoGN::Utils::FBO * const fbo)
 	glClearColor(0, 0, 0, 0); DEBUG_GL;
 	glClearDepth(1.0f); DEBUG_GL;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); DEBUG_GL;
-	glFlush(); DEBUG_GL;
-	fbo->Unbind(); DEBUG_GL;
-	glDrawBuffer(GL_BACK); DEBUG_GL;
+	fbo->SafeUnbind(); DEBUG_GL;
 }
 
 

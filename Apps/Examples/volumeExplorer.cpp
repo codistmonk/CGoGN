@@ -544,13 +544,8 @@ void MyQT::button_depth_peeling()
 
 	resetFbo();
 
-	// Enable Fbo before rendering
 	m_fbo1->Bind(); DEBUG_GL;
 	m_fbo1->EnableColorAttachments(); DEBUG_GL;
-
-	// Clear old Fbo buffers content
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); DEBUG_GL;
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); DEBUG_GL;
 
@@ -558,45 +553,7 @@ void MyQT::button_depth_peeling()
 
 	if (render_volumes)
 	{
-		m_explode_render->shaderFaces()->setDepthPeeling(1);
-		glDisable(GL_BLEND); DEBUG_GL;
-		glEnable(GL_DEPTH_TEST); DEBUG_GL;
-		glActiveTexture(GL_TEXTURE0 + 0); DEBUG_GL;
-		glBindTexture(GL_TEXTURE_2D, *(m_fbo2->GetDepthTexId())); DEBUG_GL;
-		m_explode_render->drawFaces(); DEBUG_GL;
-		glBindTexture(GL_TEXTURE_2D, 0); DEBUG_GL;
-		m_fbo1->SafeUnbind(); DEBUG_GL;
-
-		Utils::TextureSticker::StickTextureOnWholeScreen(m_fbo1->GetColorTexId(0));
-
-		CGoGN::Utils::FBO * previousFBO = m_fbo1;
-		CGoGN::Utils::FBO * currentFBO = m_fbo2;
-		GLuint queryId, sampleCount;
-		glGenQueries(1, &queryId); DEBUG_GL;
-
-		m_explode_render->shaderFaces()->setDepthPeeling(2);
-		// TODO count number of layers
-		for (int i = 0; i < 20; ++i)
-		{
-			glBeginQuery(GL_SAMPLES_PASSED_ARB, queryId); DEBUG_GL;
-
-			peelDepthLayerAndBlendToDefaultBuffer(previousFBO, currentFBO, m_explode_render);
-
-			glEndQuery(GL_SAMPLES_PASSED_ARB); DEBUG_GL;
-			glGetQueryObjectuiv(queryId, GL_QUERY_RESULT_ARB, &sampleCount); DEBUG_GL;
-
-//			DEBUG_OUT << sampleCount << std::endl;
-
-			if (sampleCount == 0) {
-				break;
-			}
-
-			std::swap(previousFBO, currentFBO);
-		}
-
-		glDeleteQueries(1, &queryId); DEBUG_GL;
-
-		m_explode_render->shaderFaces()->setDepthPeeling(0);
+		peelDepthLayersAndBlendToDefaultBuffer(m_fbo1, m_fbo2, m_explode_render, 20);
 	}
 	else
 	{
@@ -607,23 +564,10 @@ void MyQT::button_depth_peeling()
 	glReadBuffer(GL_BACK);
 
 	GL1::Viewport const viewport;
-	int const width = viewport.width();
-	int const height = viewport.height();
-	QImage image(width, height, QImage::Format_ARGB32);
+	QImage image(viewport.width(), viewport.height(), QImage::Format_ARGB32);
 	image.fill(0);
 
-	std::vector<GLubyte> pixels(width * height * 4);
-	glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
-
-	for (int y = 0; y < height; ++y) {
-		for (int x = 0; x < width; ++x) {
-			QColor const color(
-					pixels[(y * width + x) * 4 + 0],
-					pixels[(y * width + x) * 4 + 1],
-					pixels[(y * width + x) * 4 + 2]);
-			image.setPixel(x, height - 1 - y, color.rgba());
-		}
-	}
+	readPixelsTo(image);
 
 	m_imageComponent.setPixmap(QPixmap::fromImage(image));
 	m_imageViewer.setWidget(&m_imageComponent);

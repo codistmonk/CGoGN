@@ -107,6 +107,26 @@ static void bindClearUnbind(CGoGN::Utils::FBO * const fbo)
 	fbo->SafeUnbind(); DEBUG_GL;
 }
 
+/**
+ * Initializes image's pixels from data retrieved using glReadPixels() and image's dimensions.
+ */
+static void readPixelsTo(QImage & image)
+{
+	int const width = image.width();
+	int const height = image.height();
+	std::vector<GLubyte> pixels(width * height * 4);
+	glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]); DEBUG_GL;
+
+	for (int y = 0; y < height; ++y) {
+		for (int x = 0; x < width; ++x) {
+			QColor const color(
+					pixels[(y * width + x) * 4 + 0],
+					pixels[(y * width + x) * 4 + 1],
+					pixels[(y * width + x) * 4 + 2]);
+			image.setPixel(x, height - 1 - y, color.rgba());
+		}
+	}
+}
 
 namespace Debug
 {

@@ -15,7 +15,7 @@ namespace Transparency
  * \returns target
  */
 template<typename PFP>
-static inline typename PFP::VEC3 & linerp(typename PFP::VEC3 & target, typename PFP::VEC3 const & source, float const k)
+static inline typename PFP::VEC3 & linerp(typename PFP::VEC3 const & source, typename PFP::VEC3 & target, float const k)
 {
 	target[0] = target[0] * k + source[0] * (1.0f - k);
 	target[1] = target[1] * k + source[1] * (1.0f - k);
@@ -26,11 +26,11 @@ static inline typename PFP::VEC3 & linerp(typename PFP::VEC3 & target, typename 
 
 /**
  * Linear interpolation.
- * \returns a * s + b * (1 - s)
+ * \returns b * s + a * (1 - s)
  */
-static inline float linerp(float const s, float const a, float const b)
+static inline float linerp(float const a, float const b, float const s)
 {
-	return a * s + b * (1.0f - s);
+	return b * s + a * (1.0f - s);
 }
 
 /**

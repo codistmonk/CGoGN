@@ -84,9 +84,9 @@ static void updateRasterizationSpansTopDown(RasterizationSpans & spans, int cons
 		{
 			float const s = static_cast<float>(pixelCount - 1) / std::max(m, 1);
 
-			assert(linerp(s, a1, a2) || linerp(s, b1, b2) || linerp(s, c1, c2));
+			assert(linerp(a1, a2, s) || linerp(b1, b2, s) || linerp(c1, c2, s));
 
-			spans[y].updateRange(x, linerp(s, a1, a2), linerp(s, b1, b2), linerp(s, c1, c2));
+			spans[y].updateRange(x, linerp(a1, a2, s), linerp(b1, b2, s), linerp(c1, c2, s));
 
 			if (debug)
 			{
@@ -187,9 +187,9 @@ static void rasterizeTriangle(RasterizationSpans & spans, int const viewportWidt
 			if (0 <= x && x < viewportWidth)
 			{
 				float const s = (x - firstX) / xSpan;
-				float const a = linerp(s, span.firstA(), span.lastA());
-				float const b = linerp(s, span.firstB(), span.lastB());
-				float const c = linerp(s, span.firstC(), span.lastC());
+				float const a = linerp(span.firstA(), span.lastA(), s);
+				float const b = linerp(span.firstB(), span.lastB(), s);
+				float const c = linerp(span.firstC(), span.lastC(), s);
 				float const z = 1.0f / (a / (p0.z + dz) + b / (p1.z + dz) + c / (p2.z + dz));
 
 				assert(a || b || c);

@@ -84,9 +84,9 @@ static void explodeModel(typename PFP::MAP& map, VertexAttribute<typename PFP::V
 				VEC3 va = vertexLocations[a];
 				VEC3 vb = vertexLocations[b];
 				VEC3 vc = vertexLocations[c];
-				linerp<PFP>(linerp<PFP>(va, faceCenter, faceScale), volumeCenter, volumeScale);
-				linerp<PFP>(linerp<PFP>(vb, faceCenter, faceScale), volumeCenter, volumeScale);
-				linerp<PFP>(linerp<PFP>(vc, faceCenter, faceScale), volumeCenter, volumeScale);
+				linerp<PFP>(volumeCenter, linerp<PFP>(faceCenter, va, faceScale), volumeScale);
+				linerp<PFP>(volumeCenter, linerp<PFP>(faceCenter, vb, faceScale), volumeScale);
+				linerp<PFP>(volumeCenter, linerp<PFP>(faceCenter, vc, faceScale), volumeScale);
 				memcpy(&vertices[faceIndex * 4 * 3 + 1 * 3], &va, sizeof(VEC3));
 				memcpy(&vertices[faceIndex * 4 * 3 + 2 * 3], &vb, sizeof(VEC3));
 				memcpy(&vertices[faceIndex * 4 * 3 + 3 * 3], &vc, sizeof(VEC3));
@@ -194,11 +194,11 @@ static void computeColorsUsingDepths(typename PFP::MAP & map, VolumeAttribute<ty
 
 		if (opacityGradient < 0.5)
 		{
-			alpha *= pow(opacityGradient * 2.0, lastDepth - depth);
+			alpha = 1.0 - normalizedDepth <= opacityGradient * 2.0f ? opacity : opacity * pow(opacityGradient * 2.0, lastDepth - depth);
 		}
 		else
 		{
-			alpha *= pow((1.0 - opacityGradient) * 2.0, depth);
+			alpha = normalizedDepth <= (1.0 - opacityGradient) * 2.0f ? opacity : opacity * pow((1.0 - opacityGradient) * 2.0, depth);
 		}
 
 		Dart a = d;

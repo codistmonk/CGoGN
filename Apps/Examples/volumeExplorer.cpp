@@ -312,6 +312,7 @@ void MyQT::resetFbo()
 		m_fbo2 = newFrontDepthPeelingFBO(width, height);
 	}
 
+	glFlush();
 	bindClearUnbind(m_fbo1);
 	bindClearUnbind(m_fbo2);
 }
@@ -346,6 +347,7 @@ void MyQT::cb_redraw()
 	{
 		resetFbo();
 		glBindTexture(GL_TEXTURE_2D, *(m_fbo1->GetDepthTexId())); DEBUG_GL;
+		m_explode_render->shaderFaces()->setDepthPeeling(0);
 
 		if (m_opacity < 1)
 		{
